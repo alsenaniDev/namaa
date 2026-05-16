@@ -12,8 +12,20 @@ uri = "file://artifacts/mobile/assets/images/splash.png"
 type = "image"
 title = "generated_image"
 
+[[generated]]
+id = "A_yNyswFu2Fdj2141ftVS"
+uri = "file://attached_assets/generated_images/icon_meem_transparent.png"
+type = "image"
+title = "arabic meem letter transparent"
+
+[[generated]]
+id = "ygFKzzYY7dk0bbBagSeIs"
+uri = "file://attached_assets/generated_images/icon_meem_v2.png"
+type = "image"
+title = "arabic meem letter bold"
+
 [[outputs]]
 id = "9USeVi2m7EN3FqtqnEoC0"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
-title = "New مالي App Icon"
+title = "م Icon (transparent)"

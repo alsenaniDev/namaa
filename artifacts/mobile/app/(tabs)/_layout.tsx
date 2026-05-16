@@ -101,9 +101,6 @@ export default function TabLayout() {
           tabBarIcon: tabIcon('shopping-bag'),
         }}
       />
-      {/* Hidden from tab bar — navigated as stack screens */}
-      <Tabs.Screen name="reports" options={{ href: null }} />
-      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }

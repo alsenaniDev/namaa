@@ -23,97 +23,116 @@ export default function TabLayout() {
       <Feather name={name as any} size={22} color={color} />
     );
 
-  const headerIconsStyle = dir.isRTL
-    ? { flexDirection: dir.row, alignItems: 'center', marginRight: 12 } as const
-    : { flexDirection: dir.row, alignItems: 'center', marginLeft: 12 } as const;
+  // In RTL, the gear lives in headerLeft (visual right = start for Arabic).
+  // In LTR it lives in headerRight.
+  const GearButton = () => (
+    <TouchableOpacity
+      onPress={() => router.push('/settings')}
+      style={dir.isRTL ? { marginRight: 14, padding: 4 } : { marginLeft: 14, padding: 4 }}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Feather name="settings" size={22} color={colors.foreground} />
+    </TouchableOpacity>
+  );
 
-  const gearStyle = dir.isRTL
-    ? { marginRight: 16, padding: 4 } as const
-    : { marginLeft: 16, padding: 4 } as const;
+  // Home tab has two icons. In RTL place on left side of header (start), in LTR on right.
+  const HomeHeaderIcons = () => (
+    <View style={dir.isRTL
+      ? { flexDirection: 'row', alignItems: 'center', marginRight: 14 }
+      : { flexDirection: 'row', alignItems: 'center', marginLeft: 14 }
+    }>
+      <TouchableOpacity
+        onPress={() => router.push('/reports')}
+        style={{ padding: 4, marginHorizontal: 4 }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Feather name="bar-chart-2" size={22} color={colors.foreground} />
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => router.push('/settings')}
+        style={dir.isRTL ? { padding: 4, marginLeft: 4 } : { padding: 4, marginRight: 4 }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Feather name="settings" size={22} color={colors.foreground} />
+      </TouchableOpacity>
+    </View>
+  );
+
+  const commonScreenOptions = {
+    tabBarActiveTintColor: colors.primary,
+    tabBarInactiveTintColor: colors.mutedForeground,
+    headerShown: true,
+    headerStyle: { backgroundColor: colors.background },
+    headerTitleStyle: { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 18 },
+    headerTitleAlign: 'center' as const,
+    headerShadowVisible: false,
+    tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+    tabBarStyle: {
+      position: 'absolute' as const,
+      backgroundColor: isIOS ? 'transparent' : colors.background,
+      borderTopWidth: isWeb ? 1 : StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      elevation: 0,
+      ...(isWeb ? { height: 84 } : {}),
+    },
+    tabBarBackground: () =>
+      isIOS ? (
+        <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
+      ) : isWeb ? (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
+      ) : null,
+    // default gear for non-home tabs
+    ...(dir.isRTL
+      ? { headerRight: undefined, headerLeft: () => <GearButton /> }
+      : { headerLeft: undefined, headerRight: () => <GearButton /> }),
+  };
+
+  const indexScreen = (
+    <Tabs.Screen
+      key="index"
+      name="index"
+      options={{
+        title: t.tabs.home,
+        tabBarIcon: tabIcon('home'),
+        ...(dir.isRTL
+          ? { headerRight: undefined, headerLeft: () => <HomeHeaderIcons /> }
+          : { headerLeft: undefined, headerRight: () => <HomeHeaderIcons /> }),
+      }}
+    />
+  );
+
+  const incomeScreen = (
+    <Tabs.Screen
+      key="income"
+      name="income"
+      options={{ title: t.tabs.income, tabBarIcon: tabIcon('trending-up') }}
+    />
+  );
+
+  const commitmentsScreen = (
+    <Tabs.Screen
+      key="commitments"
+      name="commitments"
+      options={{ title: t.tabs.commitments, tabBarIcon: tabIcon('credit-card') }}
+    />
+  );
+
+  const expensesScreen = (
+    <Tabs.Screen
+      key="expenses"
+      name="expenses"
+      options={{ title: t.tabs.expenses, tabBarIcon: tabIcon('shopping-bag') }}
+    />
+  );
+
+  // In RTL the visual start is the right side — reverse tab order so Home is rightmost.
+  const screens = dir.isRTL
+    ? [expensesScreen, commitmentsScreen, incomeScreen, indexScreen]
+    : [indexScreen, incomeScreen, commitmentsScreen, expensesScreen];
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
-        headerShown: true,
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 18 },
-        headerTitleAlign: 'center',
-        headerShadowVisible: false,
-        tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
-        tabBarStyle: {
-          position: 'absolute',
-          flexDirection: dir.row,
-          backgroundColor: isIOS ? 'transparent' : colors.background,
-          borderTopWidth: isWeb ? 1 : StyleSheet.hairlineWidth,
-          borderTopColor: colors.border,
-          elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
-        },
-        tabBarBackground: () =>
-          isIOS ? (
-            <BlurView intensity={100} tint={isDark ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-          ) : isWeb ? (
-            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
-          ) : null,
-        headerRight: () => (
-          <TouchableOpacity
-            onPress={() => router.push('/settings')}
-            style={gearStyle}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Feather name="settings" size={22} color={colors.foreground} />
-          </TouchableOpacity>
-        ),
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: t.tabs.home,
-          tabBarIcon: tabIcon('home'),
-          headerRight: () => (
-            <View style={headerIconsStyle}>
-              <TouchableOpacity
-                onPress={() => router.push('/reports')}
-                style={dir.isRTL ? { padding: 4, marginLeft: 4 } : { padding: 4, marginRight: 4 }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Feather name="bar-chart-2" size={22} color={colors.foreground} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => router.push('/settings')}
-                style={dir.isRTL ? { padding: 4, marginLeft: 8 } : { padding: 4, marginRight: 8 }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Feather name="settings" size={22} color={colors.foreground} />
-              </TouchableOpacity>
-            </View>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="income"
-        options={{
-          title: t.tabs.income,
-          tabBarIcon: tabIcon('trending-up'),
-        }}
-      />
-      <Tabs.Screen
-        name="commitments"
-        options={{
-          title: t.tabs.commitments,
-          tabBarIcon: tabIcon('credit-card'),
-        }}
-      />
-      <Tabs.Screen
-        name="expenses"
-        options={{
-          title: t.tabs.expenses,
-          tabBarIcon: tabIcon('shopping-bag'),
-        }}
-      />
+    <Tabs initialRouteName="index" screenOptions={commonScreenOptions}>
+      {screens}
     </Tabs>
   );
 }

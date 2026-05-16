@@ -1,7 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert, I18nManager, Platform } from 'react-native';
-import * as Updates from 'expo-updates';
 import type { Language } from '@/utils/i18n';
 
 const LANG_KEY = '@mali/language';
@@ -17,14 +16,17 @@ const LanguageContext = createContext<LanguageContextType>({
 });
 
 /**
- * Synchronous initial language — used for the very first render before the
- * AsyncStorage hydration completes.
+ * Synchronous initial language for the very first render.
+ *  • Web: read from localStorage (sync), default Arabic.
+ *  • Native: we cannot read AsyncStorage synchronously, so default to Arabic
+ *    (the app's primary language). The mount effect immediately hydrates the
+ *    real stored value — same-language users see no change; English users see
+ *    a brief Arabic frame then switch.
  *
- *  • Web:    read from localStorage (synchronous), default Arabic.
- *  • Native: derive from I18nManager.isRTL, which is persisted across launches
- *            in NSUserDefaults / SharedPreferences.  After the first install
- *            bootstrap below, isRTL always matches the user's saved language,
- *            so this gives a flash-free first render.
+ *  We intentionally do NOT read I18nManager.isRTL here. On iOS, isRTL is a
+ *  cached value that does not update until the entire native process restarts
+ *  (a JS reload does not refresh it). Deriving the JS language from it caused
+ *  an infinite reload loop on first install.
  */
 function getInitialLanguage(): Language {
   if (Platform.OS === 'web') {
@@ -37,39 +39,29 @@ function getInitialLanguage(): Language {
     } catch {}
     return 'ar';
   }
-  // Native: trust the persisted RTL flag.
-  return I18nManager.isRTL ? 'ar' : 'en';
-}
-
-async function reloadApp() {
-  try {
-    await Updates.reloadAsync();
-    return true;
-  } catch {
-    return false;
-  }
+  return 'ar';
 }
 
 function showRestartAlert(lang: Language) {
   Alert.alert(
     lang === 'ar' ? 'إعادة تشغيل مطلوبة' : 'Restart Required',
     lang === 'ar'
-      ? 'أغلق التطبيق وافتحه مرة أخرى لتطبيق اتجاه اللغة.'
-      : 'Please close and reopen the app to apply the language direction.',
+      ? 'تم تغيير اللغة. أغلق التطبيق تماماً وافتحه مرة أخرى لإكمال تغيير الاتجاه.'
+      : 'Language changed. Please fully close the app and reopen it to complete the direction change.',
     [{ text: lang === 'ar' ? 'حسناً' : 'OK' }],
   );
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getInitialLanguage);
+  // Guards the hydration effect so it never runs twice (would re-trigger the
+  // first-install bootstrap or restart prompt on every re-render).
+  const hydratedRef = useRef(false);
 
-  // On mount: reconcile persisted language with the native RTL flag.
-  // Three cases on native:
-  //   (a) First install   — no stored value. Default to Arabic, force RTL, restart.
-  //   (b) In sync         — stored matches I18nManager.isRTL. Just hydrate state.
-  //   (c) Out of sync     — stored disagrees with native flag (rare; recover by
-  //                         re-applying forceRTL and restarting).
   useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+
     let cancelled = false;
     AsyncStorage.getItem(LANG_KEY).then(async (val) => {
       if (cancelled) return;
@@ -81,38 +73,37 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         if (typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) !== lang) {
           localStorage.setItem(LANG_KEY, lang);
         }
-        const initialWasRTL = getInitialLanguage() !== 'en';
-        const shouldBeRTL = lang === 'ar';
-        if (initialWasRTL !== shouldBeRTL && typeof window !== 'undefined') {
-          window.location.reload();
-        }
         return;
       }
 
       // ─── Native ───
-      const nativeIsRTL = I18nManager.isRTL;
-
-      // (a) First install — no preference yet. Bootstrap to Arabic.
       if (stored === null) {
+        // First install: persist Arabic as the default. Also persist the
+        // native RTL flag so the NEXT cold start has native chrome (back
+        // arrow, swipe-back gesture, ScrollView inertia) in RTL too.
         await AsyncStorage.setItem(LANG_KEY, 'ar');
         setLanguageState('ar');
-        if (!nativeIsRTL) {
+        if (!I18nManager.isRTL) {
           I18nManager.allowRTL(true);
           I18nManager.forceRTL(true);
-          const reloaded = await reloadApp();
-          if (!reloaded) showRestartAlert('ar');
+          // We do NOT call Updates.reloadAsync() — on iOS the isRTL value is
+          // cached for the lifetime of the native process, so a JS reload
+          // cannot pick up the new value and would cause an infinite loop.
+          // Content layout is already correct via useDir(); native chrome
+          // will align on the next manual cold start.
         }
         return;
       }
 
-      // (b) / (c) — hydrate, and realign native if needed.
+      // Subsequent launches: hydrate state from storage. If the native RTL
+      // flag is out of sync with the stored language (e.g. the user changed
+      // language and reopened the app), align it for the NEXT cold start.
+      // Do NOT auto-reload here — see comment above.
       setLanguageState(stored);
       const shouldBeRTL = stored === 'ar';
-      if (nativeIsRTL !== shouldBeRTL) {
+      if (I18nManager.isRTL !== shouldBeRTL) {
         I18nManager.allowRTL(true);
         I18nManager.forceRTL(shouldBeRTL);
-        const reloaded = await reloadApp();
-        if (!reloaded) showRestartAlert(stored);
       }
     });
     return () => {
@@ -134,13 +125,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Native: align the persisted RTL flag with the chosen language.
+    // Native: content layout switches immediately because useDir() reads our
+    // language state. We persist the native RTL flag so the NEXT cold start
+    // also has correct native chrome direction. Show a one-time restart
+    // prompt — auto-reload won't update the cached isRTL value anyway.
     const shouldBeRTL = lang === 'ar';
-    if (I18nManager.isRTL !== shouldBeRTL) {
+    const nativeNeedsChange = I18nManager.isRTL !== shouldBeRTL;
+    if (nativeNeedsChange) {
       I18nManager.allowRTL(true);
       I18nManager.forceRTL(shouldBeRTL);
-      const reloaded = await reloadApp();
-      if (!reloaded) showRestartAlert(lang);
+      showRestartAlert(lang);
     }
   };
 

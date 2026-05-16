@@ -7,6 +7,7 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import React, { useEffect } from 'react';
 import { I18nManager, Platform, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -17,10 +18,14 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
 
-// Force RTL for Arabic
+// Force RTL for Arabic — if layout was LTR, reload so iOS applies RTL natively
 if (Platform.OS !== 'web') {
+  const wasAlreadyRTL = I18nManager.isRTL;
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
+  if (!wasAlreadyRTL && !__DEV__) {
+    Updates.reloadAsync();
+  }
 }
 
 SplashScreen.preventAutoHideAsync();

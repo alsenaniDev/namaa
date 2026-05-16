@@ -8,20 +8,23 @@ import { useApp } from '@/context/AppContext';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { COMMITMENT_CATEGORIES, CommitmentCategory } from '@/types';
+import { COMMITMENT_CATEGORIES } from '@/types';
 
 export default function AddCommitmentScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { commitments, addCommitment, updateCommitment, deleteCommitment } = useApp();
+  const { commitments, addCommitment, updateCommitment, deleteCommitment, customTypes } = useApp();
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
   const isEdit = !!existing;
 
+  // Merge built-in + custom categories
+  const allCategories = [...COMMITMENT_CATEGORIES, ...customTypes.commitmentCategories];
+
   const [title, setTitle] = useState(existing?.title ?? '');
-  const [category, setCategory] = useState<CommitmentCategory>(existing?.category ?? 'أخرى');
+  const [category, setCategory] = useState(existing?.category ?? 'أخرى');
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
   const [dueDay, setDueDay] = useState(existing?.dueDay?.toString() ?? '1');
   const [isRecurring, setIsRecurring] = useState(existing?.isRecurring ?? true);
@@ -46,7 +49,7 @@ export default function AddCommitmentScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const data = {
       title: title.trim(),
-      category,
+      category: category as any,
       amount: parseFloat(amount),
       dueDay: parseInt(dueDay) || 1,
       isRecurring,
@@ -108,8 +111,8 @@ export default function AddCommitmentScreen() {
       <Select
         label="فئة الالتزام"
         value={category}
-        options={COMMITMENT_CATEGORIES.map((c) => ({ label: c, value: c }))}
-        onValueChange={(v) => setCategory(v as CommitmentCategory)}
+        options={allCategories.map((c) => ({ label: c, value: c }))}
+        onValueChange={setCategory}
       />
 
       <Input
@@ -151,14 +154,14 @@ export default function AddCommitmentScreen() {
       </View>
 
       <Input
-        label="تاريخ البداية (اختياري - YYYY-MM-DD)"
+        label="تاريخ البداية (اختياري YYYY-MM-DD)"
         value={startDate}
         onChangeText={setStartDate}
         placeholder="مثال: 2024-01-01"
       />
 
       <Input
-        label="تاريخ النهاية (اختياري - YYYY-MM-DD)"
+        label="تاريخ النهاية (اختياري YYYY-MM-DD)"
         value={endDate}
         onChangeText={setEndDate}
         placeholder="مثال: 2026-12-31"

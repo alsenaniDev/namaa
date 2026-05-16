@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,30 +10,16 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import type { Income } from '@/types';
 
 export default function IncomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { incomes, deleteIncome, getMonthlyTotals, userProfile } = useApp();
+  const { incomes, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
-
-  const handleDelete = (item: Income) => {
-    Alert.alert('حذف الدخل', `هل تريد حذف "${item.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف', style: 'destructive',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          deleteIncome(item.id);
-        },
-      },
-    ]);
-  };
 
   const typeColors: Record<string, string> = {
     'راتب': colors.income,
@@ -55,7 +41,6 @@ export default function IncomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Summary Header */}
       <Card style={styles.summaryCard} padding={16}>
         <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي الدخل الشهري</Text>
         <Text style={[styles.summaryAmount, { color: colors.income }]}>
@@ -82,23 +67,24 @@ export default function IncomeScreen() {
             onAction={() => router.push('/income/add')}
           />
         }
-        renderItem={({ item }) => (
-          <TransactionItem
-            title={item.title}
-            subtitle={item.isRecurring ? `يوم ${item.receivedDay} شهرياً` : 'غير متكرر'}
-            amount={formatCurrency(item.amount, currency)}
-            amountColor={typeColors[item.type] ?? colors.income}
-            icon={typeIcons[item.type] ?? 'dollar-sign'}
-            iconColor={typeColors[item.type] ?? colors.income}
-            badge={item.type}
-            badgeColor={typeColors[item.type] ?? colors.income}
-            onPress={() => router.push({ pathname: '/income/add', params: { id: item.id } })}
-            onDelete={() => handleDelete(item)}
-          />
-        )}
+        renderItem={({ item }) => {
+          const ic = typeColors[item.type] ?? colors.income;
+          return (
+            <TransactionItem
+              title={item.title}
+              subtitle={item.isRecurring ? `يوم ${item.receivedDay} شهرياً` : 'غير متكرر'}
+              amount={formatCurrency(item.amount, currency)}
+              amountColor={ic}
+              icon={typeIcons[item.type] ?? 'dollar-sign'}
+              iconColor={ic}
+              badge={item.type}
+              badgeColor={ic}
+              onPress={() => router.push({ pathname: '/income/add', params: { id: item.id } })}
+            />
+          );
+        }}
       />
 
-      {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + bottomPad + 80 }]}
         onPress={() => {

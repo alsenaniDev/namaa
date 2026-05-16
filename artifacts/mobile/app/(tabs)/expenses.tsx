@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -10,9 +10,9 @@ import { formatCurrency, formatShortDate, getCurrentMonthYear } from '@/utils/fo
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import { Expense, ExpenseCategory } from '@/types';
+import type { ExpenseCategory } from '@/types';
 
-const CATEGORY_ICONS: Record<ExpenseCategory, string> = {
+const CATEGORY_ICONS: Record<string, string> = {
   'مطاعم': 'coffee',
   'قهوة': 'coffee',
   'تسوق': 'shopping-bag',
@@ -24,7 +24,7 @@ const CATEGORY_ICONS: Record<ExpenseCategory, string> = {
   'أخرى': 'more-horizontal',
 };
 
-const CATEGORY_COLORS: Record<ExpenseCategory, string> = {
+const CATEGORY_COLORS: Record<string, string> = {
   'مطاعم': '#F97316',
   'قهوة': '#92400E',
   'تسوق': '#8B5CF6',
@@ -40,7 +40,7 @@ export default function ExpensesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { expenses, deleteExpense, getMonthlyTotals, userProfile } = useApp();
+  const { expenses, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
@@ -52,19 +52,6 @@ export default function ExpensesScreen() {
       return d.getMonth() + 1 === month && d.getFullYear() === year;
     })
     .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
-
-  const handleDelete = (item: Expense) => {
-    Alert.alert('حذف المصروف', `هل تريد حذف "${item.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف', style: 'destructive',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          deleteExpense(item.id);
-        },
-      },
-    ]);
-  };
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -95,19 +82,18 @@ export default function ExpensesScreen() {
           />
         }
         renderItem={({ item }) => {
-          const ic = CATEGORY_COLORS[item.category as ExpenseCategory] ?? colors.expense;
+          const ic = CATEGORY_COLORS[item.category] ?? colors.expense;
           return (
             <TransactionItem
               title={item.title}
               subtitle={formatShortDate(item.expenseDate)}
               amount={formatCurrency(item.amount, currency)}
               amountColor={ic}
-              icon={CATEGORY_ICONS[item.category as ExpenseCategory] ?? 'more-horizontal'}
+              icon={CATEGORY_ICONS[item.category] ?? 'more-horizontal'}
               iconColor={ic}
               badge={item.category}
               badgeColor={ic}
               onPress={() => router.push({ pathname: '/expenses/add', params: { id: item.id } })}
-              onDelete={() => handleDelete(item)}
             />
           );
         }}

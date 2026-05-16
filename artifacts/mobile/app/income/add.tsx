@@ -8,27 +8,29 @@ import { useApp } from '@/context/AppContext';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { INCOME_TYPES, IncomeType } from '@/types';
+import { INCOME_TYPES } from '@/types';
 
 export default function AddIncomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { incomes, addIncome, updateIncome, deleteIncome } = useApp();
+  const { incomes, addIncome, updateIncome, deleteIncome, customTypes } = useApp();
 
   const existing = params.id ? incomes.find((i) => i.id === params.id) : undefined;
   const isEdit = !!existing;
 
+  // Merge built-in + custom types
+  const allTypes = [...INCOME_TYPES, ...customTypes.incomeTypes];
+
   const [title, setTitle] = useState(existing?.title ?? '');
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
-  const [type, setType] = useState<IncomeType>(existing?.type ?? 'راتب');
+  const [type, setType] = useState(existing?.type ?? 'راتب');
   const [isRecurring, setIsRecurring] = useState(existing?.isRecurring ?? true);
   const [receivedDay, setReceivedDay] = useState(existing?.receivedDay?.toString() ?? '1');
   const [receivedDate, setReceivedDate] = useState(existing?.receivedDate ?? new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [loading, setLoading] = useState(false);
-
   const [errors, setErrors] = useState<{ title?: string; amount?: string }>({});
 
   const validate = () => {
@@ -46,7 +48,7 @@ export default function AddIncomeScreen() {
     const data = {
       title: title.trim(),
       amount: parseFloat(amount),
-      type,
+      type: type as any,
       isRecurring,
       receivedDay: parseInt(receivedDay) || 1,
       receivedDate: isRecurring ? undefined : receivedDate,
@@ -105,8 +107,8 @@ export default function AddIncomeScreen() {
       <Select
         label="نوع الدخل"
         value={type}
-        options={INCOME_TYPES.map((t) => ({ label: t, value: t }))}
-        onValueChange={(v) => setType(v as IncomeType)}
+        options={allTypes.map((t) => ({ label: t, value: t }))}
+        onValueChange={setType}
       />
 
       <View style={[styles.switchRow, { borderColor: colors.border }]}>

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { useColorScheme } from 'react-native';
 import { UserProfile, Income, Commitment, CommitmentPayment, Expense } from '../types';
-import { storage } from '../utils/storage';
+import { storage, CustomTypes } from '../utils/storage';
 import { generateId, getCurrentMonthYear } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
 import { calculateMonthlyTotals, MonthlyTotals } from '../utils/calculations';
@@ -12,6 +11,7 @@ interface AppContextType {
   commitments: Commitment[];
   commitmentPayments: CommitmentPayment[];
   expenses: Expense[];
+  customTypes: CustomTypes;
   isLoading: boolean;
   saveUserProfile: (profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateUserProfile: (profile: Partial<UserProfile>) => Promise<void>;
@@ -26,6 +26,8 @@ interface AppContextType {
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  addCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
+  removeCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   clearAllData: () => Promise<void>;
   loadSampleData: () => Promise<void>;
   getMonthlyTotals: (month: number, year: number) => MonthlyTotals;
@@ -34,29 +36,34 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
+const DEFAULT_CUSTOM_TYPES: CustomTypes = { incomeTypes: [], commitmentCategories: [], expenseCategories: [] };
+
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [commitmentPayments, setCommitmentPayments] = useState<CommitmentPayment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [customTypes, setCustomTypes] = useState<CustomTypes>(DEFAULT_CUSTOM_TYPES);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [profile, inc, com, payments, exp] = await Promise.all([
+        const [profile, inc, com, payments, exp, ct] = await Promise.all([
           storage.getUserProfile(),
           storage.getIncomes(),
           storage.getCommitments(),
           storage.getCommitmentPayments(),
           storage.getExpenses(),
+          storage.getCustomTypes(),
         ]);
         setUserProfile(profile);
         setIncomes(inc);
         setCommitments(com);
         setCommitmentPayments(payments);
         setExpenses(exp);
+        setCustomTypes(ct);
       } finally {
         setIsLoading(false);
       }
@@ -168,6 +175,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setExpenses(updated);
   }, [expenses]);
 
+  const addCustomType = useCallback(async (category: keyof CustomTypes, value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed || customTypes[category].includes(trimmed)) return;
+    const updated = { ...customTypes, [category]: [...customTypes[category], trimmed] };
+    await storage.saveCustomTypes(updated);
+    setCustomTypes(updated);
+  }, [customTypes]);
+
+  const removeCustomType = useCallback(async (category: keyof CustomTypes, value: string) => {
+    const updated = { ...customTypes, [category]: customTypes[category].filter((v) => v !== value) };
+    await storage.saveCustomTypes(updated);
+    setCustomTypes(updated);
+  }, [customTypes]);
+
   const clearAllData = useCallback(async () => {
     await storage.clearAll();
     setUserProfile(null);
@@ -175,6 +196,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCommitments([]);
     setCommitmentPayments([]);
     setExpenses([]);
+    setCustomTypes(DEFAULT_CUSTOM_TYPES);
   }, []);
 
   const loadSampleData = useCallback(async () => {
@@ -206,11 +228,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AppContext.Provider value={{
-      userProfile, incomes, commitments, commitmentPayments, expenses, isLoading,
+      userProfile, incomes, commitments, commitmentPayments, expenses, customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
       addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid,
       addExpense, updateExpense, deleteExpense,
+      addCustomType, removeCustomType,
       clearAllData, loadSampleData, getMonthlyTotals, exportData,
     }}>
       {children}

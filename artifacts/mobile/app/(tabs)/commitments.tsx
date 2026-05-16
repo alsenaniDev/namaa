@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -9,13 +9,13 @@ import { useApp } from '@/context/AppContext';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import { Commitment } from '@/types';
+import type { Commitment } from '@/types';
 
 export default function CommitmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { commitments, commitmentPayments, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid, getMonthlyTotals, userProfile } = useApp();
+  const { commitments, commitmentPayments, markCommitmentPaid, markCommitmentUnpaid, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
@@ -34,49 +34,42 @@ export default function CommitmentsScreen() {
     }
   };
 
-  const handleDelete = (item: Commitment) => {
-    Alert.alert('حذف الالتزام', `هل تريد حذف "${item.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف', style: 'destructive',
-        onPress: () => {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          deleteCommitment(item.id);
-        },
-      },
-    ]);
-  };
-
   const today = new Date().getDate();
-  const paidCount = commitments.filter((c) => getPayment(c.id)?.status === 'paid').length;
-  const lateCount = commitments.filter((c) => c.isActive && !getPayment(c.id) && c.dueDay < today).length;
+  const activeCommitments = commitments.filter((c) => c.isActive);
+  const paidCount = activeCommitments.filter((c) => getPayment(c.id)?.status === 'paid').length;
+  const lateCount = activeCommitments.filter((c) => !getPayment(c.id) && c.dueDay < today).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* Summary Card */}
       <Card style={styles.summaryCard} padding={14}>
         <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي الالتزامات الشهرية</Text>
         <Text style={[styles.summaryAmount, { color: colors.commitment }]}>
           {formatCurrency(totals.totalCommitments, currency)}
         </Text>
         <View style={styles.statsRow}>
-          <View style={[styles.statBadge, { backgroundColor: colors.danger + '18' }]}>
-            <Text style={[styles.statText, { color: colors.danger }]}>{lateCount} متأخر</Text>
-          </View>
+          {lateCount > 0 ? (
+            <View style={[styles.statBadge, { backgroundColor: colors.danger + '18' }]}>
+              <Feather name="alert-circle" size={11} color={colors.danger} />
+              <Text style={[styles.statText, { color: colors.danger }]}>{lateCount} متأخر</Text>
+            </View>
+          ) : null}
           <View style={[styles.statBadge, { backgroundColor: colors.success + '18' }]}>
+            <Feather name="check-circle" size={11} color={colors.success} />
             <Text style={[styles.statText, { color: colors.success }]}>{paidCount} مدفوع</Text>
           </View>
-          <Text style={[styles.statTotal, { color: colors.mutedForeground }]}>{commitments.length} التزام</Text>
+          <Text style={[styles.statTotal, { color: colors.mutedForeground }]}>{activeCommitments.length} التزام</Text>
         </View>
       </Card>
 
       <FlatList
-        data={commitments.filter((c) => c.isActive)}
+        data={activeCommitments}
         keyExtractor={(item) => item.id}
-        scrollEnabled={!!commitments.length}
+        scrollEnabled
         contentContainerStyle={[
           styles.list,
           { paddingBottom: insets.bottom + bottomPad + 90 },
-          !commitments.length && styles.emptyList,
+          !activeCommitments.length && styles.emptyList,
         ]}
         ListEmptyComponent={
           <EmptyState
@@ -91,53 +84,62 @@ export default function CommitmentsScreen() {
           const payment = getPayment(item.id);
           const isPaid = payment?.status === 'paid';
           const isLate = !isPaid && item.dueDay < today;
-          const statusColor = isPaid ? colors.success : isLate ? colors.danger : colors.warning;
-          const statusLabel = isPaid ? 'مدفوع' : isLate ? 'متأخر' : `يوم ${item.dueDay}`;
+          const accentColor = isPaid ? colors.success : isLate ? colors.danger : colors.warning;
 
           return (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/commitments/add', params: { id: item.id } })}
-              activeOpacity={0.75}
+              activeOpacity={0.72}
               style={[
-                styles.commitItem,
+                styles.card,
                 {
                   backgroundColor: colors.card,
-                  borderColor: isPaid ? colors.success + '30' : isLate ? colors.danger + '30' : colors.border,
+                  borderColor: colors.border,
                   borderRadius: colors.radius - 2,
+                  borderRightColor: accentColor,
                 },
               ]}
             >
-              <View style={styles.commitRow}>
-                {/* Toggle paid button */}
-                <TouchableOpacity
-                  onPress={() => handleTogglePaid(item)}
-                  style={[styles.checkBtn, { borderColor: statusColor, backgroundColor: isPaid ? statusColor + '20' : 'transparent' }]}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  {isPaid ? <Feather name="check" size={16} color={statusColor} /> : null}
-                </TouchableOpacity>
+              {/* Right: paid toggle */}
+              <TouchableOpacity
+                onPress={() => handleTogglePaid(item)}
+                style={[
+                  styles.checkBtn,
+                  {
+                    borderColor: accentColor,
+                    backgroundColor: isPaid ? accentColor + '20' : 'transparent',
+                  },
+                ]}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                {isPaid ? (
+                  <Feather name="check" size={14} color={accentColor} />
+                ) : (
+                  <View style={[styles.checkDot, { backgroundColor: accentColor }]} />
+                )}
+              </TouchableOpacity>
 
-                <View style={{ flex: 1, marginHorizontal: 10 }}>
-                  <View style={styles.titleRow}>
-                    <View style={[styles.statusDot, { backgroundColor: statusColor }]} />
-                    <Text style={[styles.commitTitle, { color: colors.foreground }]}>{item.title}</Text>
+              {/* Center: info */}
+              <View style={styles.cardBody}>
+                <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+                  {item.title}
+                </Text>
+                <View style={styles.cardMeta}>
+                  <View style={[styles.statusPill, { backgroundColor: accentColor + '18' }]}>
+                    <Text style={[styles.statusPillText, { color: accentColor }]}>
+                      {isPaid ? 'مدفوع' : isLate ? 'متأخر' : `يوم ${item.dueDay}`}
+                    </Text>
                   </View>
-                  <View style={styles.metaRow}>
-                    <Text style={[styles.statusLabel, { color: statusColor }]}>{statusLabel}</Text>
-                    <Text style={[styles.category, { color: colors.mutedForeground }]}>{item.category}</Text>
-                  </View>
+                  <Text style={[styles.cardCat, { color: colors.mutedForeground }]}>{item.category}</Text>
                 </View>
+              </View>
 
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={[styles.commitAmount, { color: colors.commitment }]}>{formatCurrency(item.amount, currency)}</Text>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(item)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ marginTop: 4 }}
-                  >
-                    <Feather name="trash-2" size={14} color={colors.danger} />
-                  </TouchableOpacity>
-                </View>
+              {/* Left: amount + chevron */}
+              <View style={styles.cardRight}>
+                <Text style={[styles.cardAmount, { color: colors.commitment }]}>
+                  {formatCurrency(item.amount, currency)}
+                </Text>
+                <Feather name="chevron-left" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
               </View>
             </TouchableOpacity>
           );
@@ -164,20 +166,49 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: 'right', marginBottom: 8 },
   statsRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  statBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 },
+  statBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
-  commitItem: { borderWidth: 1, marginBottom: 8, padding: 12 },
-  commitRow: { flexDirection: 'row-reverse', alignItems: 'center' },
-  checkBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  titleRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6, marginBottom: 4 },
-  statusDot: { width: 8, height: 8, borderRadius: 4 },
-  commitTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', flex: 1, textAlign: 'right' },
-  metaRow: { flexDirection: 'row-reverse', gap: 8, alignItems: 'center' },
-  statusLabel: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
-  category: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  commitAmount: { fontSize: 15, fontFamily: 'Inter_700Bold', textAlign: 'left' },
-  fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  card: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderRightWidth: 3,
+    marginBottom: 8,
+    gap: 10,
+  },
+  checkBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkDot: { width: 8, height: 8, borderRadius: 4 },
+  cardBody: { flex: 1 },
+  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 4 },
+  cardMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
+  statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  cardRight: { alignItems: 'flex-end', gap: 2 },
+  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  fab: {
+    position: 'absolute',
+    left: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
 });

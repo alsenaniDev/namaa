@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Alert, Platform } from 'react-native';
+import { ScrollView, StyleSheet, Alert, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,22 +8,24 @@ import { useApp } from '@/context/AppContext';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
-import { EXPENSE_CATEGORIES, ExpenseCategory } from '@/types';
+import { EXPENSE_CATEGORIES } from '@/types';
 
 export default function AddExpenseScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { expenses, addExpense, updateExpense, deleteExpense } = useApp();
+  const { expenses, addExpense, updateExpense, deleteExpense, customTypes } = useApp();
 
   const existing = params.id ? expenses.find((e) => e.id === params.id) : undefined;
   const isEdit = !!existing;
-
   const todayStr = new Date().toISOString().split('T')[0];
 
+  // Merge built-in + custom categories
+  const allCategories = [...EXPENSE_CATEGORIES, ...customTypes.expenseCategories];
+
   const [title, setTitle] = useState(existing?.title ?? '');
-  const [category, setCategory] = useState<ExpenseCategory>(existing?.category ?? 'أخرى');
+  const [category, setCategory] = useState(existing?.category ?? 'أخرى');
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
   const [expenseDate, setExpenseDate] = useState(existing?.expenseDate ?? todayStr);
   const [notes, setNotes] = useState(existing?.notes ?? '');
@@ -44,7 +46,7 @@ export default function AddExpenseScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const data = {
       title: title.trim(),
-      category,
+      category: category as any,
       amount: parseFloat(amount),
       expenseDate: expenseDate || todayStr,
       notes: notes.trim() || undefined,
@@ -102,8 +104,8 @@ export default function AddExpenseScreen() {
       <Select
         label="فئة المصروف"
         value={category}
-        options={EXPENSE_CATEGORIES.map((c) => ({ label: c, value: c }))}
-        onValueChange={(v) => setCategory(v as ExpenseCategory)}
+        options={allCategories.map((c) => ({ label: c, value: c }))}
+        onValueChange={setCategory}
       />
 
       <Input

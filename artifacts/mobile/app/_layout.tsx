@@ -15,17 +15,28 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppProvider, useApp } from '@/context/AppContext';
-import { LanguageProvider } from '@/context/LanguageContext';
+import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
 import { isRTL } from '@/utils/dir';
 
-// Apply web direction once, synchronously, before anything renders.
+// Apply initial web direction synchronously before first render.
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
   document.documentElement.style.direction = isRTL ? 'rtl' : 'ltr';
 }
 
 SplashScreen.preventAutoHideAsync();
+
+// Keeps document.dir in sync whenever language changes (web only).
+function WebDirectionSync() {
+  const { language } = useLanguage();
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.documentElement.style.direction = language === 'ar' ? 'rtl' : 'ltr';
+    }
+  }, [language]);
+  return null;
+}
 
 function LoadingView() {
   const colors = useColors();
@@ -100,6 +111,7 @@ export default function RootLayout() {
           <AppProvider>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
+                <WebDirectionSync />
                 <AppLayout />
               </KeyboardProvider>
             </GestureHandlerRootView>

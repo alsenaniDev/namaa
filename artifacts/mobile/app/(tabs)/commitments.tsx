@@ -5,19 +5,20 @@ import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
+import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import type { Commitment } from '@/types';
-import * as dir from '@/utils/dir';
 
 export default function CommitmentsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const t = useT();
+  const dir = useDir();
   const { commitments, commitmentPayments, markCommitmentPaid, markCommitmentUnpaid, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
@@ -30,11 +31,8 @@ export default function CommitmentsScreen() {
   const handleTogglePaid = (item: Commitment) => {
     const payment = getPayment(item.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (payment?.status === 'paid') {
-      markCommitmentUnpaid(item.id, month, year);
-    } else {
-      markCommitmentPaid(item.id, month, year, item.amount);
-    }
+    if (payment?.status === 'paid') markCommitmentUnpaid(item.id, month, year);
+    else markCommitmentPaid(item.id, month, year, item.amount);
   };
 
   const today = new Date().getDate();
@@ -45,18 +43,16 @@ export default function CommitmentsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Card style={styles.summaryCard} padding={14}>
-        <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t.commitments.totalLabel}</Text>
-        <Text style={[styles.summaryAmount, { color: colors.commitment }]}>
-          {formatCurrency(totals.totalCommitments, currency)}
-        </Text>
-        <View style={styles.statsRow}>
+        <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.totalLabel}</Text>
+        <Text style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.commitment }]}>{formatCurrency(totals.totalCommitments, currency)}</Text>
+        <View style={[styles.statsRow, { flexDirection: dir.row }]}>
           {lateCount > 0 ? (
-            <View style={[styles.statBadge, { backgroundColor: colors.danger + '18' }]}>
+            <View style={[styles.statBadge, { flexDirection: dir.row, backgroundColor: colors.danger + '18' }]}>
               <Feather name="alert-circle" size={11} color={colors.danger} />
               <Text style={[styles.statText, { color: colors.danger }]}>{lateCount} {t.commitments.lateSuffix}</Text>
             </View>
           ) : null}
-          <View style={[styles.statBadge, { backgroundColor: colors.success + '18' }]}>
+          <View style={[styles.statBadge, { flexDirection: dir.row, backgroundColor: colors.success + '18' }]}>
             <Feather name="check-circle" size={11} color={colors.success} />
             <Text style={[styles.statText, { color: colors.success }]}>{paidCount} {t.commitments.paidSuffix}</Text>
           </View>
@@ -68,73 +64,43 @@ export default function CommitmentsScreen() {
         data={activeCommitments}
         keyExtractor={(item) => item.id}
         scrollEnabled
-        contentContainerStyle={[
-          styles.list,
-          { paddingBottom: insets.bottom + bottomPad + 90 },
-          !activeCommitments.length && styles.emptyList,
-        ]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !activeCommitments.length && styles.emptyList]}
         ListEmptyComponent={
-          <EmptyState
-            icon="credit-card"
-            title={t.commitments.emptyTitle}
-            description={t.commitments.emptyDesc}
-            actionLabel={t.commitments.addLabel}
-            onAction={() => router.push('/commitments/add')}
-          />
+          <EmptyState icon="credit-card" title={t.commitments.emptyTitle} description={t.commitments.emptyDesc} actionLabel={t.commitments.addLabel} onAction={() => router.push('/commitments/add')} />
         }
         renderItem={({ item }) => {
           const payment = getPayment(item.id);
           const isPaid = payment?.status === 'paid';
           const isLate = !isPaid && item.dueDay < today;
           const accentColor = isPaid ? colors.success : isLate ? colors.danger : colors.warning;
-
-          const statusLabel = isPaid
-            ? t.commitments.paid
-            : isLate
-            ? t.commitments.late
-            : `${t.commitments.dayPrefix} ${item.dueDay}`;
+          const statusLabel = isPaid ? t.commitments.paid : isLate ? t.commitments.late : `${t.commitments.dayPrefix} ${item.dueDay}`;
 
           return (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/commitments/add', params: { id: item.id } })}
               activeOpacity={0.72}
-              style={[styles.cardWrapper, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
+              style={[styles.cardWrapper, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
             >
               <View style={[styles.strip, { backgroundColor: accentColor }]} />
-              <View style={styles.cardInner}>
+              <View style={[styles.cardInner, { flexDirection: dir.row }]}>
                 <TouchableOpacity
                   onPress={() => handleTogglePaid(item)}
-                  style={[
-                    styles.checkBtn,
-                    { borderColor: accentColor, backgroundColor: isPaid ? accentColor + '20' : 'transparent' },
-                  ]}
+                  style={[styles.checkBtn, { borderColor: accentColor, backgroundColor: isPaid ? accentColor + '20' : 'transparent' }]}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  {isPaid ? (
-                    <Feather name="check" size={14} color={accentColor} />
-                  ) : (
-                    <View style={[styles.checkDot, { backgroundColor: accentColor }]} />
-                  )}
+                  {isPaid ? <Feather name="check" size={14} color={accentColor} /> : <View style={[styles.checkDot, { backgroundColor: accentColor }]} />}
                 </TouchableOpacity>
-
                 <View style={styles.cardBody}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  <View style={styles.cardMetaRow}>
+                  <Text style={[styles.cardTitle, { textAlign: dir.textAlign, color: colors.foreground }]} numberOfLines={1}>{item.title}</Text>
+                  <View style={[styles.cardMetaRow, { flexDirection: dir.row }]}>
                     <View style={[styles.statusPill, { backgroundColor: accentColor + '18' }]}>
                       <Text style={[styles.statusPillText, { color: accentColor }]}>{statusLabel}</Text>
                     </View>
-                    <Text style={[styles.cardCat, { color: colors.mutedForeground }]} numberOfLines={1}>
-                      {item.category}
-                    </Text>
+                    <Text style={[styles.cardCat, { color: colors.mutedForeground }]} numberOfLines={1}>{item.category}</Text>
                   </View>
                 </View>
-
-                <View style={styles.cardRight}>
-                  <Text style={[styles.cardAmount, { color: colors.commitment }]} numberOfLines={1}>
-                    {formatCurrency(item.amount, currency)}
-                  </Text>
+                <View style={[styles.cardRight, { flexDirection: dir.row }]}>
+                  <Text style={[styles.cardAmount, { textAlign: dir.textAlign, color: colors.commitment }]} numberOfLines={1}>{formatCurrency(item.amount, currency)}</Text>
                   <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
                 </View>
               </View>
@@ -145,10 +111,7 @@ export default function CommitmentsScreen() {
 
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + bottomPad + 80 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/commitments/add');
-        }}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/commitments/add'); }}
         activeOpacity={0.85}
       >
         <Feather name="plus" size={26} color="#fff" />
@@ -159,26 +122,26 @@ export default function CommitmentsScreen() {
 
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
-  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
-  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign, marginBottom: 8 },
-  statsRow: { flexDirection: dir.row, alignItems: 'center', gap: 8 },
-  statBadge: { flexDirection: dir.row, alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
+  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 4 },
+  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 8 },
+  statsRow: { alignItems: 'center', gap: 8 },
+  statBadge: { alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
-  cardWrapper: { flexDirection: dir.row, borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
+  cardWrapper: { borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
   strip: { width: 4 },
-  cardInner: { flex: 1, flexDirection: dir.row, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
+  cardInner: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
   checkBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkDot: { width: 8, height: 8, borderRadius: 4 },
   cardBody: { flex: 1 },
-  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign, marginBottom: 4 },
-  cardMetaRow: { flexDirection: dir.row, alignItems: 'center', gap: 6 },
+  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 4 },
+  cardMetaRow: { alignItems: 'center', gap: 6 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular', flexShrink: 1 },
-  cardRight: { flexDirection: dir.row, alignItems: 'center', gap: 4, flexShrink: 0 },
-  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign },
+  cardRight: { alignItems: 'center', gap: 4, flexShrink: 0 },
+  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

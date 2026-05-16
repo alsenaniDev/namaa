@@ -75,9 +75,9 @@ export default function ReportsScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>مقارنة بصرية</Text>
         <View style={styles.barChart}>
           {[
-            { label: 'الدخل', value: totals.totalIncome, color: colors.income },
-            { label: 'الالتزامات', value: totals.totalCommitments, color: colors.commitment },
             { label: 'المصاريف', value: totals.totalExpenses, color: colors.expense },
+            { label: 'الالتزامات', value: totals.totalCommitments, color: colors.commitment },
+            { label: 'الدخل', value: totals.totalIncome, color: colors.income },
           ].map((bar) => {
             const pct = maxBar > 0 ? (bar.value / maxBar) * 100 : 0;
             return (
@@ -114,27 +114,24 @@ export default function ReportsScreen() {
       {sortedExpCats.length > 0 && (
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>المصاريف حسب الفئة</Text>
-          {sortedExpCats.map(([cat, amt], i) => (
-            <View key={cat} style={styles.catRow}>
-              <Text style={[styles.catAmt, { color: BAR_COLORS[i % BAR_COLORS.length] }]}>
-                {formatCurrency(amt, currency)}
-              </Text>
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <View style={styles.catLabelRow}>
-                  <Text style={[styles.catPct, { color: colors.mutedForeground }]}>
-                    {totals.totalExpenses > 0 ? Math.round((amt / totals.totalExpenses) * 100) : 0}٪
-                  </Text>
-                  <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
-                </View>
-                <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
-                  <View style={[styles.catFill, {
-                    width: `${totals.totalExpenses > 0 ? (amt / totals.totalExpenses) * 100 : 0}%` as any,
-                    backgroundColor: BAR_COLORS[i % BAR_COLORS.length],
-                  }]} />
+          {sortedExpCats.map(([cat, amt], i) => {
+            const pct = totals.totalExpenses > 0 ? (amt / totals.totalExpenses) * 100 : 0;
+            const barColor = BAR_COLORS[i % BAR_COLORS.length];
+            return (
+              <View key={cat} style={styles.catRow}>
+                <Text style={[styles.catAmt, { color: barColor }]}>{formatCurrency(amt, currency)}</Text>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={styles.catLabelRow}>
+                    <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
+                    <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
+                  </View>
+                  <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
+                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', right: 0 }]} />
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
       )}
 
@@ -142,27 +139,24 @@ export default function ReportsScreen() {
       {sortedComCats.length > 0 && (
         <Card style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.foreground }]}>الالتزامات حسب الفئة</Text>
-          {sortedComCats.map(([cat, amt], i) => (
-            <View key={cat} style={styles.catRow}>
-              <Text style={[styles.catAmt, { color: BAR_COLORS[(i + 3) % BAR_COLORS.length] }]}>
-                {formatCurrency(amt, currency)}
-              </Text>
-              <View style={{ flex: 1, marginRight: 12 }}>
-                <View style={styles.catLabelRow}>
-                  <Text style={[styles.catPct, { color: colors.mutedForeground }]}>
-                    {totals.totalCommitments > 0 ? Math.round((amt / totals.totalCommitments) * 100) : 0}٪
-                  </Text>
-                  <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
-                </View>
-                <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
-                  <View style={[styles.catFill, {
-                    width: `${totals.totalCommitments > 0 ? (amt / totals.totalCommitments) * 100 : 0}%` as any,
-                    backgroundColor: BAR_COLORS[(i + 3) % BAR_COLORS.length],
-                  }]} />
+          {sortedComCats.map(([cat, amt], i) => {
+            const pct = totals.totalCommitments > 0 ? (amt / totals.totalCommitments) * 100 : 0;
+            const barColor = BAR_COLORS[(i + 3) % BAR_COLORS.length];
+            return (
+              <View key={cat} style={styles.catRow}>
+                <Text style={[styles.catAmt, { color: barColor }]}>{formatCurrency(amt, currency)}</Text>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <View style={styles.catLabelRow}>
+                    <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
+                    <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
+                  </View>
+                  <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
+                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', right: 0 }]} />
+                  </View>
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
       )}
 
@@ -198,8 +192,8 @@ const styles = StyleSheet.create({
   catName: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   catPct: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   catAmt: { fontSize: 13, fontFamily: 'Inter_700Bold', marginLeft: 8, minWidth: 80, textAlign: 'left' },
-  catBar: { height: 6, borderRadius: 3, overflow: 'hidden' },
-  catFill: { height: 6, borderRadius: 3 },
+  catBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
+  catFill: { height: 6, borderRadius: 3, top: 0, bottom: 0 },
   noData: { alignItems: 'center', paddingVertical: 48, gap: 10 },
   noDataTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   noDataSub: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },

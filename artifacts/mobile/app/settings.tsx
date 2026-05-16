@@ -34,17 +34,9 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
     setInput('');
   };
 
-  const handleRemove = (val: string) => {
-    Alert.alert('حذف', `هل تريد حذف "${val}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
-      {
-        text: 'حذف', style: 'destructive',
-        onPress: async () => {
-          await removeCustomType(category, val);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        },
-      },
-    ]);
+  const handleRemove = async (val: string) => {
+    await removeCustomType(category, val);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   return (

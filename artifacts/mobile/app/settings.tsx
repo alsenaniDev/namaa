@@ -6,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
-import { useLanguage } from '@/context/LanguageContext';
 import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +13,6 @@ import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { CURRENCIES, INCOME_TYPES, COMMITMENT_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import type { CustomTypes } from '@/utils/storage';
-import type { Language } from '@/utils/i18n';
 
 type TypeCategory = keyof CustomTypes;
 
@@ -79,7 +77,6 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
-  const { language, setLanguage } = useLanguage();
   const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData } = useApp();
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
@@ -97,12 +94,6 @@ export default function SettingsScreen() {
     setSaving(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(t.common.saved, t.common.savedMsg);
-  };
-
-  const handleLanguageChange = async (lang: Language) => {
-    if (lang === language) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await setLanguage(lang);
   };
 
   const handleExport = async () => {
@@ -141,25 +132,6 @@ export default function SettingsScreen() {
         <Input label={t.settings.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
         <Input label={t.settings.savingGoalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
         <Input label={t.settings.monthStartLabel} value={monthStartDay} onChangeText={setMonthStartDay} placeholder="1" keyboardType="number-pad" />
-
-        <View style={styles.langSection}>
-          <Text style={[styles.langLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.languageLabel}</Text>
-          <View style={[styles.langRow, { flexDirection: dir.row }]}>
-            {(['ar', 'en'] as Language[]).map((lang) => (
-              <TouchableOpacity
-                key={lang}
-                onPress={() => handleLanguageChange(lang)}
-                activeOpacity={0.8}
-                style={[styles.langBtn, { flexDirection: dir.row, borderColor: language === lang ? colors.primary : colors.border, backgroundColor: language === lang ? colors.primary + '15' : colors.muted }]}
-              >
-                {language === lang ? <Feather name="check" size={14} color={colors.primary} /> : null}
-                <Text style={[styles.langBtnText, { color: language === lang ? colors.primary : colors.mutedForeground }]}>
-                  {lang === 'ar' ? t.settings.arabic : t.settings.english}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
 
         <Button title={saving ? t.common.saving : t.common.saveChanges} onPress={handleSave} fullWidth loading={saving} />
       </Card>
@@ -207,11 +179,6 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginBottom: 24 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
-  langSection: { marginBottom: 16 },
-  langLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginBottom: 8 },
-  langRow: { gap: 10 },
-  langBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, gap: 6 },
-  langBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
   typeManager: { marginBottom: 4 },
   typeTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },
   chipRow: { flexWrap: 'wrap', gap: 6, marginBottom: 10 },

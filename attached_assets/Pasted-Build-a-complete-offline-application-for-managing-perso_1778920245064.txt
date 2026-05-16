@@ -1,0 +1,325 @@
+Build a complete offline application for managing personal income, monthly commitments, expenses, and salary net balance.
+
+Important rules:
+- Do not use a backend.
+- Do not use Firebase.
+- Do not use external APIs.
+- The app must store all data locally inside the app.
+- The app must work offline.
+- The main language of the app is Arabic.
+- The UI must support RTL layout.
+- The app should be modern, clean, simple, and easy to use.
+- The first version must be a working MVP, not just UI screens.
+- Choose the best technology that works well inside Replit.
+- Do not mention or depend on any mobile-specific framework unless needed.
+
+App idea:
+The application helps users organize their monthly financial life. The user can enter their monthly salary and other income sources, then add monthly commitments such as loans, rent, bills, subscriptions, and other fixed payments. The user can also add variable expenses. The app calculates the remaining net amount from the salary and shows a clear monthly financial summary.
+
+Main features:
+
+1. Initial Setup
+Create a first-time setup screen where the user enters:
+- User name
+- Preferred currency, default SAR
+- Main monthly salary
+- Monthly saving goal, optional
+- Financial month start day, default 1
+
+After setup, store the data locally.
+
+2. Dashboard
+Create a dashboard screen that shows:
+- Total monthly income
+- Total monthly commitments
+- Total monthly expenses
+- Net remaining amount
+- Commitment percentage from income
+- Expense percentage from income
+- Suggested saving amount
+- Financial health status
+
+Formula:
+Net Remaining = Total Income - Total Commitments - Total Expenses
+
+Financial health status:
+- If commitments are less than 30% of income: ممتاز
+- If commitments are between 30% and 50%: متوسط
+- If commitments are between 50% and 70%: خطر
+- If commitments are more than 70%: حرج جدًا
+
+Show this status clearly with a card and a simple Arabic message.
+
+3. Income Management
+Create screens to:
+- List incomes
+- Add income
+- Edit income
+- Delete income
+
+Income fields:
+- id
+- title
+- amount
+- type
+- isRecurring
+- receivedDay
+- receivedDate
+- notes
+- createdAt
+- updatedAt
+
+Income types:
+- راتب
+- عمل إضافي
+- مكافأة
+- تجارة
+- استثمار
+- أخرى
+
+4. Commitments Management
+Create screens to:
+- List commitments
+- Add commitment
+- Edit commitment
+- Delete commitment
+- Mark commitment as paid for the current month
+
+Commitment fields:
+- id
+- title
+- category
+- amount
+- startDate
+- endDate
+- dueDay
+- isRecurring
+- isActive
+- notes
+- createdAt
+- updatedAt
+
+Commitment categories:
+- قرض شخصي
+- قرض سيارة
+- إيجار
+- تمويل عقاري
+- كهرباء
+- ماء
+- إنترنت
+- اشتراك
+- تأمين
+- أقساط دراسية
+- مصروف عائلي
+- أخرى
+
+Also support monthly payment tracking for each commitment:
+- commitmentId
+- month
+- year
+- amount
+- paidDate
+- status: paid, unpaid, late
+- notes
+
+5. Expenses Management
+Create screens to:
+- List expenses
+- Add expense
+- Edit expense
+- Delete expense
+
+Expense fields:
+- id
+- title
+- category
+- amount
+- expenseDate
+- notes
+- createdAt
+- updatedAt
+
+Expense categories:
+- مطاعم
+- قهوة
+- تسوق
+- بنزين
+- سفر
+- ترفيه
+- صحة
+- تعليم
+- أخرى
+
+6. Reports
+Create a reports screen that shows:
+- Monthly summary
+- Total income
+- Total commitments
+- Total expenses
+- Net remaining
+- Highest expense category
+- Highest commitment category
+- Simple chart for income vs commitments vs expenses
+- Simple chart for expenses by category
+
+7. Calendar / Monthly Due List
+Create a simple monthly view showing:
+- Income receiving days
+- Commitment due days
+- Paid commitments
+- Unpaid commitments
+- Late commitments
+
+If building a real calendar is too much for the MVP, create a clean monthly list grouped by date.
+
+8. Settings
+Create a settings screen with:
+- Edit user name
+- Edit currency
+- Edit salary
+- Edit saving goal
+- Edit financial month start day
+- Toggle dark mode
+- Clear all data
+- Export local backup if possible
+- Import local backup if possible
+
+9. Smart Financial Ideas
+Add useful features that help the user organize money better:
+- Show commitment percentage from salary
+- Warn the user if commitments are too high
+- Suggest a monthly saving amount
+- Show how much money remains after commitments only
+- Show how much money remains after all expenses
+- Show upcoming commitments
+- Show late commitments
+- Show paid and unpaid commitments for the current month
+- Compare current month with previous month if data exists
+- Give a simple Arabic financial tip based on the user’s situation
+
+10. UI/UX Requirements
+The design should be:
+- Arabic RTL
+- Modern
+- Clean
+- Easy to use
+- Uses cards
+- Uses clear numbers
+- Uses friendly Arabic labels
+- Supports dark mode if possible
+- Has empty states
+- Has confirmation dialogs before delete
+- Has clear success/error messages
+- Has responsive layout
+
+Main navigation tabs:
+- الرئيسية
+- الدخل
+- الالتزامات
+- المصاريف
+- التقارير
+- الإعدادات
+
+11. Data Structure
+Create local data models for:
+
+User:
+- id
+- name
+- preferredCurrency
+- monthlySalary
+- monthlySavingGoal
+- financialMonthStartDay
+- isDarkMode
+- createdAt
+- updatedAt
+
+Income:
+- id
+- title
+- amount
+- type
+- isRecurring
+- receivedDay
+- receivedDate
+- notes
+- createdAt
+- updatedAt
+
+Commitment:
+- id
+- title
+- category
+- amount
+- startDate
+- endDate
+- dueDay
+- isRecurring
+- isActive
+- notes
+- createdAt
+- updatedAt
+
+CommitmentPayment:
+- id
+- commitmentId
+- month
+- year
+- amount
+- paidDate
+- status
+- notes
+
+Expense:
+- id
+- title
+- category
+- amount
+- expenseDate
+- notes
+- createdAt
+- updatedAt
+
+Budget:
+- id
+- category
+- monthlyLimit
+- month
+- year
+- createdAt
+- updatedAt
+
+Notification:
+- id
+- title
+- body
+- relatedType
+- relatedId
+- scheduledDate
+- isRead
+- createdAt
+
+12. Required Implementation
+Please implement:
+- Local data storage
+- Full CRUD for income
+- Full CRUD for commitments
+- Full CRUD for expenses
+- Working dashboard calculations
+- Arabic RTL support
+- Sample data for testing
+- Clean navigation
+- Reusable components
+- Error handling
+- Empty states
+- Amount formatting with currency
+- Date formatting
+- Dark mode if possible
+
+13. Important Notes
+- Do not build only static screens.
+- Do not use fake calculations.
+- Do not leave unfinished TODO comments.
+- Make the app runnable inside Replit.
+- Keep the code clean and organized.
+- Make the MVP complete and usable.

@@ -1,45 +1,68 @@
-# [Project name]
+# مالي - إدارة الميزانية الشخصية
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A fully offline Arabic RTL personal finance app built with Expo (React Native). No backend, no external APIs — all data stored locally on the device using AsyncStorage.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- Expo app runs via workflow `artifacts/mobile: expo`
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Framework: Expo SDK 54, expo-router v6
+- Storage: AsyncStorage (fully offline, no backend)
+- State: React Context (AppContext)
+- UI: React Native + Feather icons, Inter font (Arabic-compatible)
+- RTL: I18nManager.forceRTL(true), CSS direction for web
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/mobile/` — the Expo app
+- `artifacts/mobile/app/` — expo-router screens
+  - `_layout.tsx` — root layout, RTL setup, AppProvider
+  - `setup.tsx` — 4-step onboarding wizard
+  - `(tabs)/` — 6 tabs: Dashboard, Income, Commitments, Expenses, Reports, Settings
+  - `income/add.tsx`, `commitments/add.tsx`, `expenses/add.tsx` — modal add/edit forms
+- `artifacts/mobile/context/AppContext.tsx` — all CRUD state + AsyncStorage persistence
+- `artifacts/mobile/types/index.ts` — all TypeScript types and constants
+- `artifacts/mobile/utils/` — calculations, format, storage, sampleData
+- `artifacts/mobile/components/` — SummaryCard, HealthStatusCard, ProgressBar, TransactionItem + ui/ folder
+- `artifacts/mobile/constants/colors.ts` — light/dark theme tokens
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Fully offline: zero network calls, all data lives in AsyncStorage
+- Contract-first types: all data types defined in `types/index.ts`, all CRUD in AppContext
+- RTL-first layout: all `flexDirection` uses `row-reverse`, all text uses `textAlign: right`
+- Financial month: configurable start day (e.g. salary on day 15 → month runs 15th to 14th)
+- Health status: 4-tier system (ممتاز/متوسط/خطر/حرج) based on commitment % of income
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard with monthly income/commitments/expenses summary + health status indicator
+- Income management (CRUD): salary, freelance, bonus, investment, business
+- Commitment management (CRUD): loans, rent, utilities, subscriptions with paid/unpaid toggle
+- Expense tracking (CRUD): categorized daily spending with date
+- Reports: monthly bar chart + category breakdown (expenses + commitments)
+- Settings: profile, currency, saving goal, data export, sample data, clear all
+- 4-step onboarding wizard with optional sample data preload
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Arabic UI only, RTL layout throughout
+- Emerald green primary color (#10B981)
+- Offline-first, no backend required
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- I18nManager.forceRTL only affects native (iOS/Android). Web uses CSS `direction: rtl`
+- FABs positioned on LEFT (which appears RIGHT in RTL)
+- `pnpm run dev` at workspace root is not supported; use workflow restart
+- Verify with `pnpm --filter @workspace/mobile run typecheck`, not `build`
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `expo` skill for Expo-specific patterns

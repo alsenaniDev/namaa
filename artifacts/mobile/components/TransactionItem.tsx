@@ -25,51 +25,114 @@ export function TransactionItem({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.72}
-      style={[styles.container, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2, borderRightColor: ic, borderRightWidth: 3 }]}
+      style={[styles.wrapper, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
     >
-      {icon ? (
-        <View style={[styles.iconWrap, { backgroundColor: ic + '15', borderRadius: 20 }]}>
-          <Feather name={icon as any} size={17} color={ic} />
-        </View>
-      ) : null}
+      {/* Accent strip on the right (first child in row-reverse = visually right) */}
+      <View style={[styles.strip, { backgroundColor: ic }]} />
 
-      <View style={styles.body}>
-        <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{title}</Text>
-        <View style={styles.metaRow}>
-          {badge ? (
-            <View style={[styles.badge, { backgroundColor: (badgeColor ?? colors.primary) + '18' }]}>
-              <Text style={[styles.badgeText, { color: badgeColor ?? colors.primary }]}>{badge}</Text>
-            </View>
-          ) : null}
-          {subtitle ? <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{subtitle}</Text> : null}
-        </View>
-      </View>
+      {/* Content */}
+      <View style={styles.inner}>
+        {/* Right side: icon */}
+        {icon ? (
+          <View style={[styles.iconWrap, { backgroundColor: ic + '15', borderRadius: 18 }]}>
+            <Feather name={icon as any} size={17} color={ic} />
+          </View>
+        ) : null}
 
-      <View style={styles.right}>
-        <Text style={[styles.amount, { color: amountColor ?? colors.foreground }]}>{amount}</Text>
-        <Feather name="chevron-left" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+        {/* Center: title + meta */}
+        <View style={styles.body}>
+          <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{title}</Text>
+          <View style={styles.metaRow}>
+            {badge ? (
+              <View style={[styles.badge, { backgroundColor: (badgeColor ?? colors.primary) + '18' }]}>
+                <Text style={[styles.badgeText, { color: badgeColor ?? colors.primary }]}>{badge}</Text>
+              </View>
+            ) : null}
+            {subtitle ? (
+              <Text style={[styles.subtitle, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {subtitle}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+
+        {/* Left side: amount + chevron */}
+        <View style={styles.right}>
+          <Text style={[styles.amount, { color: amountColor ?? colors.foreground }]} numberOfLines={1}>
+            {amount}
+          </Text>
+          <Feather name="chevron-left" size={13} color={colors.mutedForeground} />
+        </View>
       </View>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
+    flexDirection: 'row-reverse',
+    borderWidth: 1,
+    marginBottom: 8,
+    overflow: 'hidden',
+  },
+  strip: {
+    width: 4,
+  },
+  inner: {
+    flex: 1,
     flexDirection: 'row-reverse',
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
-    borderWidth: 1,
-    marginBottom: 8,
     gap: 10,
   },
-  iconWrap: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  body: { flex: 1 },
-  title: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 4 },
-  metaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
-  badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
-  badgeText: { fontSize: 11, fontFamily: 'Inter_500Medium' },
-  subtitle: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  right: { alignItems: 'flex-end', gap: 2 },
-  amount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  body: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 14,
+    fontFamily: 'Inter_500Medium',
+    textAlign: 'right',
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'nowrap',
+  },
+  badge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    flexShrink: 0,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontFamily: 'Inter_500Medium',
+  },
+  subtitle: {
+    fontSize: 11,
+    fontFamily: 'Inter_400Regular',
+    flexShrink: 1,
+  },
+  right: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    gap: 3,
+    flexShrink: 0,
+    minWidth: 64,
+  },
+  amount: {
+    fontSize: 14,
+    fontFamily: 'Inter_700Bold',
+    textAlign: 'left',
+  },
 });

@@ -16,9 +16,7 @@ import type { CustomTypes } from '@/utils/storage';
 
 type TypeCategory = keyof CustomTypes;
 
-function TypeManager({
-  title, category, builtins,
-}: { title: string; category: TypeCategory; builtins: string[] }) {
+function TypeManager({ title, category, builtins }: { title: string; category: TypeCategory; builtins: string[] }) {
   const colors = useColors();
   const { customTypes, addCustomType, removeCustomType } = useApp();
   const [input, setInput] = useState('');
@@ -53,7 +51,7 @@ function TypeManager({
     <View style={styles.typeManager}>
       <Text style={[styles.typeTitle, { color: colors.foreground }]}>{title}</Text>
 
-      {/* Built-in list */}
+      {/* Built-in chips */}
       <View style={styles.chipRow}>
         {builtins.map((t) => (
           <View key={t} style={[styles.chip, { backgroundColor: colors.muted, borderColor: colors.border }]}>
@@ -63,37 +61,30 @@ function TypeManager({
       </View>
 
       {/* Custom items */}
-      {items.length > 0 ? (
-        <View style={[styles.customList, { borderColor: colors.border }]}>
-          <Text style={[styles.customLabel, { color: colors.mutedForeground }]}>مضافة بواسطتك</Text>
-          {items.map((t) => (
-            <View key={t} style={[styles.customRow, { borderBottomColor: colors.border }]}>
-              <TouchableOpacity
-                onPress={() => handleRemove(t)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Feather name="x-circle" size={18} color={colors.danger} />
-              </TouchableOpacity>
-              <Text style={[styles.customRowText, { color: colors.foreground }]}>{t}</Text>
-            </View>
-          ))}
+      {items.map((t) => (
+        <View key={t} style={[styles.customItem, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+          <TouchableOpacity onPress={() => handleRemove(t)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Feather name="x" size={16} color={colors.danger} />
+          </TouchableOpacity>
+          <Text style={[styles.customItemText, { color: colors.primary }]}>{t}</Text>
+          <View style={[styles.customDot, { backgroundColor: colors.primary }]} />
         </View>
-      ) : null}
+      ))}
 
-      {/* Add input */}
+      {/* Add row */}
       <View style={[styles.addRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
         <TouchableOpacity
           onPress={handleAdd}
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
+          style={[styles.addBtn, { backgroundColor: input.trim() ? colors.primary : colors.muted }]}
           disabled={!input.trim()}
           activeOpacity={0.8}
         >
-          <Feather name="plus" size={18} color="#fff" />
+          <Feather name="plus" size={17} color={input.trim() ? '#fff' : colors.mutedForeground} />
         </TouchableOpacity>
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="أضف نوعاً جديداً..."
+          placeholder="أضف نوعاً مخصصاً..."
           placeholderTextColor={colors.mutedForeground}
           style={[styles.addInput, { color: colors.foreground }]}
           onSubmitEditing={handleAdd}
@@ -167,10 +158,10 @@ export default function SettingsScreen() {
   };
 
   const handleClearData = () => {
-    Alert.alert('تحذير', 'سيتم حذف جميع بياناتك نهائياً. لا يمكن التراجع عن هذا الإجراء.', [
+    Alert.alert('تحذير نهائي', 'سيتم حذف جميع بياناتك نهائياً ولا يمكن استرجاعها. هل أنت متأكد تماماً؟', [
       { text: 'إلغاء', style: 'cancel' },
       {
-        text: 'مسح الكل', style: 'destructive',
+        text: 'نعم، احذف كل شيء', style: 'destructive',
         onPress: async () => {
           await clearAllData();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -186,7 +177,7 @@ export default function SettingsScreen() {
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
-      {/* Profile */}
+      {/* ── Profile ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>الملف الشخصي</Text>
       <Card style={styles.card}>
         <Input label="الاسم" value={name} onChangeText={setName} placeholder="أدخل اسمك" />
@@ -197,71 +188,78 @@ export default function SettingsScreen() {
         <Button title={saving ? 'جاري الحفظ...' : 'حفظ التغييرات'} onPress={handleSave} fullWidth loading={saving} />
       </Card>
 
-      {/* Custom Types */}
+      {/* ── Custom Categories ── */}
       <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>إدارة التصنيفات</Text>
       <Card style={styles.card} padding={14}>
-        <TypeManager
-          title="أنواع الدخل"
-          category="incomeTypes"
-          builtins={[...INCOME_TYPES]}
-        />
+        <TypeManager title="أنواع الدخل" category="incomeTypes" builtins={[...INCOME_TYPES]} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <TypeManager
-          title="فئات الالتزامات"
-          category="commitmentCategories"
-          builtins={[...COMMITMENT_CATEGORIES]}
-        />
+        <TypeManager title="فئات الالتزامات" category="commitmentCategories" builtins={[...COMMITMENT_CATEGORIES]} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <TypeManager
-          title="فئات المصاريف"
-          category="expenseCategories"
-          builtins={[...EXPENSE_CATEGORIES]}
-        />
+        <TypeManager title="فئات المصاريف" category="expenseCategories" builtins={[...EXPENSE_CATEGORIES]} />
       </Card>
 
-      {/* Data Tools */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>أدوات البيانات</Text>
-      <Card style={styles.card} padding={0}>
-        <TouchableOpacity onPress={handleLoadSample} style={[styles.toolRow, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
-          <View style={[styles.toolIcon, { backgroundColor: colors.primary + '15' }]}>
-            <Feather name="database" size={18} color={colors.primary} />
-          </View>
-          <View style={styles.toolText}>
-            <Text style={[styles.toolTitle, { color: colors.foreground }]}>تحميل بيانات تجريبية</Text>
-            <Text style={[styles.toolSub, { color: colors.mutedForeground }]}>أضف أمثلة لاستكشاف التطبيق</Text>
-          </View>
-          <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+      {/* ── Data Management ── */}
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>إدارة البيانات</Text>
 
-        <TouchableOpacity onPress={handleExport} style={[styles.toolRow, { borderBottomColor: colors.border }]} activeOpacity={0.7}>
-          <View style={[styles.toolIcon, { backgroundColor: colors.success + '15' }]}>
-            <Feather name="upload" size={18} color={colors.success} />
-          </View>
-          <View style={styles.toolText}>
-            <Text style={[styles.toolTitle, { color: colors.foreground }]}>تصدير نسخة احتياطية</Text>
-            <Text style={[styles.toolSub, { color: colors.mutedForeground }]}>احفظ بياناتك كملف JSON</Text>
-          </View>
-          <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
+      {/* Sample Data */}
+      <TouchableOpacity
+        onPress={handleLoadSample}
+        activeOpacity={0.8}
+        style={[styles.dataCard, { backgroundColor: colors.primary + '0E', borderColor: colors.primary + '35' }]}
+      >
+        <View style={[styles.dataIconCircle, { backgroundColor: colors.primary }]}>
+          <Feather name="database" size={22} color="#fff" />
+        </View>
+        <View style={styles.dataCardText}>
+          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>بيانات تجريبية</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
+            أضف بيانات نموذجية لاستكشاف ميزات التطبيق
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-        <TouchableOpacity onPress={handleClearData} style={styles.toolRow} activeOpacity={0.7}>
-          <View style={[styles.toolIcon, { backgroundColor: colors.danger + '15' }]}>
-            <Feather name="trash-2" size={18} color={colors.danger} />
-          </View>
-          <View style={styles.toolText}>
-            <Text style={[styles.toolTitle, { color: colors.danger }]}>مسح جميع البيانات</Text>
-            <Text style={[styles.toolSub, { color: colors.mutedForeground }]}>حذف نهائي لا يمكن التراجع عنه</Text>
-          </View>
-          <Feather name="chevron-left" size={18} color={colors.mutedForeground} />
-        </TouchableOpacity>
-      </Card>
+      {/* Export */}
+      <TouchableOpacity
+        onPress={handleExport}
+        activeOpacity={0.8}
+        style={[styles.dataCard, { backgroundColor: colors.success + '0E', borderColor: colors.success + '35' }]}
+      >
+        <View style={[styles.dataIconCircle, { backgroundColor: colors.success }]}>
+          <Feather name="share-2" size={22} color="#fff" />
+        </View>
+        <View style={styles.dataCardText}>
+          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>تصدير البيانات</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
+            احفظ نسخة احتياطية من جميع بياناتك
+          </Text>
+        </View>
+      </TouchableOpacity>
 
-      {/* Credit */}
-      <View style={[styles.creditBox, { borderColor: colors.border, backgroundColor: colors.card }]}>
+      {/* Clear */}
+      <TouchableOpacity
+        onPress={handleClearData}
+        activeOpacity={0.8}
+        style={[styles.dataCard, { backgroundColor: colors.danger + '0E', borderColor: colors.danger + '35' }]}
+      >
+        <View style={[styles.dataIconCircle, { backgroundColor: colors.danger }]}>
+          <Feather name="trash-2" size={22} color="#fff" />
+        </View>
+        <View style={styles.dataCardText}>
+          <Text style={[styles.dataCardTitle, { color: colors.danger }]}>مسح جميع البيانات</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
+            حذف نهائي لا يمكن التراجع عنه
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* ── Credit ── */}
+      <View style={[styles.creditBox, { borderColor: colors.border }]}>
         <Feather name="code" size={14} color={colors.primary} style={{ marginLeft: 8 }} />
-        <View>
-          <Text style={[styles.creditText, { color: colors.foreground }]}>تطوير: Mohammed Alsenani</Text>
-          <Text style={[styles.creditSub, { color: colors.mutedForeground }]}>مالي v1.0 — بياناتك على جهازك فقط</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.creditName, { color: colors.foreground }]}>تطوير: Mohammed Alsenani</Text>
+          <Text style={[styles.creditSub, { color: colors.mutedForeground }]}>
+            مالي v1.0 — بياناتك محفوظة على جهازك فقط
+          </Text>
         </View>
       </View>
     </ScrollView>
@@ -270,29 +268,70 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: {
+    fontSize: 11,
+    fontFamily: 'Inter_600SemiBold',
+    textAlign: 'right',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
   card: { marginBottom: 24 },
-  divider: { height: 1, marginVertical: 16 },
-  toolRow: { flexDirection: 'row-reverse', alignItems: 'center', padding: 14, borderBottomWidth: StyleSheet.hairlineWidth },
-  toolIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', marginLeft: 12 },
-  toolText: { flex: 1 },
-  toolTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 2 },
-  toolSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
+
   // TypeManager
   typeManager: { marginBottom: 4 },
   typeTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 10 },
   chipRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
   chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  customList: { borderRadius: 10, borderWidth: 1, marginBottom: 10, overflow: 'hidden' },
-  customLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', textAlign: 'right', paddingHorizontal: 12, paddingTop: 8, paddingBottom: 4 },
-  customRow: { flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth },
-  customRowText: { flex: 1, fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'right', marginRight: 10 },
-  addRow: { flexDirection: 'row-reverse', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, overflow: 'hidden', height: 44 },
+  customItem: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 6,
+    gap: 8,
+  },
+  customItemText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right' },
+  customDot: { width: 6, height: 6, borderRadius: 3 },
+  addRow: { flexDirection: 'row-reverse', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, overflow: 'hidden', height: 46 },
   addInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular', height: '100%' },
-  addBtn: { width: 44, height: '100%', alignItems: 'center', justifyContent: 'center' },
+  addBtn: { width: 46, height: '100%', alignItems: 'center', justifyContent: 'center' },
+
+  // Data Management cards
+  dataCard: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    marginBottom: 10,
+    gap: 14,
+  },
+  dataIconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  dataCardText: { flex: 1 },
+  dataCardTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 3 },
+  dataCardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', lineHeight: 18 },
+
   // Credit
-  creditBox: { flexDirection: 'row-reverse', alignItems: 'center', padding: 14, borderRadius: 12, borderWidth: 1, marginTop: 4 },
-  creditText: { fontSize: 13, fontFamily: 'Inter_600SemiBold', textAlign: 'right' },
+  creditBox: {
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    marginTop: 14,
+    gap: 10,
+  },
+  creditName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', textAlign: 'right' },
   creditSub: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'right', marginTop: 2 },
 });

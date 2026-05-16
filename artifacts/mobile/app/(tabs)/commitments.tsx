@@ -41,7 +41,6 @@ export default function CommitmentsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Summary Card */}
       <Card style={styles.summaryCard} padding={14}>
         <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي الالتزامات الشهرية</Text>
         <Text style={[styles.summaryAmount, { color: colors.commitment }]}>
@@ -90,63 +89,59 @@ export default function CommitmentsScreen() {
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/commitments/add', params: { id: item.id } })}
               activeOpacity={0.72}
-              style={[
-                styles.card,
-                {
-                  backgroundColor: colors.card,
-                  borderColor: colors.border,
-                  borderRadius: colors.radius - 2,
-                  borderRightColor: accentColor,
-                },
-              ]}
+              style={[styles.cardWrapper, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
             >
-              {/* Right: paid toggle */}
-              <TouchableOpacity
-                onPress={() => handleTogglePaid(item)}
-                style={[
-                  styles.checkBtn,
-                  {
-                    borderColor: accentColor,
-                    backgroundColor: isPaid ? accentColor + '20' : 'transparent',
-                  },
-                ]}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                {isPaid ? (
-                  <Feather name="check" size={14} color={accentColor} />
-                ) : (
-                  <View style={[styles.checkDot, { backgroundColor: accentColor }]} />
-                )}
-              </TouchableOpacity>
+              {/* Accent strip on the right */}
+              <View style={[styles.strip, { backgroundColor: accentColor }]} />
 
-              {/* Center: info */}
-              <View style={styles.cardBody}>
-                <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
-                  {item.title}
-                </Text>
-                <View style={styles.cardMeta}>
-                  <View style={[styles.statusPill, { backgroundColor: accentColor + '18' }]}>
-                    <Text style={[styles.statusPillText, { color: accentColor }]}>
-                      {isPaid ? 'مدفوع' : isLate ? 'متأخر' : `يوم ${item.dueDay}`}
+              {/* Card content */}
+              <View style={styles.cardInner}>
+                {/* Rightmost: paid toggle button */}
+                <TouchableOpacity
+                  onPress={() => handleTogglePaid(item)}
+                  style={[
+                    styles.checkBtn,
+                    { borderColor: accentColor, backgroundColor: isPaid ? accentColor + '20' : 'transparent' },
+                  ]}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
+                  {isPaid ? (
+                    <Feather name="check" size={14} color={accentColor} />
+                  ) : (
+                    <View style={[styles.checkDot, { backgroundColor: accentColor }]} />
+                  )}
+                </TouchableOpacity>
+
+                {/* Center: info */}
+                <View style={styles.cardBody}>
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                  <View style={styles.cardMetaRow}>
+                    <View style={[styles.statusPill, { backgroundColor: accentColor + '18' }]}>
+                      <Text style={[styles.statusPillText, { color: accentColor }]}>
+                        {isPaid ? 'مدفوع' : isLate ? 'متأخر' : `يوم ${item.dueDay}`}
+                      </Text>
+                    </View>
+                    <Text style={[styles.cardCat, { color: colors.mutedForeground }]} numberOfLines={1}>
+                      {item.category}
                     </Text>
                   </View>
-                  <Text style={[styles.cardCat, { color: colors.mutedForeground }]}>{item.category}</Text>
                 </View>
-              </View>
 
-              {/* Left: amount + chevron */}
-              <View style={styles.cardRight}>
-                <Text style={[styles.cardAmount, { color: colors.commitment }]}>
-                  {formatCurrency(item.amount, currency)}
-                </Text>
-                <Feather name="chevron-left" size={14} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+                {/* Left: amount + chevron */}
+                <View style={styles.cardRight}>
+                  <Text style={[styles.cardAmount, { color: colors.commitment }]} numberOfLines={1}>
+                    {formatCurrency(item.amount, currency)}
+                  </Text>
+                  <Feather name="chevron-left" size={13} color={colors.mutedForeground} />
+                </View>
               </View>
             </TouchableOpacity>
           );
         }}
       />
 
-      {/* FAB */}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + bottomPad + 80 }]}
         onPress={() => {
@@ -171,44 +166,19 @@ const styles = StyleSheet.create({
   statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
-  card: {
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderRightWidth: 3,
-    marginBottom: 8,
-    gap: 10,
-  },
-  checkBtn: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  // Card
+  cardWrapper: { flexDirection: 'row-reverse', borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
+  strip: { width: 4 },
+  cardInner: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
+  checkBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkDot: { width: 8, height: 8, borderRadius: 4 },
   cardBody: { flex: 1 },
   cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 4 },
-  cardMeta: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  cardMetaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  cardRight: { alignItems: 'flex-end', gap: 2 },
-  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-  fab: {
-    position: 'absolute',
-    left: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
+  cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular', flexShrink: 1 },
+  cardRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 3, flexShrink: 0, minWidth: 64 },
+  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: 'left' },
+  fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

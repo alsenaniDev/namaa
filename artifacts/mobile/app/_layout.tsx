@@ -65,8 +65,8 @@ function AppLayout() {
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="setup" options={{ headerShown: false }} />
-      <Stack.Screen name="reports" options={{ title: 'Reports' }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+      <Stack.Screen name="reports" options={{ title: 'التقارير' }} />
+      <Stack.Screen name="settings" options={{ title: 'الإعدادات' }} />
       <Stack.Screen name="income/add" options={{ presentation: 'modal', title: 'إضافة / تعديل دخل' }} />
       <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: 'إضافة / تعديل التزام' }} />
       <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: 'إضافة / تعديل مصروف' }} />

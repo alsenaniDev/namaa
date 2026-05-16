@@ -108,7 +108,7 @@ export default function AddIncomeScreen() {
         label="نوع الدخل"
         value={type}
         options={allTypes.map((t) => ({ label: t, value: t }))}
-        onValueChange={setType}
+        onValueChange={(v) => setType(v as typeof type)}
       />
 
       <View style={[styles.switchRow, { borderColor: colors.border }]}>

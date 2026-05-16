@@ -3,7 +3,8 @@ import { UserProfile, Income, Commitment, CommitmentPayment, Expense } from '../
 import { storage, CustomTypes } from '../utils/storage';
 import { generateId, getCurrentMonthYear } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
-import { calculateMonthlyTotals, MonthlyTotals } from '../utils/calculations';
+import { MonthlyTotals } from '../types';
+import { calculateMonthlyTotals } from '../utils/calculations';
 
 interface AppContextType {
   userProfile: UserProfile | null;

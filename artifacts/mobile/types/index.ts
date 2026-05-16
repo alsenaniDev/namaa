@@ -91,6 +91,17 @@ export const EXPENSE_CATEGORIES: ExpenseCategory[] = [
   'مطاعم', 'قهوة', 'تسوق', 'بنزين', 'سفر', 'ترفيه', 'صحة', 'تعليم', 'أخرى',
 ];
 
+export interface Expense {
+  id: string;
+  title: string;
+  amount: number;
+  category: ExpenseCategory;
+  expenseDate: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type HealthStatus = 'ممتاز' | 'متوسط' | 'خطر' | 'حرج جدًا';
 
 export interface MonthlyTotals {

@@ -105,7 +105,7 @@ export default function AddExpenseScreen() {
         label="فئة المصروف"
         value={category}
         options={allCategories.map((c) => ({ label: c, value: c }))}
-        onValueChange={setCategory}
+        onValueChange={(v) => setCategory(v as typeof category)}
       />
 
       <Input

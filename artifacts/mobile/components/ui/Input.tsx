@@ -37,7 +37,6 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, ...pro
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           textAlign="right"
-          writingDirection="rtl"
           {...props}
         />
         {rightIcon ? (

@@ -112,7 +112,7 @@ export default function AddCommitmentScreen() {
         label="فئة الالتزام"
         value={category}
         options={allCategories.map((c) => ({ label: c, value: c }))}
-        onValueChange={setCategory}
+        onValueChange={(v) => setCategory(v as typeof category)}
       />
 
       <Input

@@ -30,8 +30,44 @@ uri = "file://attached_assets/generated_images/wallet_icon_green.png"
 type = "image"
 title = "green wallet icon flat"
 
+[[generated]]
+id = "ls2PVu5K7tQ8ndtwfe7DZ"
+uri = "file://attached_assets/generated_images/logo_option_1_wallet.png"
+type = "image"
+title = "wallet logo with green gradient"
+
+[[generated]]
+id = "f09h9gniznehorbjkicdI"
+uri = "file://attached_assets/generated_images/logo_option_2_chart.png"
+type = "image"
+title = "ascending chart M logo"
+
+[[generated]]
+id = "uUZp77Jn-suQJXQIkW6sH"
+uri = "file://attached_assets/generated_images/logo_option_3_coin_badge.png"
+type = "image"
+title = "coin stack circular badge"
+
 [[outputs]]
 id = "9USeVi2m7EN3FqtqnEoC0"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
 title = "Wallet App Icon"
+
+[[outputs]]
+id = "hi0Lln6hj8zRiLnMS9Ifb"
+uri = "file://attached_assets/generated_images/logo_option_1_wallet.png"
+type = "image"
+title = "Option 1 — Wallet with growth arrow (emerald gradient)"
+
+[[outputs]]
+id = "0sHcDhyapes7bM64p1875"
+uri = "file://attached_assets/generated_images/logo_option_2_chart.png"
+type = "image"
+title = "Option 2 — Ascending chart forming 'M' (white background)"
+
+[[outputs]]
+id = "0yOrw5JFJhXsK936jo-di"
+uri = "file://attached_assets/generated_images/logo_option_3_coin_badge.png"
+type = "image"
+title = "Option 3 — Coin stack in circular gold-trim badge"

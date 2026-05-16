@@ -7,17 +7,21 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
 import { CURRENCIES, INCOME_TYPES, COMMITMENT_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import type { CustomTypes } from '@/utils/storage';
+import type { Language } from '@/utils/i18n';
 
 type TypeCategory = keyof CustomTypes;
 
 function TypeManager({ title, category, builtins }: { title: string; category: TypeCategory; builtins: string[] }) {
   const colors = useColors();
+  const t = useT();
   const { customTypes, addCustomType, removeCustomType } = useApp();
   const [input, setInput] = useState('');
   const items = customTypes[category];
@@ -26,7 +30,7 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
     const val = input.trim();
     if (!val) return;
     if (builtins.includes(val) || items.includes(val)) {
-      Alert.alert('موجود مسبقاً', 'هذا النوع مضاف بالفعل');
+      Alert.alert(t.settings.alreadyExistsTitle, t.settings.alreadyExistsMsg);
       return;
     }
     await addCustomType(category, val);
@@ -53,12 +57,12 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
       </View>
 
       {/* Custom items */}
-      {items.map((t) => (
-        <View key={t} style={[styles.customItem, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
-          <TouchableOpacity onPress={() => handleRemove(t)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      {items.map((item) => (
+        <View key={item} style={[styles.customItem, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
+          <TouchableOpacity onPress={() => handleRemove(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Feather name="x" size={16} color={colors.danger} />
           </TouchableOpacity>
-          <Text style={[styles.customItemText, { color: colors.primary }]}>{t}</Text>
+          <Text style={[styles.customItemText, { color: colors.primary }]}>{item}</Text>
           <View style={[styles.customDot, { backgroundColor: colors.primary }]} />
         </View>
       ))}
@@ -76,7 +80,7 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
         <TextInput
           value={input}
           onChangeText={setInput}
-          placeholder="أضف نوعاً مخصصاً..."
+          placeholder={t.settings.addCustomPlaceholder}
           placeholderTextColor={colors.mutedForeground}
           style={[styles.addInput, { color: colors.foreground }]}
           onSubmitEditing={handleAdd}
@@ -91,6 +95,8 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const t = useT();
+  const { language, setLanguage } = useLanguage();
   const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData } = useApp();
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
@@ -102,7 +108,7 @@ export default function SettingsScreen() {
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim()) { Alert.alert('خطأ', 'الرجاء إدخال الاسم'); return; }
+    if (!name.trim()) { Alert.alert(t.common.errorTitle, t.settings.saveErrorMsg); return; }
     setSaving(true);
     await updateUserProfile({
       name: name.trim(),
@@ -113,7 +119,13 @@ export default function SettingsScreen() {
     });
     setSaving(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('تم الحفظ', 'تم تحديث إعداداتك بنجاح');
+    Alert.alert(t.common.saved, t.common.savedMsg);
+  };
+
+  const handleLanguageChange = async (lang: Language) => {
+    if (lang === language) return;
+    await setLanguage(lang);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
   const handleExport = async () => {
@@ -128,32 +140,32 @@ export default function SettingsScreen() {
         a.click();
         URL.revokeObjectURL(url);
       } else {
-        await Share.share({ message: data, title: 'نسخة احتياطية - مالي' });
+        await Share.share({ message: data, title: t.settings.exportShare });
       }
     } catch {
-      Alert.alert('خطأ', 'تعذّر تصدير البيانات');
+      Alert.alert(t.common.errorTitle, t.settings.exportError);
     }
   };
 
   const handleLoadSample = () => {
-    Alert.alert('بيانات تجريبية', 'سيتم إضافة بيانات نموذجية للتجربة. هل تريد المتابعة؟', [
-      { text: 'إلغاء', style: 'cancel' },
+    Alert.alert(t.settings.sampleConfirmTitle, t.settings.sampleConfirmMsg, [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'تحميل',
+        text: t.settings.sampleLoadBtn,
         onPress: async () => {
           await loadSampleData();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          Alert.alert('تم', 'تم تحميل البيانات التجريبية');
+          Alert.alert(t.common.done, t.settings.sampleLoadedMsg);
         },
       },
     ]);
   };
 
   const handleClearData = () => {
-    Alert.alert('تحذير نهائي', 'سيتم حذف جميع بياناتك نهائياً ولا يمكن استرجاعها. هل أنت متأكد تماماً؟', [
-      { text: 'إلغاء', style: 'cancel' },
+    Alert.alert(t.settings.clearConfirmTitle, t.settings.clearConfirmMsg, [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'نعم، احذف كل شيء', style: 'destructive',
+        text: t.settings.clearConfirmBtn, style: 'destructive',
         onPress: async () => {
           await clearAllData();
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -170,30 +182,70 @@ export default function SettingsScreen() {
       keyboardShouldPersistTaps="handled"
     >
       {/* ── Profile ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>الملف الشخصي</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t.settings.profileSection}</Text>
       <Card style={styles.card}>
-        <Input label="الاسم" value={name} onChangeText={setName} placeholder="أدخل اسمك" />
-        <Select label="العملة المفضلة" value={currency} options={CURRENCIES} onValueChange={setCurrency} />
-        <Input label="الراتب الشهري" value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
-        <Input label="هدف الادخار الشهري (اختياري)" value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
-        <Input label="يوم بدء الشهر المالي (1-28)" value={monthStartDay} onChangeText={setMonthStartDay} placeholder="1" keyboardType="number-pad" />
-        <Button title={saving ? 'جاري الحفظ...' : 'حفظ التغييرات'} onPress={handleSave} fullWidth loading={saving} />
+        <Input label={t.settings.nameLabel} value={name} onChangeText={setName} placeholder="" />
+        <Select label={t.settings.currencyLabel} value={currency} options={CURRENCIES} onValueChange={setCurrency} />
+        <Input label={t.settings.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
+        <Input label={t.settings.savingGoalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
+        <Input label={t.settings.monthStartLabel} value={monthStartDay} onChangeText={setMonthStartDay} placeholder="1" keyboardType="number-pad" />
+
+        {/* Language selector */}
+        <View style={styles.langSection}>
+          <Text style={[styles.langLabel, { color: colors.mutedForeground }]}>{t.settings.languageLabel}</Text>
+          <View style={styles.langRow}>
+            <TouchableOpacity
+              onPress={() => handleLanguageChange('en')}
+              activeOpacity={0.8}
+              style={[
+                styles.langBtn,
+                {
+                  borderColor: language === 'en' ? colors.primary : colors.border,
+                  backgroundColor: language === 'en' ? colors.primary + '15' : colors.muted,
+                },
+              ]}
+            >
+              <Text style={[styles.langBtnText, { color: language === 'en' ? colors.primary : colors.mutedForeground }]}>
+                {t.settings.english}
+              </Text>
+              {language === 'en' ? <Feather name="check" size={14} color={colors.primary} style={{ marginRight: 4 }} /> : null}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleLanguageChange('ar')}
+              activeOpacity={0.8}
+              style={[
+                styles.langBtn,
+                {
+                  borderColor: language === 'ar' ? colors.primary : colors.border,
+                  backgroundColor: language === 'ar' ? colors.primary + '15' : colors.muted,
+                },
+              ]}
+            >
+              <Text style={[styles.langBtnText, { color: language === 'ar' ? colors.primary : colors.mutedForeground }]}>
+                {t.settings.arabic}
+              </Text>
+              {language === 'ar' ? <Feather name="check" size={14} color={colors.primary} style={{ marginRight: 4 }} /> : null}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Button title={saving ? t.common.saving : t.common.saveChanges} onPress={handleSave} fullWidth loading={saving} />
       </Card>
 
       {/* ── Custom Categories ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>إدارة التصنيفات</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t.settings.categoriesSection}</Text>
       <Card style={styles.card} padding={14}>
-        <TypeManager title="أنواع الدخل" category="incomeTypes" builtins={[...INCOME_TYPES]} />
+        <TypeManager title={t.settings.incomeTypesTitle} category="incomeTypes" builtins={[...INCOME_TYPES]} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <TypeManager title="فئات الالتزامات" category="commitmentCategories" builtins={[...COMMITMENT_CATEGORIES]} />
+        <TypeManager title={t.settings.commitmentCatsTitle} category="commitmentCategories" builtins={[...COMMITMENT_CATEGORIES]} />
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
-        <TypeManager title="فئات المصاريف" category="expenseCategories" builtins={[...EXPENSE_CATEGORIES]} />
+        <TypeManager title={t.settings.expenseCatsTitle} category="expenseCategories" builtins={[...EXPENSE_CATEGORIES]} />
       </Card>
 
       {/* ── Data Management ── */}
-      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>إدارة البيانات</Text>
+      <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t.settings.dataSection}</Text>
 
-      {/* Sample Data */}
       <TouchableOpacity
         onPress={handleLoadSample}
         activeOpacity={0.8}
@@ -203,14 +255,11 @@ export default function SettingsScreen() {
           <Feather name="database" size={22} color="#fff" />
         </View>
         <View style={styles.dataCardText}>
-          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>بيانات تجريبية</Text>
-          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
-            أضف بيانات نموذجية لاستكشاف ميزات التطبيق
-          </Text>
+          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>{t.settings.sampleTitle}</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>{t.settings.sampleDesc}</Text>
         </View>
       </TouchableOpacity>
 
-      {/* Export */}
       <TouchableOpacity
         onPress={handleExport}
         activeOpacity={0.8}
@@ -220,14 +269,11 @@ export default function SettingsScreen() {
           <Feather name="share-2" size={22} color="#fff" />
         </View>
         <View style={styles.dataCardText}>
-          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>تصدير البيانات</Text>
-          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
-            احفظ نسخة احتياطية من جميع بياناتك
-          </Text>
+          <Text style={[styles.dataCardTitle, { color: colors.foreground }]}>{t.settings.exportTitle}</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>{t.settings.exportDesc}</Text>
         </View>
       </TouchableOpacity>
 
-      {/* Clear */}
       <TouchableOpacity
         onPress={handleClearData}
         activeOpacity={0.8}
@@ -237,10 +283,8 @@ export default function SettingsScreen() {
           <Feather name="trash-2" size={22} color="#fff" />
         </View>
         <View style={styles.dataCardText}>
-          <Text style={[styles.dataCardTitle, { color: colors.danger }]}>مسح جميع البيانات</Text>
-          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>
-            حذف نهائي لا يمكن التراجع عنه
-          </Text>
+          <Text style={[styles.dataCardTitle, { color: colors.danger }]}>{t.settings.clearTitle}</Text>
+          <Text style={[styles.dataCardSub, { color: colors.mutedForeground }]}>{t.settings.clearDesc}</Text>
         </View>
       </TouchableOpacity>
 
@@ -248,10 +292,8 @@ export default function SettingsScreen() {
       <View style={[styles.creditBox, { borderColor: colors.border }]}>
         <Feather name="code" size={14} color={colors.primary} style={{ marginLeft: 8 }} />
         <View style={{ flex: 1 }}>
-          <Text style={[styles.creditName, { color: colors.foreground }]}>تطوير: Mohammed Alsenani</Text>
-          <Text style={[styles.creditSub, { color: colors.mutedForeground }]}>
-            مالي v1.0 — بياناتك محفوظة على جهازك فقط
-          </Text>
+          <Text style={[styles.creditName, { color: colors.foreground }]}>{t.settings.creditDev}</Text>
+          <Text style={[styles.creditSub, { color: colors.mutedForeground }]}>{t.settings.creditSub}</Text>
         </View>
       </View>
     </ScrollView>
@@ -270,6 +312,22 @@ const styles = StyleSheet.create({
   },
   card: { marginBottom: 24 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
+
+  // Language selector
+  langSection: { marginBottom: 16 },
+  langLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 8 },
+  langRow: { flexDirection: 'row-reverse', gap: 10 },
+  langBtn: {
+    flex: 1,
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    gap: 4,
+  },
+  langBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
 
   // TypeManager
   typeManager: { marginBottom: 4 },

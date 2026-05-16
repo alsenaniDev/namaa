@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -15,6 +16,7 @@ export default function IncomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const { incomes, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
@@ -42,11 +44,11 @@ export default function IncomeScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Card style={styles.summaryCard} padding={16}>
-        <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي الدخل الشهري</Text>
+        <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t.income.totalLabel}</Text>
         <Text style={[styles.summaryAmount, { color: colors.income }]}>
           {formatCurrency(totals.totalIncome, currency)}
         </Text>
-        <Text style={[styles.summaryCount, { color: colors.mutedForeground }]}>{incomes.length} مصدر دخل</Text>
+        <Text style={[styles.summaryCount, { color: colors.mutedForeground }]}>{incomes.length} {t.income.sourceSuffix}</Text>
       </Card>
 
       <FlatList
@@ -61,9 +63,9 @@ export default function IncomeScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="trending-up"
-            title="لا يوجد دخل مسجل"
-            description="أضف مصادر دخلك الشهرية لبدء تتبع ميزانيتك"
-            actionLabel="إضافة دخل"
+            title={t.income.emptyTitle}
+            description={t.income.emptyDesc}
+            actionLabel={t.income.addLabel}
             onAction={() => router.push('/income/add')}
           />
         }
@@ -72,7 +74,7 @@ export default function IncomeScreen() {
           return (
             <TransactionItem
               title={item.title}
-              subtitle={item.isRecurring ? `يوم ${item.receivedDay} شهرياً` : 'غير متكرر'}
+              subtitle={item.isRecurring ? t.income.recurringDay(item.receivedDay) : t.income.nonRecurring}
               amount={formatCurrency(item.amount, currency)}
               amountColor={ic}
               icon={typeIcons[item.type] ?? 'dollar-sign'}

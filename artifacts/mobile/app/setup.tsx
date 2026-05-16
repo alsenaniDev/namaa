@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -15,6 +16,7 @@ export default function SetupScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const { saveUserProfile, loadSampleData } = useApp();
 
   const [name, setName] = useState('');
@@ -30,7 +32,7 @@ export default function SetupScreen() {
 
   const handleFinish = async (withSample: boolean) => {
     if (!name.trim()) {
-      setNameError('الرجاء إدخال اسمك أولاً');
+      setNameError(t.setup.nameError);
       return;
     }
     setLoading(true);
@@ -62,43 +64,41 @@ export default function SetupScreen() {
         <View style={[styles.iconWrap, { backgroundColor: colors.primary + '15', borderRadius: 40 }]}>
           <Feather name="dollar-sign" size={40} color={colors.primary} />
         </View>
-        <Text style={[styles.title, { color: colors.foreground }]}>مرحباً في مالي</Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          أدخل بياناتك لبدء تتبع ميزانيتك الشخصية
-        </Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>{t.setup.title}</Text>
+        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{t.setup.subtitle}</Text>
 
         {/* Form */}
         <View style={[styles.form, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.formSection, { color: colors.mutedForeground }]}>المعلومات الأساسية</Text>
+          <Text style={[styles.formSection, { color: colors.mutedForeground }]}>{t.setup.basicInfo}</Text>
 
           <Input
-            label="اسمك الكريم *"
+            label={t.setup.nameLabel}
             value={name}
             onChangeText={(v) => { setName(v); setNameError(''); }}
-            placeholder="أدخل اسمك"
+            placeholder={t.setup.namePlaceholder}
             error={nameError}
             autoFocus
           />
 
           <Select
-            label="العملة المفضلة"
+            label={t.setup.currencyLabel}
             value={currency}
             options={CURRENCIES}
             onValueChange={setCurrency}
           />
 
           <Input
-            label="الراتب الشهري (اختياري)"
+            label={t.setup.salaryLabel}
             value={salary}
             onChangeText={setSalary}
             placeholder="0.00"
             keyboardType="decimal-pad"
           />
 
-          <Text style={[styles.formSection, { color: colors.mutedForeground, marginTop: 8 }]}>إعدادات إضافية</Text>
+          <Text style={[styles.formSection, { color: colors.mutedForeground, marginTop: 8 }]}>{t.setup.advancedSection}</Text>
 
           <Input
-            label="هدف الادخار الشهري (اختياري)"
+            label={t.setup.goalLabel}
             value={savingGoal}
             onChangeText={setSavingGoal}
             placeholder="0.00"
@@ -106,7 +106,7 @@ export default function SetupScreen() {
           />
 
           <Input
-            label="يوم بدء الشهر المالي (1-28)"
+            label={t.setup.monthStartLabel}
             value={monthStartDay}
             onChangeText={setMonthStartDay}
             placeholder="1"
@@ -117,21 +117,19 @@ export default function SetupScreen() {
         {/* Sample data notice */}
         <View style={[styles.infoBox, { backgroundColor: colors.primary + '0D', borderColor: colors.primary + '25' }]}>
           <Feather name="info" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
-          <Text style={[styles.infoText, { color: colors.foreground }]}>
-            يمكنك تحميل بيانات تجريبية لاستكشاف التطبيق بسرعة، أو البدء بقائمة فارغة.
-          </Text>
+          <Text style={[styles.infoText, { color: colors.foreground }]}>{t.setup.sampleHint}</Text>
         </View>
 
         {/* Actions */}
         <Button
-          title={loading ? 'جاري الإعداد...' : 'ابدأ مع بيانات تجريبية'}
+          title={loading ? t.setup.loadingBtn : t.setup.withSampleBtn}
           onPress={() => handleFinish(true)}
           fullWidth
           loading={loading}
           style={{ marginBottom: 10 }}
         />
         <Button
-          title="ابدأ بقائمة فارغة"
+          title={t.setup.emptyBtn}
           onPress={() => handleFinish(false)}
           variant="outline"
           fullWidth

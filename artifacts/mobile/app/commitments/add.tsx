@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -14,13 +15,13 @@ export default function AddCommitmentScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ id?: string }>();
   const { commitments, addCommitment, updateCommitment, deleteCommitment, customTypes } = useApp();
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
   const isEdit = !!existing;
 
-  // Merge built-in + custom categories
   const allCategories = [...COMMITMENT_CATEGORIES, ...customTypes.commitmentCategories];
 
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -37,8 +38,8 @@ export default function AddCommitmentScreen() {
 
   const validate = () => {
     const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = 'الرجاء إدخال العنوان';
-    if (!amount || parseFloat(amount) <= 0) errs.amount = 'الرجاء إدخال مبلغ صحيح';
+    if (!title.trim()) errs.title = t.forms.errorTitle;
+    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -68,10 +69,10 @@ export default function AddCommitmentScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('حذف الالتزام', `هل تريد حذف "${existing?.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
+    Alert.alert(t.commitments.deleteTitle, t.commitments.deleteMsg(existing?.title ?? ''), [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'حذف', style: 'destructive',
+        text: t.common.delete, style: 'destructive',
         onPress: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await deleteCommitment(params.id!);
@@ -91,16 +92,16 @@ export default function AddCommitmentScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Input
-        label="عنوان الالتزام"
+        label={t.forms.commitmentTitle}
         value={title}
         onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }}
-        placeholder="مثال: قرض بنك الأهلي"
+        placeholder={t.forms.commitmentTitle}
         error={errors.title}
         autoFocus
       />
 
       <Input
-        label="المبلغ الشهري"
+        label={t.forms.commitmentAmountLabel}
         value={amount}
         onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
         placeholder="0.00"
@@ -109,14 +110,14 @@ export default function AddCommitmentScreen() {
       />
 
       <Select
-        label="فئة الالتزام"
+        label={t.forms.commitmentCategoryLabel}
         value={category}
         options={allCategories.map((c) => ({ label: c, value: c }))}
         onValueChange={(v) => setCategory(v as typeof category)}
       />
 
       <Input
-        label="يوم الاستحقاق من الشهر"
+        label={t.forms.dueDayLabel}
         value={dueDay}
         onChangeText={setDueDay}
         placeholder="1"
@@ -131,9 +132,9 @@ export default function AddCommitmentScreen() {
           thumbColor="#fff"
         />
         <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={[styles.switchLabel, { color: colors.foreground }]}>التزام متكرر شهرياً</Text>
+          <Text style={[styles.switchLabel, { color: colors.foreground }]}>{t.commitments.recurringLabel}</Text>
           <Text style={[styles.switchSub, { color: colors.mutedForeground }]}>
-            {isRecurring ? 'يتكرر كل شهر' : 'لمرة واحدة'}
+            {isRecurring ? t.commitments.recurringYes : t.commitments.recurringNo}
           </Text>
         </View>
       </View>
@@ -146,39 +147,39 @@ export default function AddCommitmentScreen() {
           thumbColor="#fff"
         />
         <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={[styles.switchLabel, { color: colors.foreground }]}>الالتزام نشط</Text>
+          <Text style={[styles.switchLabel, { color: colors.foreground }]}>{t.commitments.activeLabel}</Text>
           <Text style={[styles.switchSub, { color: colors.mutedForeground }]}>
-            {isActive ? 'يُحسب في الميزانية الشهرية' : 'متوقف مؤقتاً'}
+            {isActive ? t.commitments.activeYes : t.commitments.activeNo}
           </Text>
         </View>
       </View>
 
       <Input
-        label="تاريخ البداية (اختياري YYYY-MM-DD)"
+        label={t.forms.startDateLabel}
         value={startDate}
         onChangeText={setStartDate}
-        placeholder="مثال: 2024-01-01"
+        placeholder="2024-01-01"
       />
 
       <Input
-        label="تاريخ النهاية (اختياري YYYY-MM-DD)"
+        label={t.forms.endDateLabel}
         value={endDate}
         onChangeText={setEndDate}
-        placeholder="مثال: 2026-12-31"
+        placeholder="2026-12-31"
       />
 
       <Input
-        label="ملاحظات (اختياري)"
+        label={t.forms.notesLabel}
         value={notes}
         onChangeText={setNotes}
-        placeholder="أي ملاحظات..."
+        placeholder=""
         multiline
         numberOfLines={3}
         style={{ height: 80, textAlignVertical: 'top' }}
       />
 
       <Button
-        title={loading ? 'جاري الحفظ...' : isEdit ? 'تحديث الالتزام' : 'إضافة الالتزام'}
+        title={loading ? t.common.saving : isEdit ? t.commitments.updateBtn : t.commitments.addBtn}
         onPress={handleSave}
         fullWidth
         loading={loading}
@@ -187,7 +188,7 @@ export default function AddCommitmentScreen() {
 
       {isEdit ? (
         <Button
-          title="حذف هذا الالتزام"
+          title={t.commitments.deleteBtn}
           onPress={handleDelete}
           variant="destructive"
           fullWidth

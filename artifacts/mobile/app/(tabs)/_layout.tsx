@@ -5,6 +5,7 @@ import React from 'react';
 import { Platform, StyleSheet, View, useColorScheme, TouchableOpacity } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useRouter } from 'expo-router';
+import { useT } from '@/hooks/useT';
 
 export default function TabLayout() {
   const colors = useColors();
@@ -13,6 +14,7 @@ export default function TabLayout() {
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const router = useRouter();
+  const t = useT();
 
   const tabIcon = (name: string) =>
     ({ color }: { color: string }) => (
@@ -58,7 +60,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'الرئيسية',
+          title: t.tabs.home,
           tabBarIcon: tabIcon('home'),
           headerRight: () => (
             <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
@@ -83,21 +85,21 @@ export default function TabLayout() {
       <Tabs.Screen
         name="income"
         options={{
-          title: 'الدخل',
+          title: t.tabs.income,
           tabBarIcon: tabIcon('trending-up'),
         }}
       />
       <Tabs.Screen
         name="commitments"
         options={{
-          title: 'الالتزامات',
+          title: t.tabs.commitments,
           tabBarIcon: tabIcon('credit-card'),
         }}
       />
       <Tabs.Screen
         name="expenses"
         options={{
-          title: 'المصاريف',
+          title: t.tabs.expenses,
           tabBarIcon: tabIcon('shopping-bag'),
         }}
       />

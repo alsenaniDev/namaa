@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { formatCurrency, formatMonthYear } from '@/utils/format';
 import { getExpensesByCategory, getCommitmentsByCategory } from '@/utils/calculations';
 import { ProgressBar } from '@/components/ProgressBar';
@@ -12,6 +13,7 @@ import { Card } from '@/components/ui/Card';
 export default function ReportsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const t = useT();
   const { getMonthlyTotals, expenses, commitments, userProfile } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
@@ -58,10 +60,10 @@ export default function ReportsScreen() {
       {/* Summary Grid */}
       <View style={styles.grid}>
         {[
-          { label: 'الدخل', amount: totals.totalIncome, color: colors.income },
-          { label: 'الالتزامات', amount: totals.totalCommitments, color: colors.commitment },
-          { label: 'المصاريف', amount: totals.totalExpenses, color: colors.expense },
-          { label: 'الصافي', amount: totals.netRemaining, color: totals.netRemaining >= 0 ? colors.success : colors.danger },
+          { label: t.reports.income, amount: totals.totalIncome, color: colors.income },
+          { label: t.reports.commitments, amount: totals.totalCommitments, color: colors.commitment },
+          { label: t.reports.expenses, amount: totals.totalExpenses, color: colors.expense },
+          { label: t.reports.net, amount: totals.netRemaining, color: totals.netRemaining >= 0 ? colors.success : colors.danger },
         ].map((item) => (
           <View key={item.label} style={[styles.summaryCell, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}>
             <Text style={[styles.cellLabel, { color: colors.mutedForeground }]}>{item.label}</Text>
@@ -72,12 +74,12 @@ export default function ReportsScreen() {
 
       {/* Visual Bar Comparison */}
       <Card style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>مقارنة بصرية</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.reports.visualComparison}</Text>
         <View style={styles.barChart}>
           {[
-            { label: 'المصاريف', value: totals.totalExpenses, color: colors.expense },
-            { label: 'الالتزامات', value: totals.totalCommitments, color: colors.commitment },
-            { label: 'الدخل', value: totals.totalIncome, color: colors.income },
+            { label: t.reports.expenses, value: totals.totalExpenses, color: colors.expense },
+            { label: t.reports.commitments, value: totals.totalCommitments, color: colors.commitment },
+            { label: t.reports.income, value: totals.totalIncome, color: colors.income },
           ].map((bar) => {
             const pct = maxBar > 0 ? (bar.value / maxBar) * 100 : 0;
             return (
@@ -95,15 +97,15 @@ export default function ReportsScreen() {
 
       {/* Percentage Bars */}
       <Card style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>نسبة الإنفاق من الدخل</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.reports.spendingRatio}</Text>
         <ProgressBar
-          label="نسبة الالتزامات"
+          label={t.reports.commitmentsRatio}
           value={totals.totalCommitments}
           max={totals.totalIncome}
           color={totals.commitmentPercent > 70 ? colors.danger : totals.commitmentPercent > 50 ? colors.warning : colors.success}
         />
         <ProgressBar
-          label="نسبة المصاريف"
+          label={t.reports.expensesRatio}
           value={totals.totalExpenses}
           max={totals.totalIncome}
           color={colors.expense}
@@ -113,7 +115,7 @@ export default function ReportsScreen() {
       {/* Expenses by Category */}
       {sortedExpCats.length > 0 && (
         <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>المصاريف حسب الفئة</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.reports.expensesByCategory}</Text>
           {sortedExpCats.map(([cat, amt], i) => {
             const pct = totals.totalExpenses > 0 ? (amt / totals.totalExpenses) * 100 : 0;
             const barColor = BAR_COLORS[i % BAR_COLORS.length];
@@ -138,7 +140,7 @@ export default function ReportsScreen() {
       {/* Commitments by Category */}
       {sortedComCats.length > 0 && (
         <Card style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>الالتزامات حسب الفئة</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.reports.commitmentsByCategory}</Text>
           {sortedComCats.map(([cat, amt], i) => {
             const pct = totals.totalCommitments > 0 ? (amt / totals.totalCommitments) * 100 : 0;
             const barColor = BAR_COLORS[(i + 3) % BAR_COLORS.length];
@@ -163,8 +165,8 @@ export default function ReportsScreen() {
       {totals.totalIncome === 0 && totals.totalCommitments === 0 && totals.totalExpenses === 0 && (
         <View style={styles.noData}>
           <Feather name="bar-chart-2" size={56} color={colors.mutedForeground} />
-          <Text style={[styles.noDataTitle, { color: colors.foreground }]}>لا توجد بيانات</Text>
-          <Text style={[styles.noDataSub, { color: colors.mutedForeground }]}>أضف دخلاً أو مصاريف لرؤية التقارير</Text>
+          <Text style={[styles.noDataTitle, { color: colors.foreground }]}>{t.reports.noDataTitle}</Text>
+          <Text style={[styles.noDataSub, { color: colors.mutedForeground }]}>{t.reports.noDataSub}</Text>
         </View>
       )}
     </ScrollView>

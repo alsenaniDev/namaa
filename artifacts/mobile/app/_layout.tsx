@@ -16,18 +16,16 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppProvider, useApp } from '@/context/AppContext';
+import { LanguageProvider } from '@/context/LanguageContext';
 import { useColors } from '@/hooks/useColors';
+import { useT } from '@/hooks/useT';
 
-// Force RTL for Arabic.
-// forceRTL persists in NSUserDefaults (iOS) / SharedPreferences (Android),
-// so after the first reload isRTL will be true and this branch won't fire again.
+// Force RTL for Arabic layout. Persists after first reload.
 if (Platform.OS !== 'web') {
   const wasAlreadyRTL = I18nManager.isRTL;
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
   if (!wasAlreadyRTL) {
-    // Reload so the native layer picks up RTL before rendering anything.
-    // Safe against loops: after reload isRTL === true, so we never enter again.
     Updates.reloadAsync().catch(() => {});
   }
 }
@@ -48,6 +46,7 @@ function AppLayout() {
   const router = useRouter();
   const segments = useSegments();
   const colors = useColors();
+  const t = useT();
 
   useEffect(() => {
     if (isLoading) return;
@@ -69,16 +68,16 @@ function AppLayout() {
         headerTitleAlign: 'center',
         headerShadowVisible: false,
         headerTintColor: colors.primary,
-        headerBackTitle: 'رجوع',
+        headerBackTitle: t.nav.back,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="setup" options={{ headerShown: false }} />
-      <Stack.Screen name="reports" options={{ title: 'التقارير' }} />
-      <Stack.Screen name="settings" options={{ title: 'الإعدادات' }} />
-      <Stack.Screen name="income/add" options={{ presentation: 'modal', title: 'إضافة / تعديل دخل' }} />
-      <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: 'إضافة / تعديل التزام' }} />
-      <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: 'إضافة / تعديل مصروف' }} />
+      <Stack.Screen name="reports" options={{ title: t.screen.reports }} />
+      <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
+      <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />
+      <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: t.screen.addEditCommitment }} />
+      <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: t.screen.addEditExpense }} />
     </Stack>
   );
 }
@@ -102,13 +101,15 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <AppProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AppLayout />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
-        </AppProvider>
+        <LanguageProvider>
+          <AppProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <AppLayout />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </AppProvider>
+        </LanguageProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

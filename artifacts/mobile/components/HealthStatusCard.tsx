@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useT } from '@/hooks/useT';
 import { HealthStatus } from '@/types';
 
 interface HealthStatusCardProps {
@@ -20,20 +21,22 @@ const STATUS_ICONS: Record<HealthStatus, string> = {
 
 export function HealthStatusCard({ status, color, message, commitmentPercent }: HealthStatusCardProps) {
   const colors = useColors();
+  const t = useT();
   const iconName = STATUS_ICONS[status];
+  const statusLabel = t.health.statusLabels[status] ?? status;
 
   return (
     <View style={[styles.card, { backgroundColor: color + '15', borderColor: color + '40', borderRadius: colors.radius }]}>
       <View style={styles.header}>
         <View style={[styles.badge, { backgroundColor: color }]}>
-          <Text style={styles.badgeText}>{status}</Text>
+          <Text style={styles.badgeText}>{statusLabel}</Text>
         </View>
         <View style={styles.headerRight}>
-          <Text style={[styles.pctLabel, { color: colors.mutedForeground }]}>نسبة الالتزامات</Text>
+          <Text style={[styles.pctLabel, { color: colors.mutedForeground }]}>{t.health.commitmentPctLabel}</Text>
           <Feather name={iconName as any} size={22} color={color} />
         </View>
       </View>
-      <Text style={[styles.percent, { color }]}>{Math.round(commitmentPercent)}٪ من الدخل</Text>
+      <Text style={[styles.percent, { color }]}>{t.health.pctOfIncome(Math.round(commitmentPercent))}</Text>
       <Text style={[styles.message, { color: colors.foreground }]}>{message}</Text>
     </View>
   );

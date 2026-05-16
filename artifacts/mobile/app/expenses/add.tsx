@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -14,6 +15,7 @@ export default function AddExpenseScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ id?: string }>();
   const { expenses, addExpense, updateExpense, deleteExpense, customTypes } = useApp();
 
@@ -21,7 +23,6 @@ export default function AddExpenseScreen() {
   const isEdit = !!existing;
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Merge built-in + custom categories
   const allCategories = [...EXPENSE_CATEGORIES, ...customTypes.expenseCategories];
 
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -34,8 +35,8 @@ export default function AddExpenseScreen() {
 
   const validate = () => {
     const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = 'الرجاء إدخال العنوان';
-    if (!amount || parseFloat(amount) <= 0) errs.amount = 'الرجاء إدخال مبلغ صحيح';
+    if (!title.trim()) errs.title = t.forms.errorTitle;
+    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -61,10 +62,10 @@ export default function AddExpenseScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('حذف المصروف', `هل تريد حذف "${existing?.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
+    Alert.alert(t.expenses.deleteTitle, t.expenses.deleteMsg(existing?.title ?? ''), [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'حذف', style: 'destructive',
+        text: t.common.delete, style: 'destructive',
         onPress: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await deleteExpense(params.id!);
@@ -84,16 +85,16 @@ export default function AddExpenseScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Input
-        label="عنوان المصروف"
+        label={t.forms.titleLabel}
         value={title}
         onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }}
-        placeholder="مثال: غداء في المطعم"
+        placeholder={t.forms.titleLabel}
         error={errors.title}
         autoFocus
       />
 
       <Input
-        label="المبلغ"
+        label={t.forms.amountLabel}
         value={amount}
         onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
         placeholder="0.00"
@@ -102,31 +103,32 @@ export default function AddExpenseScreen() {
       />
 
       <Select
-        label="فئة المصروف"
+        label={t.forms.categoryLabel}
         value={category}
         options={allCategories.map((c) => ({ label: c, value: c }))}
         onValueChange={(v) => setCategory(v as typeof category)}
       />
 
       <Input
-        label="تاريخ المصروف (YYYY-MM-DD)"
+        label={t.forms.receivedDateLabel}
         value={expenseDate}
         onChangeText={setExpenseDate}
-        placeholder={todayStr}
+        placeholder="YYYY-MM-DD"
+        keyboardType="default"
       />
 
       <Input
-        label="ملاحظات (اختياري)"
+        label={t.forms.notesLabel}
         value={notes}
         onChangeText={setNotes}
-        placeholder="أي ملاحظات..."
+        placeholder=""
         multiline
         numberOfLines={3}
         style={{ height: 80, textAlignVertical: 'top' }}
       />
 
       <Button
-        title={loading ? 'جاري الحفظ...' : isEdit ? 'تحديث المصروف' : 'إضافة المصروف'}
+        title={loading ? t.common.saving : isEdit ? t.expenses.updateBtn : t.expenses.addBtn}
         onPress={handleSave}
         fullWidth
         loading={loading}
@@ -135,7 +137,7 @@ export default function AddExpenseScreen() {
 
       {isEdit ? (
         <Button
-          title="حذف هذا المصروف"
+          title={t.expenses.deleteBtn}
           onPress={handleDelete}
           variant="destructive"
           fullWidth

@@ -4,8 +4,11 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
+import { useLanguage } from '@/context/LanguageContext';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
-import { getUpcomingCommitments, getLateCommitments, getFinancialTip } from '@/utils/calculations';
+import { getUpcomingCommitments, getLateCommitments } from '@/utils/calculations';
+import { getFinancialTip } from '@/utils/calculations';
 import { SummaryCard } from '@/components/SummaryCard';
 import { HealthStatusCard } from '@/components/HealthStatusCard';
 import { Card } from '@/components/ui/Card';
@@ -14,17 +17,20 @@ export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { userProfile, commitments, commitmentPayments, expenses, getMonthlyTotals } = useApp();
+  const { language } = useLanguage();
+  const t = useT();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const upcoming = getUpcomingCommitments(commitments, commitmentPayments).slice(0, 3);
   const late = getLateCommitments(commitments, commitmentPayments);
-  const tip = getFinancialTip(totals);
+  const tip = getFinancialTip(totals, language);
 
   const today = new Date();
-  const dayName = today.toLocaleDateString('ar-SA', { weekday: 'long' });
-  const dateStr = today.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
+  const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+  const dayName = today.toLocaleDateString(locale, { weekday: 'long' });
+  const dateStr = today.toLocaleDateString(locale, { year: 'numeric', month: 'long', day: 'numeric' });
 
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
 
@@ -38,7 +44,7 @@ export default function DashboardScreen() {
       <View style={styles.greetRow}>
         <View style={{ flex: 1, marginRight: 12 }}>
           <Text style={[styles.dateText, { color: colors.mutedForeground }]}>{dayName}، {dateStr}</Text>
-          <Text style={[styles.greetText, { color: colors.foreground }]}>مرحباً، {userProfile?.name ?? ''}</Text>
+          <Text style={[styles.greetText, { color: colors.foreground }]}>{t.dashboard.greeting}، {userProfile?.name ?? ''}</Text>
         </View>
         <View style={[styles.avatarWrap, { backgroundColor: colors.primary + '20', borderRadius: 26 }]}>
           <Feather name="user" size={24} color={colors.primary} />
@@ -48,13 +54,13 @@ export default function DashboardScreen() {
       {/* Summary Grid */}
       <View style={styles.gridRow}>
         <SummaryCard
-          label="إجمالي الدخل"
+          label={t.dashboard.totalIncome}
           amount={formatCurrency(totals.totalIncome, currency)}
           icon="trending-up"
           iconColor={colors.income}
         />
         <SummaryCard
-          label="الالتزامات"
+          label={t.dashboard.totalCommitments}
           amount={formatCurrency(totals.totalCommitments, currency)}
           icon="credit-card"
           iconColor={colors.commitment}
@@ -62,18 +68,18 @@ export default function DashboardScreen() {
       </View>
       <View style={styles.gridRow}>
         <SummaryCard
-          label="المصاريف"
+          label={t.dashboard.totalExpenses}
           amount={formatCurrency(totals.totalExpenses, currency)}
           icon="shopping-bag"
           iconColor={colors.expense}
         />
         <SummaryCard
-          label="الصافي المتبقي"
+          label={t.dashboard.netRemaining}
           amount={formatCurrency(totals.netRemaining, currency)}
           icon="activity"
           iconColor={totals.netRemaining >= 0 ? colors.success : colors.danger}
           trend={totals.netRemaining >= 0 ? 'up' : 'down'}
-          sub={totals.netRemaining >= 0 ? 'متاح للإنفاق' : 'تجاوزت الميزانية'}
+          sub={totals.netRemaining >= 0 ? t.dashboard.availableToSpend : t.dashboard.overBudget}
         />
       </View>
 
@@ -91,12 +97,12 @@ export default function DashboardScreen() {
           {totals.suggestedSaving > 0 ? (
             <View style={[styles.savingBadge, { backgroundColor: colors.primary + '15' }]}>
               <Text style={[styles.savingText, { color: colors.primary }]}>
-                مقترح للادخار: {formatCurrency(totals.suggestedSaving, currency)}
+                {t.dashboard.suggestedSaving}: {formatCurrency(totals.suggestedSaving, currency)}
               </Text>
             </View>
           ) : null}
           <View style={{ flex: 1 }}>
-            <Text style={[styles.remainLabel, { color: colors.mutedForeground }]}>المتبقي بعد الالتزامات</Text>
+            <Text style={[styles.remainLabel, { color: colors.mutedForeground }]}>{t.dashboard.remainingAfterCommitments}</Text>
             <Text style={[styles.remainAmount, {
               color: totals.remainingAfterCommitments >= 0 ? colors.foreground : colors.danger,
             }]}>
@@ -111,7 +117,7 @@ export default function DashboardScreen() {
         <Card style={[styles.lateCard, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '30' }]}>
           <View style={styles.lateHeader}>
             <Text style={[styles.lateCount, { color: colors.danger }]}>{late.length}</Text>
-            <Text style={[styles.lateTitle, { color: colors.danger }]}>التزامات متأخرة</Text>
+            <Text style={[styles.lateTitle, { color: colors.danger }]}>{t.dashboard.lateCommitments}</Text>
             <Feather name="alert-triangle" size={18} color={colors.danger} />
           </View>
           {late.slice(0, 2).map((c) => (
@@ -125,14 +131,14 @@ export default function DashboardScreen() {
       {/* Upcoming Commitments */}
       {upcoming.length > 0 ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>الالتزامات القادمة</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.dashboard.upcomingCommitments}</Text>
           {upcoming.map((c) => (
             <Card key={c.id} style={styles.listItem} padding={12}>
               <View style={styles.listRow}>
                 <Text style={[styles.listAmt, { color: colors.commitment }]}>{formatCurrency(c.amount, currency)}</Text>
                 <View style={{ flex: 1, marginRight: 10 }}>
                   <Text style={[styles.listTitle, { color: colors.foreground }]}>{c.title}</Text>
-                  <Text style={[styles.listSub, { color: colors.mutedForeground }]}>يستحق يوم {c.dueDay}</Text>
+                  <Text style={[styles.listSub, { color: colors.mutedForeground }]}>{t.dashboard.dueOn} {c.dueDay}</Text>
                 </View>
               </View>
             </Card>
@@ -143,7 +149,7 @@ export default function DashboardScreen() {
       {/* Recent Expenses */}
       {expenses.length > 0 ? (
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>آخر المصاريف</Text>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{t.dashboard.recentExpenses}</Text>
           {[...expenses].reverse().slice(0, 3).map((e) => (
             <Card key={e.id} style={styles.listItem} padding={12}>
               <View style={styles.listRow}>

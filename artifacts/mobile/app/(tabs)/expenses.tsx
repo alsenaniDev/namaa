@@ -6,6 +6,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { formatCurrency, formatShortDate, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -40,6 +41,7 @@ export default function ExpensesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const { expenses, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
@@ -56,11 +58,11 @@ export default function ExpensesScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Card style={styles.summaryCard} padding={14}>
-        <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي مصاريف هذا الشهر</Text>
+        <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>{t.expenses.totalLabel}</Text>
         <Text style={[styles.summaryAmount, { color: colors.expense }]}>
           {formatCurrency(totals.totalExpenses, currency)}
         </Text>
-        <Text style={[styles.summaryCount, { color: colors.mutedForeground }]}>{monthExpenses.length} مصروف</Text>
+        <Text style={[styles.summaryCount, { color: colors.mutedForeground }]}>{monthExpenses.length} {t.expenses.countSuffix}</Text>
       </Card>
 
       <FlatList
@@ -75,9 +77,9 @@ export default function ExpensesScreen() {
         ListEmptyComponent={
           <EmptyState
             icon="shopping-bag"
-            title="لا توجد مصاريف هذا الشهر"
-            description="سجّل مصاريفك اليومية لمتابعة ميزانيتك"
-            actionLabel="إضافة مصروف"
+            title={t.expenses.emptyTitle}
+            description={t.expenses.emptyDesc}
+            actionLabel={t.expenses.addLabel}
             onAction={() => router.push('/expenses/add')}
           />
         }

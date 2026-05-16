@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useApp } from '@/context/AppContext';
+import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
@@ -14,13 +15,13 @@ export default function AddIncomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ id?: string }>();
   const { incomes, addIncome, updateIncome, deleteIncome, customTypes } = useApp();
 
   const existing = params.id ? incomes.find((i) => i.id === params.id) : undefined;
   const isEdit = !!existing;
 
-  // Merge built-in + custom types
   const allTypes = [...INCOME_TYPES, ...customTypes.incomeTypes];
 
   const [title, setTitle] = useState(existing?.title ?? '');
@@ -35,8 +36,8 @@ export default function AddIncomeScreen() {
 
   const validate = () => {
     const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = 'الرجاء إدخال العنوان';
-    if (!amount || parseFloat(amount) <= 0) errs.amount = 'الرجاء إدخال مبلغ صحيح';
+    if (!title.trim()) errs.title = t.forms.errorTitle;
+    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -64,10 +65,10 @@ export default function AddIncomeScreen() {
   };
 
   const handleDelete = () => {
-    Alert.alert('حذف الدخل', `هل تريد حذف "${existing?.title}"؟`, [
-      { text: 'إلغاء', style: 'cancel' },
+    Alert.alert(t.income.deleteTitle, t.income.deleteMsg(existing?.title ?? ''), [
+      { text: t.common.cancel, style: 'cancel' },
       {
-        text: 'حذف', style: 'destructive',
+        text: t.common.delete, style: 'destructive',
         onPress: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await deleteIncome(params.id!);
@@ -87,16 +88,16 @@ export default function AddIncomeScreen() {
       showsVerticalScrollIndicator={false}
     >
       <Input
-        label="عنوان مصدر الدخل"
+        label={t.forms.titleLabel}
         value={title}
         onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }}
-        placeholder="مثال: راتب شركة الأمل"
+        placeholder={t.forms.titleLabel}
         error={errors.title}
         autoFocus
       />
 
       <Input
-        label="المبلغ"
+        label={t.forms.amountLabel}
         value={amount}
         onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
         placeholder="0.00"
@@ -105,7 +106,7 @@ export default function AddIncomeScreen() {
       />
 
       <Select
-        label="نوع الدخل"
+        label={t.forms.typeLabel}
         value={type}
         options={allTypes.map((t) => ({ label: t, value: t }))}
         onValueChange={(v) => setType(v as typeof type)}
@@ -119,16 +120,16 @@ export default function AddIncomeScreen() {
           thumbColor="#fff"
         />
         <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={[styles.switchLabel, { color: colors.foreground }]}>دخل متكرر شهرياً</Text>
+          <Text style={[styles.switchLabel, { color: colors.foreground }]}>{t.forms.monthlyRecurring}</Text>
           <Text style={[styles.switchSub, { color: colors.mutedForeground }]}>
-            {isRecurring ? 'يتكرر كل شهر تلقائياً' : 'دخل لمرة واحدة'}
+            {isRecurring ? t.commitments.recurringYes : t.commitments.recurringNo}
           </Text>
         </View>
       </View>
 
       {isRecurring ? (
         <Input
-          label="يوم الاستلام من الشهر"
+          label={t.forms.recurringDayLabel}
           value={receivedDay}
           onChangeText={setReceivedDay}
           placeholder="1"
@@ -136,25 +137,25 @@ export default function AddIncomeScreen() {
         />
       ) : (
         <Input
-          label="تاريخ الاستلام (YYYY-MM-DD)"
+          label={t.forms.receivedDateLabel}
           value={receivedDate}
           onChangeText={setReceivedDate}
-          placeholder={new Date().toISOString().split('T')[0]}
+          placeholder="YYYY-MM-DD"
         />
       )}
 
       <Input
-        label="ملاحظات (اختياري)"
+        label={t.forms.notesLabel}
         value={notes}
         onChangeText={setNotes}
-        placeholder="أي ملاحظات إضافية..."
+        placeholder=""
         multiline
         numberOfLines={3}
         style={{ height: 80, textAlignVertical: 'top' }}
       />
 
       <Button
-        title={loading ? 'جاري الحفظ...' : isEdit ? 'تحديث الدخل' : 'إضافة الدخل'}
+        title={loading ? t.common.saving : isEdit ? t.income.updateBtn : t.income.addBtn}
         onPress={handleSave}
         fullWidth
         loading={loading}
@@ -163,7 +164,7 @@ export default function AddIncomeScreen() {
 
       {isEdit ? (
         <Button
-          title="حذف هذا الدخل"
+          title={t.income.deleteBtn}
           onPress={handleDelete}
           variant="destructive"
           fullWidth

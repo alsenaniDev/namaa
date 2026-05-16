@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import * as dir from '@/utils/dir';
 
 interface ProgressBarProps {
   label: string;
@@ -27,7 +28,12 @@ export function ProgressBar({ label, value, max, color, showPercent = true }: Pr
         <View
           style={[
             styles.fill,
-            { width: `${pct}%`, backgroundColor: barColor, borderRadius: 6 },
+            {
+              width: `${pct}%`,
+              backgroundColor: barColor,
+              borderRadius: 6,
+              ...(dir.isRTL ? { position: 'absolute', right: 0, top: 0, bottom: 0 } : {}),
+            },
           ]}
         />
       </View>
@@ -37,8 +43,8 @@ export function ProgressBar({ label, value, max, color, showPercent = true }: Pr
 
 const styles = StyleSheet.create({
   container: { marginBottom: 12 },
-  row: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  label: { fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right' },
+  row: { flexDirection: dir.row, justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
+  label: { fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign },
   pct: { fontSize: 13, fontFamily: 'Inter_700Bold' },
   track: { height: 10, overflow: 'hidden' },
   fill: { height: 10 },

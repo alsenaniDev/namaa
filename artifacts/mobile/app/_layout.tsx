@@ -7,9 +7,8 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as Updates from 'expo-updates';
 import React, { useEffect } from 'react';
-import { I18nManager, Platform, View, ActivityIndicator } from 'react-native';
+import { Platform, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -19,15 +18,11 @@ import { AppProvider, useApp } from '@/context/AppContext';
 import { LanguageProvider } from '@/context/LanguageContext';
 import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
+import { isRTL } from '@/utils/dir';
 
-// Force RTL for Arabic layout. Persists after first reload.
-if (Platform.OS !== 'web') {
-  const wasAlreadyRTL = I18nManager.isRTL;
-  I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
-  if (!wasAlreadyRTL) {
-    Updates.reloadAsync().catch(() => {});
-  }
+// Apply web direction once, synchronously, before anything renders.
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  document.documentElement.style.direction = isRTL ? 'rtl' : 'ltr';
 }
 
 SplashScreen.preventAutoHideAsync();

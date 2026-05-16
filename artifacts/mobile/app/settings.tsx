@@ -16,6 +16,7 @@ import { Card } from '@/components/ui/Card';
 import { CURRENCIES, INCOME_TYPES, COMMITMENT_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import type { CustomTypes } from '@/utils/storage';
 import type { Language } from '@/utils/i18n';
+import * as dir from '@/utils/dir';
 
 type TypeCategory = keyof CustomTypes;
 
@@ -85,7 +86,7 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
           style={[styles.addInput, { color: colors.foreground }]}
           onSubmitEditing={handleAdd}
           returnKeyType="done"
-          textAlign="right"
+          textAlign={dir.textAlign}
         />
       </View>
     </View>
@@ -124,8 +125,8 @@ export default function SettingsScreen() {
 
   const handleLanguageChange = async (lang: Language) => {
     if (lang === language) return;
-    await setLanguage(lang);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    await setLanguage(lang);
   };
 
   const handleExport = async () => {
@@ -195,23 +196,6 @@ export default function SettingsScreen() {
           <Text style={[styles.langLabel, { color: colors.mutedForeground }]}>{t.settings.languageLabel}</Text>
           <View style={styles.langRow}>
             <TouchableOpacity
-              onPress={() => handleLanguageChange('en')}
-              activeOpacity={0.8}
-              style={[
-                styles.langBtn,
-                {
-                  borderColor: language === 'en' ? colors.primary : colors.border,
-                  backgroundColor: language === 'en' ? colors.primary + '15' : colors.muted,
-                },
-              ]}
-            >
-              <Text style={[styles.langBtnText, { color: language === 'en' ? colors.primary : colors.mutedForeground }]}>
-                {t.settings.english}
-              </Text>
-              {language === 'en' ? <Feather name="check" size={14} color={colors.primary} style={{ marginRight: 4 }} /> : null}
-            </TouchableOpacity>
-
-            <TouchableOpacity
               onPress={() => handleLanguageChange('ar')}
               activeOpacity={0.8}
               style={[
@@ -222,10 +206,27 @@ export default function SettingsScreen() {
                 },
               ]}
             >
+              {language === 'ar' ? <Feather name="check" size={14} color={colors.primary} /> : null}
               <Text style={[styles.langBtnText, { color: language === 'ar' ? colors.primary : colors.mutedForeground }]}>
                 {t.settings.arabic}
               </Text>
-              {language === 'ar' ? <Feather name="check" size={14} color={colors.primary} style={{ marginRight: 4 }} /> : null}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={() => handleLanguageChange('en')}
+              activeOpacity={0.8}
+              style={[
+                styles.langBtn,
+                {
+                  borderColor: language === 'en' ? colors.primary : colors.border,
+                  backgroundColor: language === 'en' ? colors.primary + '15' : colors.muted,
+                },
+              ]}
+            >
+              {language === 'en' ? <Feather name="check" size={14} color={colors.primary} /> : null}
+              <Text style={[styles.langBtnText, { color: language === 'en' ? colors.primary : colors.mutedForeground }]}>
+                {t.settings.english}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -290,7 +291,7 @@ export default function SettingsScreen() {
 
       {/* ── Credit ── */}
       <View style={[styles.creditBox, { borderColor: colors.border }]}>
-        <Feather name="code" size={14} color={colors.primary} style={{ marginLeft: 8 }} />
+        <Feather name="code" size={14} color={colors.primary} />
         <View style={{ flex: 1 }}>
           <Text style={[styles.creditName, { color: colors.foreground }]}>{t.settings.creditDev}</Text>
           <Text style={[styles.creditSub, { color: colors.mutedForeground }]}>{t.settings.creditSub}</Text>
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 11,
     fontFamily: 'Inter_600SemiBold',
-    textAlign: 'right',
+    textAlign: dir.textAlign,
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -315,28 +316,28 @@ const styles = StyleSheet.create({
 
   // Language selector
   langSection: { marginBottom: 16 },
-  langLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 8 },
-  langRow: { flexDirection: 'row-reverse', gap: 10 },
+  langLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign, marginBottom: 8 },
+  langRow: { flexDirection: dir.row, gap: 10 },
   langBtn: {
     flex: 1,
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1.5,
-    gap: 4,
+    gap: 6,
   },
   langBtnText: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
 
   // TypeManager
   typeManager: { marginBottom: 4 },
-  typeTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 10 },
-  chipRow: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  typeTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign, marginBottom: 10 },
+  chipRow: { flexDirection: dir.row, flexWrap: 'wrap', gap: 6, marginBottom: 10 },
   chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
   chipText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   customItem: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -345,15 +346,15 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     gap: 8,
   },
-  customItemText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: 'right' },
+  customItemText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign },
   customDot: { width: 6, height: 6, borderRadius: 3 },
-  addRow: { flexDirection: 'row-reverse', alignItems: 'center', borderWidth: 1.5, borderRadius: 10, overflow: 'hidden', height: 46 },
+  addRow: { flexDirection: dir.row, alignItems: 'center', borderWidth: 1.5, borderRadius: 10, overflow: 'hidden', height: 46 },
   addInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular', height: '100%' },
   addBtn: { width: 46, height: '100%', alignItems: 'center', justifyContent: 'center' },
 
   // Data Management cards
   dataCard: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     padding: 16,
     borderRadius: 14,
@@ -370,18 +371,18 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   dataCardText: { flex: 1 },
-  dataCardTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 3 },
-  dataCardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', lineHeight: 18 },
+  dataCardTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign, marginBottom: 3 },
+  dataCardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, lineHeight: 18 },
 
   // Credit
   creditBox: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     paddingVertical: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     marginTop: 14,
     gap: 10,
   },
-  creditName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', textAlign: 'right' },
-  creditSub: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'right', marginTop: 2 },
+  creditName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign },
+  creditSub: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginTop: 2 },
 });

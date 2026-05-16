@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import * as dir from '@/utils/dir';
 
 interface TransactionItemProps {
   title: string;
@@ -27,19 +28,17 @@ export function TransactionItem({
       activeOpacity={0.72}
       style={[styles.wrapper, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
     >
-      {/* Accent strip on the right (first child in row-reverse = visually right) */}
+      {/* Accent strip */}
       <View style={[styles.strip, { backgroundColor: ic }]} />
 
       {/* Content */}
       <View style={styles.inner}>
-        {/* Right side: icon */}
         {icon ? (
           <View style={[styles.iconWrap, { backgroundColor: ic + '15', borderRadius: 18 }]}>
             <Feather name={icon as any} size={17} color={ic} />
           </View>
         ) : null}
 
-        {/* Center: title + meta */}
         <View style={styles.body}>
           <Text style={[styles.title, { color: colors.foreground }]} numberOfLines={1}>{title}</Text>
           <View style={styles.metaRow}>
@@ -56,12 +55,11 @@ export function TransactionItem({
           </View>
         </View>
 
-        {/* Left side: amount + chevron */}
         <View style={styles.right}>
           <Text style={[styles.amount, { color: amountColor ?? colors.foreground }]} numberOfLines={1}>
             {amount}
           </Text>
-          <Feather name="chevron-left" size={13} color={colors.mutedForeground} />
+          <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
         </View>
       </View>
     </TouchableOpacity>
@@ -70,7 +68,7 @@ export function TransactionItem({
 
 const styles = StyleSheet.create({
   wrapper: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     borderWidth: 1,
     marginBottom: 8,
     overflow: 'hidden',
@@ -80,7 +78,7 @@ const styles = StyleSheet.create({
   },
   inner: {
     flex: 1,
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     paddingVertical: 12,
     paddingHorizontal: 12,
@@ -99,11 +97,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontFamily: 'Inter_500Medium',
-    textAlign: 'right',
+    textAlign: dir.textAlign,
     marginBottom: 4,
   },
   metaRow: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     gap: 6,
     flexWrap: 'nowrap',
@@ -124,7 +122,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   right: {
-    flexDirection: 'row-reverse',
+    flexDirection: dir.row,
     alignItems: 'center',
     gap: 4,
     flexShrink: 0,
@@ -132,6 +130,6 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 14,
     fontFamily: 'Inter_700Bold',
-    textAlign: 'right',
+    textAlign: dir.textAlign,
   },
 });

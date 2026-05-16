@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { INCOME_TYPES } from '@/types';
+import * as dir from '@/utils/dir';
 
 export default function AddIncomeScreen() {
   const colors = useColors();
@@ -119,7 +120,7 @@ export default function AddIncomeScreen() {
           trackColor={{ false: colors.border, true: colors.primary }}
           thumbColor="#fff"
         />
-        <View style={{ flex: 1, marginRight: 12 }}>
+        <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.switchLabel, { color: colors.foreground }]}>{t.forms.monthlyRecurring}</Text>
           <Text style={[styles.switchSub, { color: colors.mutedForeground }]}>
             {isRecurring ? t.commitments.recurringYes : t.commitments.recurringNo}
@@ -178,7 +179,7 @@ export default function AddIncomeScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
-  switchRow: { flexDirection: 'row-reverse', alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1.5, marginBottom: 14 },
-  switchLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 2 },
-  switchSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  switchRow: { flexDirection: dir.row, alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1.5, marginBottom: 14 },
+  switchLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign, marginBottom: 2 },
+  switchSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign },
 });

@@ -11,6 +11,7 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import type { Commitment } from '@/types';
+import * as dir from '@/utils/dir';
 
 export default function CommitmentsScreen() {
   const colors = useColors();
@@ -134,7 +135,7 @@ export default function CommitmentsScreen() {
                   <Text style={[styles.cardAmount, { color: colors.commitment }]} numberOfLines={1}>
                     {formatCurrency(item.amount, currency)}
                   </Text>
-                  <Feather name="chevron-left" size={13} color={colors.mutedForeground} />
+                  <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
                 </View>
               </View>
             </TouchableOpacity>
@@ -158,26 +159,26 @@ export default function CommitmentsScreen() {
 
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
-  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
-  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: 'right', marginBottom: 8 },
-  statsRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
-  statBadge: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
+  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
+  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign, marginBottom: 8 },
+  statsRow: { flexDirection: dir.row, alignItems: 'center', gap: 8 },
+  statBadge: { flexDirection: dir.row, alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
-  cardWrapper: { flexDirection: 'row-reverse', borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
+  cardWrapper: { flexDirection: dir.row, borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
   strip: { width: 4 },
-  cardInner: { flex: 1, flexDirection: 'row-reverse', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
+  cardInner: { flex: 1, flexDirection: dir.row, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
   checkBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkDot: { width: 8, height: 8, borderRadius: 4 },
   cardBody: { flex: 1 },
-  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right', marginBottom: 4 },
-  cardMetaRow: { flexDirection: 'row-reverse', alignItems: 'center', gap: 6 },
+  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign, marginBottom: 4 },
+  cardMetaRow: { flexDirection: dir.row, alignItems: 'center', gap: 6 },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular', flexShrink: 1 },
-  cardRight: { flexDirection: 'row-reverse', alignItems: 'center', gap: 4, flexShrink: 0 },
-  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  cardRight: { flexDirection: dir.row, alignItems: 'center', gap: 4, flexShrink: 0 },
+  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

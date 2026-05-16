@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { Card } from './ui/Card';
+import * as dir from '@/utils/dir';
 
 interface SummaryCardProps {
   label: string;
@@ -32,7 +33,7 @@ export function SummaryCard({ label, amount, icon, iconColor, sub, trend }: Summ
               name={trend === 'up' ? 'trending-up' : trend === 'down' ? 'trending-down' : 'minus'}
               size={12}
               color={trend === 'up' ? colors.success : trend === 'down' ? colors.danger : colors.mutedForeground}
-              style={{ marginLeft: 4 }}
+              style={dir.isRTL ? { marginLeft: 4 } : { marginRight: 4 }}
             />
           ) : null}
           <Text style={[styles.sub, { color: colors.mutedForeground }]}>{sub}</Text>
@@ -44,10 +45,10 @@ export function SummaryCard({ label, amount, icon, iconColor, sub, trend }: Summ
 
 const styles = StyleSheet.create({
   card: { flex: 1, minWidth: 140 },
-  row: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 10, gap: 8 },
+  row: { flexDirection: dir.row, alignItems: 'center', marginBottom: 10, gap: 8 },
   iconWrap: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 12, fontFamily: 'Inter_500Medium', flex: 1, textAlign: 'right' },
-  amount: { fontSize: 18, fontWeight: '700', fontFamily: 'Inter_700Bold', textAlign: 'right', marginBottom: 4 },
-  subRow: { flexDirection: 'row-reverse', alignItems: 'center' },
-  sub: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  label: { fontSize: 12, fontFamily: 'Inter_500Medium', flex: 1, textAlign: dir.textAlign },
+  amount: { fontSize: 18, fontWeight: '700', fontFamily: 'Inter_700Bold', textAlign: dir.textAlign, marginBottom: 4 },
+  subRow: { flexDirection: dir.row, alignItems: 'center' },
+  sub: { fontSize: 11, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign },
 });

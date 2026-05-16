@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { CURRENCIES } from '@/types';
+import * as dir from '@/utils/dir';
 
 export default function SetupScreen() {
   const colors = useColors();
@@ -116,7 +117,7 @@ export default function SetupScreen() {
 
         {/* Sample data notice */}
         <View style={[styles.infoBox, { backgroundColor: colors.primary + '0D', borderColor: colors.primary + '25' }]}>
-          <Feather name="info" size={16} color={colors.primary} style={{ marginLeft: 8 }} />
+          <Feather name="info" size={16} color={colors.primary} />
           <Text style={[styles.infoText, { color: colors.foreground }]}>{t.setup.sampleHint}</Text>
         </View>
 
@@ -146,7 +147,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 26, fontFamily: 'Inter_700Bold', textAlign: 'center', marginBottom: 6 },
   subtitle: { fontSize: 14, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   form: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16 },
-  formSection: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: 'right', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
-  infoBox: { flexDirection: 'row-reverse', alignItems: 'flex-start', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
-  infoText: { flex: 1, fontSize: 13, lineHeight: 21, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  formSection: { fontSize: 11, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12 },
+  infoBox: { flexDirection: dir.row, alignItems: 'flex-start', gap: 10, padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 20 },
+  infoText: { flex: 1, fontSize: 13, lineHeight: 21, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign },
 });

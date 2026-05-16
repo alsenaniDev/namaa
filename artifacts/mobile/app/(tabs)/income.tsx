@@ -11,6 +11,7 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
+import * as dir from '@/utils/dir';
 
 export default function IncomeScreen() {
   const colors = useColors();
@@ -103,9 +104,9 @@ export default function IncomeScreen() {
 
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
-  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
-  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: 'right', marginBottom: 2 },
-  summaryCount: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
+  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign, marginBottom: 2 },
+  summaryCount: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },

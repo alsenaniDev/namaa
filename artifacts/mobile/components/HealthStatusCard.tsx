@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
 import { HealthStatus } from '@/types';
+import * as dir from '@/utils/dir';
 
 interface HealthStatusCardProps {
   status: HealthStatus;
@@ -44,11 +45,11 @@ export function HealthStatusCard({ status, color, message, commitmentPercent }: 
 
 const styles = StyleSheet.create({
   card: { padding: 16, borderWidth: 1, marginBottom: 4 },
-  header: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  headerRight: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8 },
+  header: { flexDirection: dir.row, alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  headerRight: { flexDirection: dir.row, alignItems: 'center', gap: 8 },
   badge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   badgeText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'Inter_700Bold' },
   pctLabel: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  percent: { fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold', textAlign: 'right', marginBottom: 6 },
-  message: { fontSize: 13, lineHeight: 20, textAlign: 'right', fontFamily: 'Inter_400Regular' },
+  percent: { fontSize: 20, fontWeight: '700', fontFamily: 'Inter_700Bold', textAlign: dir.textAlign, marginBottom: 6 },
+  message: { fontSize: 13, lineHeight: 20, textAlign: dir.textAlign, fontFamily: 'Inter_400Regular' },
 });

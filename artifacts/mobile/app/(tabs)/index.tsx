@@ -12,6 +12,7 @@ import { getFinancialTip } from '@/utils/calculations';
 import { SummaryCard } from '@/components/SummaryCard';
 import { HealthStatusCard } from '@/components/HealthStatusCard';
 import { Card } from '@/components/ui/Card';
+import * as dir from '@/utils/dir';
 
 export default function DashboardScreen() {
   const colors = useColors();
@@ -42,12 +43,12 @@ export default function DashboardScreen() {
     >
       {/* Greeting */}
       <View style={styles.greetRow}>
-        <View style={{ flex: 1, marginRight: 12 }}>
-          <Text style={[styles.dateText, { color: colors.mutedForeground }]}>{dayName}، {dateStr}</Text>
-          <Text style={[styles.greetText, { color: colors.foreground }]}>{t.dashboard.greeting}، {userProfile?.name ?? ''}</Text>
-        </View>
         <View style={[styles.avatarWrap, { backgroundColor: colors.primary + '20', borderRadius: 26 }]}>
           <Feather name="user" size={24} color={colors.primary} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.dateText, { color: colors.mutedForeground }]}>{dayName}، {dateStr}</Text>
+          <Text style={[styles.greetText, { color: colors.foreground }]}>{t.dashboard.greeting}، {userProfile?.name ?? ''}</Text>
         </View>
       </View>
 
@@ -116,9 +117,9 @@ export default function DashboardScreen() {
       {late.length > 0 ? (
         <Card style={[styles.lateCard, { backgroundColor: colors.danger + '10', borderColor: colors.danger + '30' }]}>
           <View style={styles.lateHeader}>
-            <Text style={[styles.lateCount, { color: colors.danger }]}>{late.length}</Text>
-            <Text style={[styles.lateTitle, { color: colors.danger }]}>{t.dashboard.lateCommitments}</Text>
             <Feather name="alert-triangle" size={18} color={colors.danger} />
+            <Text style={[styles.lateTitle, { color: colors.danger }]}>{t.dashboard.lateCommitments}</Text>
+            <Text style={[styles.lateCount, { color: colors.danger }]}>{late.length}</Text>
           </View>
           {late.slice(0, 2).map((c) => (
             <Text key={c.id} style={[styles.lateItem, { color: colors.foreground }]}>
@@ -136,7 +137,7 @@ export default function DashboardScreen() {
             <Card key={c.id} style={styles.listItem} padding={12}>
               <View style={styles.listRow}>
                 <Text style={[styles.listAmt, { color: colors.commitment }]}>{formatCurrency(c.amount, currency)}</Text>
-                <View style={{ flex: 1, marginRight: 10 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { color: colors.foreground }]}>{c.title}</Text>
                   <Text style={[styles.listSub, { color: colors.mutedForeground }]}>{t.dashboard.dueOn} {c.dueDay}</Text>
                 </View>
@@ -154,7 +155,7 @@ export default function DashboardScreen() {
             <Card key={e.id} style={styles.listItem} padding={12}>
               <View style={styles.listRow}>
                 <Text style={[styles.listAmt, { color: colors.expense }]}>{formatCurrency(e.amount, currency)}</Text>
-                <View style={{ flex: 1, marginRight: 10 }}>
+                <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { color: colors.foreground }]}>{e.title}</Text>
                   <Text style={[styles.listSub, { color: colors.mutedForeground }]}>{e.category}</Text>
                 </View>
@@ -167,8 +168,8 @@ export default function DashboardScreen() {
       {/* Financial Tip */}
       <Card style={[styles.tipCard, { backgroundColor: colors.primary + '0D', borderColor: colors.primary + '25' }]}>
         <View style={styles.tipRow}>
+          <Feather name="info" size={20} color={colors.primary} />
           <Text style={[styles.tipText, { color: colors.foreground }]}>{tip}</Text>
-          <Feather name="info" size={20} color={colors.primary} style={{ marginLeft: 10 }} />
         </View>
       </Card>
     </ScrollView>
@@ -177,30 +178,30 @@ export default function DashboardScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16 },
-  greetRow: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 20 },
+  greetRow: { flexDirection: dir.row, alignItems: 'center', gap: 12, marginBottom: 20 },
   avatarWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
-  dateText: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 2 },
-  greetText: { fontSize: 20, fontFamily: 'Inter_700Bold', textAlign: 'right' },
-  gridRow: { flexDirection: 'row-reverse', gap: 10, marginBottom: 10 },
+  dateText: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 2 },
+  greetText: { fontSize: 20, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign },
+  gridRow: { flexDirection: dir.row, gap: 10, marginBottom: 10 },
   remainCard: { marginTop: 10, marginBottom: 10 },
-  remainRow: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
-  remainLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
-  remainAmount: { fontSize: 20, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  remainRow: { flexDirection: dir.row, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 },
+  remainLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
+  remainAmount: { fontSize: 20, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign },
   savingBadge: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   savingText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   lateCard: { padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 10 },
-  lateHeader: { flexDirection: 'row-reverse', alignItems: 'center', gap: 8, marginBottom: 8 },
-  lateTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', flex: 1, textAlign: 'right' },
+  lateHeader: { flexDirection: dir.row, alignItems: 'center', gap: 8, marginBottom: 8 },
+  lateTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', flex: 1, textAlign: dir.textAlign },
   lateCount: { fontSize: 20, fontFamily: 'Inter_700Bold' },
-  lateItem: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
+  lateItem: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
   section: { marginTop: 4, marginBottom: 4 },
-  sectionTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 10 },
+  sectionTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign, marginBottom: 10 },
   listItem: { marginBottom: 6 },
-  listRow: { flexDirection: 'row-reverse', alignItems: 'center' },
-  listTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: 'right' },
-  listSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', marginTop: 2 },
+  listRow: { flexDirection: dir.row, alignItems: 'center', gap: 10 },
+  listTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', textAlign: dir.textAlign },
+  listSub: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginTop: 2 },
   listAmt: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   tipCard: { padding: 14, borderRadius: 12, borderWidth: 1, marginTop: 10, marginBottom: 10 },
-  tipRow: { flexDirection: 'row-reverse', alignItems: 'flex-start' },
-  tipText: { flex: 1, fontSize: 13, lineHeight: 21, fontFamily: 'Inter_400Regular', textAlign: 'right' },
+  tipRow: { flexDirection: dir.row, alignItems: 'flex-start', gap: 10 },
+  tipText: { flex: 1, fontSize: 13, lineHeight: 21, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign },
 });

@@ -9,6 +9,7 @@ import { formatCurrency, formatMonthYear } from '@/utils/format';
 import { getExpensesByCategory, getCommitmentsByCategory } from '@/utils/calculations';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Card } from '@/components/ui/Card';
+import * as dir from '@/utils/dir';
 
 export default function ReportsScreen() {
   const colors = useColors();
@@ -49,11 +50,11 @@ export default function ReportsScreen() {
       {/* Month Selector */}
       <View style={[styles.monthBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Feather name="chevron-right" size={24} color={colors.primary} />
+          <Feather name={dir.chevronBack as any} size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.monthLabel, { color: colors.foreground }]}>{formatMonthYear(month, year)}</Text>
         <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Feather name="chevron-left" size={24} color={colors.primary} />
+          <Feather name={dir.chevronDetail as any} size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -122,13 +123,13 @@ export default function ReportsScreen() {
             return (
               <View key={cat} style={styles.catRow}>
                 <Text style={[styles.catAmt, { color: barColor }]}>{formatCurrency(amt, currency)}</Text>
-                <View style={{ flex: 1, marginRight: 12 }}>
+                <View style={{ flex: 1, marginLeft: 12 }}>
                   <View style={styles.catLabelRow}>
                     <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                     <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
                   </View>
                   <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
-                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', right: 0 }]} />
+                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
                   </View>
                 </View>
               </View>
@@ -147,13 +148,13 @@ export default function ReportsScreen() {
             return (
               <View key={cat} style={styles.catRow}>
                 <Text style={[styles.catAmt, { color: barColor }]}>{formatCurrency(amt, currency)}</Text>
-                <View style={{ flex: 1, marginRight: 12 }}>
+                <View style={{ flex: 1, marginLeft: 12 }}>
                   <View style={styles.catLabelRow}>
                     <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                     <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
                   </View>
                   <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
-                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', right: 0 }]} />
+                    <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
                   </View>
                 </View>
               </View>
@@ -175,25 +176,25 @@ export default function ReportsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
-  monthBar: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
+  monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
   monthLabel: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
-  grid: { flexDirection: 'row-reverse', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  grid: { flexDirection: dir.row, flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   summaryCell: { width: '48%', padding: 14, borderWidth: 1 },
-  cellLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: 'right', marginBottom: 4 },
-  cellAmount: { fontSize: 15, fontFamily: 'Inter_700Bold', textAlign: 'right' },
+  cellLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', textAlign: dir.textAlign, marginBottom: 4 },
+  cellAmount: { fontSize: 15, fontFamily: 'Inter_700Bold', textAlign: dir.textAlign },
   section: { marginBottom: 14 },
-  sectionTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', textAlign: 'right', marginBottom: 14 },
-  barChart: { flexDirection: 'row-reverse', justifyContent: 'space-around', alignItems: 'flex-end', height: 130, gap: 8 },
+  sectionTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', textAlign: dir.textAlign, marginBottom: 14 },
+  barChart: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 130, gap: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
   barAmt: { fontSize: 10, fontFamily: 'Inter_700Bold', marginBottom: 6, textAlign: 'center' },
   barTrack: { width: '80%', flex: 1, borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden', maxHeight: 80 },
   barFill: { width: '100%', borderRadius: 6 },
   barLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginTop: 6, textAlign: 'center' },
-  catRow: { flexDirection: 'row-reverse', alignItems: 'center', marginBottom: 12 },
-  catLabelRow: { flexDirection: 'row-reverse', justifyContent: 'space-between', marginBottom: 4 },
+  catRow: { flexDirection: dir.row, alignItems: 'center', marginBottom: 12 },
+  catLabelRow: { flexDirection: dir.row, justifyContent: 'space-between', marginBottom: 4 },
   catName: { fontSize: 13, fontFamily: 'Inter_500Medium' },
   catPct: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  catAmt: { fontSize: 13, fontFamily: 'Inter_700Bold', marginLeft: 8, minWidth: 80, textAlign: 'left' },
+  catAmt: { fontSize: 13, fontFamily: 'Inter_700Bold', marginRight: 8, minWidth: 80, textAlign: dir.textAlign },
   catBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
   catFill: { height: 6, borderRadius: 3, top: 0, bottom: 0 },
   noData: { alignItems: 'center', paddingVertical: 48, gap: 10 },

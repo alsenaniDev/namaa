@@ -16,6 +16,10 @@ const LanguageContext = createContext<LanguageContextType>({
   setLanguage: async () => {},
 });
 
+// Synchronous initial state — used for the very first render before AsyncStorage resolves.
+// On native: _layout.tsx already called I18nManager.forceRTL(true) at module level,
+// so the native bridge is RTL from the start. We default the JS state to 'ar' to match.
+// On web: read from localStorage so there is no direction flash.
 function getInitialLanguage(): Language {
   if (Platform.OS === 'web') {
     try {
@@ -27,51 +31,36 @@ function getInitialLanguage(): Language {
     } catch {}
     return 'ar';
   }
-  // Native: always default to 'ar' so useDir() returns RTL values on the very
-  // first render — even before AsyncStorage resolves and before I18nManager
-  // has been force-set (which only takes effect after a native restart).
-  // The effect below will correct this to 'en' if the user previously chose English.
+  // Native: always default to 'ar'. The module-level forceRTL(true) in _layout.tsx
+  // has already set the native bridge to RTL, so this matches that state.
   return 'ar';
-}
-
-async function triggerNativeRestart(shouldBeRTL: boolean) {
-  I18nManager.allowRTL(shouldBeRTL);
-  I18nManager.forceRTL(shouldBeRTL);
-  try {
-    await Updates.reloadAsync();
-  } catch {
-    // expo-updates is not configured for OTA — the I18nManager flag is now
-    // persisted and will apply on the next manual app launch.
-    // Visual direction is already handled reactively via useDir(), so the
-    // UI looks correct immediately. Full native RTL (cursor, ScrollView
-    // inertia direction) will be applied on the next cold start.
-  }
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
-  // On mount: read the persisted language and sync I18nManager if needed.
+  // On mount: hydrate from persisted storage. We only update the JS language state
+  // here — we do NOT call forceRTL in this effect to avoid oscillating with the
+  // module-level forceRTL(true) that already ran in _layout.tsx.
   useEffect(() => {
-    AsyncStorage.getItem(LANG_KEY).then(async (val) => {
+    AsyncStorage.getItem(LANG_KEY).then((val) => {
       const lang: Language = val === 'ar' || val === 'en' ? val : 'ar';
       setLanguageState(lang);
 
       if (Platform.OS === 'web') {
         if (typeof localStorage === 'undefined') return;
-        const stored = localStorage.getItem(LANG_KEY);
-        const dirCurrentlyRTL = stored !== 'en';
-        const dirShouldBeRTL = lang === 'ar';
-        if (stored !== lang) localStorage.setItem(LANG_KEY, lang);
-        if (dirCurrentlyRTL !== dirShouldBeRTL) window.location.reload();
-      } else {
+        if (localStorage.getItem(LANG_KEY) !== lang) {
+          localStorage.setItem(LANG_KEY, lang);
+        }
+        // Web: reload if direction changed since the synchronous initial setup.
+        const initialWasRTL = getInitialLanguage() !== 'en';
         const shouldBeRTL = lang === 'ar';
-        if (I18nManager.isRTL !== shouldBeRTL) {
-          // Sets the native bridge flag for the NEXT launch.
-          // Visual direction is already correct via useDir() + language state.
-          await triggerNativeRestart(shouldBeRTL);
+        if (initialWasRTL !== shouldBeRTL) {
+          window.location.reload();
         }
       }
+      // Native: no forceRTL here — _layout.tsx module-level handles it.
+      // I18nManager.isRTL is already true (set synchronously before first render).
     });
   }, []);
 
@@ -80,14 +69,19 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     setLanguageState(lang);
 
     if (Platform.OS === 'web') {
-      if (typeof localStorage !== 'undefined') localStorage.setItem(LANG_KEY, lang);
-      if (typeof window !== 'undefined') window.location.reload();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(LANG_KEY, lang);
+      }
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
       return;
     }
 
-    // Native: useDir() is reactive so the UI direction updates immediately.
-    // Also persist the I18nManager flag so native system behaviours (cursor,
-    // ScrollView) are correct on the next cold start.
+    // Native: update the native RTL bridge flag for the next cold start.
+    // Our useDir() hook is reactive, so the UI direction switches immediately
+    // without needing a reload. The native system behaviours (cursor position,
+    // ScrollView inertia) will align on the next cold start.
     const shouldBeRTL = lang === 'ar';
     I18nManager.allowRTL(shouldBeRTL);
     I18nManager.forceRTL(shouldBeRTL);
@@ -95,15 +89,14 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     try {
       await Updates.reloadAsync();
     } catch {
-      // expo-updates not configured for OTA. The layout direction switches
-      // instantly via useDir(). For full native RTL, ask user to restart.
-      const isNowRTL = lang === 'ar';
+      // expo-updates OTA not configured — show a one-time restart prompt so
+      // users know to close and reopen the app for full native direction change.
       Alert.alert(
-        isNowRTL ? 'تم تغيير اللغة' : 'Language Changed',
-        isNowRTL
-          ? 'أعد تشغيل التطبيق لتطبيق جميع التغييرات بالكامل'
+        lang === 'ar' ? 'تم تغيير اللغة' : 'Language Changed',
+        lang === 'ar'
+          ? 'أعد تشغيل التطبيق لتطبيق التغييرات بالكامل'
           : 'Please restart the app to fully apply all changes.',
-        [{ text: isNowRTL ? 'حسناً' : 'OK' }],
+        [{ text: lang === 'ar' ? 'حسناً' : 'OK' }],
       );
     }
   };

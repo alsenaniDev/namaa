@@ -1,14 +1,19 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "wHvM6x9XO04XTO1sxvAMm"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
-title = "generated_image"
+title = "mali finance app icon"
 
 [[generated]]
 id = "BUjkTTK4Gz3IKdshqsGFP"
 uri = "file://artifacts/mobile/assets/images/splash.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "9USeVi2m7EN3FqtqnEoC0"
+uri = "file://artifacts/mobile/assets/images/icon.png"
+type = "image"
+title = "New مالي App Icon"

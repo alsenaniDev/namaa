@@ -8,7 +8,7 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
-import { Platform, View, ActivityIndicator } from 'react-native';
+import { I18nManager, Platform, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -20,9 +20,20 @@ import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
 import { isRTL } from '@/utils/dir';
 
-// Apply initial web direction synchronously before first render.
+// ─── SYNCHRONOUS PRE-RENDER DIRECTION SETUP ──────────────────────────────────
+// These run at module evaluation time — before the first React render — so the
+// native bridge and Yoga layout engine both start in the correct direction.
+
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  // Web: set CSS direction immediately so there is no LTR flash.
   document.documentElement.style.direction = isRTL ? 'rtl' : 'ltr';
+} else {
+  // Native (iOS / Android): forceRTL must be called BEFORE any view is created.
+  // This app defaults to Arabic (RTL). The value is persisted by React Native in
+  // NSUserDefaults / SharedPreferences so subsequent cold starts stay RTL.
+  // LanguageContext.setLanguage handles switching to LTR for English users.
+  I18nManager.allowRTL(true);
+  I18nManager.forceRTL(true);
 }
 
 SplashScreen.preventAutoHideAsync();

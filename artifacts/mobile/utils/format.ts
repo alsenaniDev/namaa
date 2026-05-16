@@ -67,3 +67,19 @@ export function getOrdinalDay(day: number): string {
 export function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
 }
+
+/**
+ * Converts Arabic-Indic (٠١٢٣٤٥٦٧٨٩) and Eastern Arabic / Persian (۰۱۲۳۴۵۶۷۸۹)
+ * digits to ASCII (0-9). Leaves letters and other characters untouched.
+ * Used in real time on every keystroke in numeric input fields.
+ */
+export function toAsciiDigits(input: string): string {
+  if (!input) return input;
+  return input.replace(/[\u0660-\u0669\u06F0-\u06F9]/g, (ch) => {
+    const code = ch.charCodeAt(0);
+    // Arabic-Indic: U+0660..U+0669  → 0..9
+    if (code >= 0x0660 && code <= 0x0669) return String(code - 0x0660);
+    // Extended Arabic-Indic (Persian/Urdu): U+06F0..U+06F9 → 0..9
+    return String(code - 0x06f0);
+  });
+}

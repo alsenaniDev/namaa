@@ -11,6 +11,16 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { COMMITMENT_CATEGORIES } from '@/types';
+import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
+
+interface FormErrors {
+  title?: string;
+  amount?: string;
+  dueDay?: string;
+  startDate?: string;
+  endDate?: string;
+  notes?: string;
+}
 
 export default function AddCommitmentScreen() {
   const colors = useColors();
@@ -35,21 +45,39 @@ export default function AddCommitmentScreen() {
   const [endDate, setEndDate] = useState(existing?.endDate ?? '');
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; amount?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validate = () => {
-    const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = t.forms.errorTitle;
-    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
+  const clearError = (field: keyof FormErrors) =>
+    setErrors((e) => ({ ...e, [field]: undefined }));
+
+  const validate = (): boolean => {
+    const errs: FormErrors = {
+      title: validateTitle(title, t),
+      amount: validateAmount(amount, t),
+      dueDay: validateDay(dueDay, t, true),
+      startDate: validateDate(startDate, t, false),
+      endDate: validateDate(endDate, t, false),
+      notes: validateNotes(notes, t),
+    };
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return !Object.values(errs).some(Boolean);
   };
 
   const handleSave = async () => {
     if (!validate()) return;
     setLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const data = { title: title.trim(), category: category as any, amount: parseFloat(amount), dueDay: parseInt(dueDay) || 1, isRecurring, isActive, startDate: startDate || undefined, endDate: endDate || undefined, notes: notes.trim() || undefined };
+    const data = {
+      title: title.trim(),
+      category: category as any,
+      amount: parseFloat(amount),
+      dueDay: parseInt(dueDay, 10) || 1,
+      isRecurring,
+      isActive,
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      notes: notes.trim() || undefined,
+    };
     if (isEdit && params.id) await updateCommitment(params.id, data);
     else await addCommitment(data);
     setLoading(false);
@@ -67,10 +95,10 @@ export default function AddCommitmentScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Input label={t.forms.commitmentTitle} value={title} onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }} placeholder={t.forms.commitmentTitle} error={errors.title} autoFocus />
-      <Input label={t.forms.commitmentAmountLabel} value={amount} onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} />
+      <Input label={t.forms.commitmentTitle} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.commitmentTitle} error={errors.title} maxLength={FIELD_LIMITS.title} autoFocus />
+      <Input label={t.forms.commitmentAmountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} maxLength={16} />
       <Select label={t.forms.commitmentCategoryLabel} value={category} options={allCategories.map((c) => ({ label: c, value: c }))} onValueChange={(v) => setCategory(v as typeof category)} />
-      <Input label={t.forms.dueDayLabel} value={dueDay} onChangeText={setDueDay} placeholder="1" keyboardType="number-pad" />
+      <Input label={t.forms.dueDayLabel} value={dueDay} onChangeText={(v) => { setDueDay(v); clearError('dueDay'); }} placeholder="1" keyboardType="number-pad" error={errors.dueDay} maxLength={2} />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
         <Switch value={isRecurring} onValueChange={setIsRecurring} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
@@ -88,9 +116,9 @@ export default function AddCommitmentScreen() {
         </View>
       </View>
 
-      <Input label={t.forms.startDateLabel} value={startDate} onChangeText={setStartDate} placeholder="2024-01-01" />
-      <Input label={t.forms.endDateLabel} value={endDate} onChangeText={setEndDate} placeholder="2026-12-31" />
-      <Input label={t.forms.notesLabel} value={notes} onChangeText={setNotes} placeholder="" multiline numberOfLines={3} style={{ height: 80, textAlignVertical: 'top' }} />
+      <Input label={t.forms.startDateLabel} value={startDate} onChangeText={(v) => { setStartDate(v); clearError('startDate'); }} placeholder="2024-01-01" keyboardType="numbers-and-punctuation" error={errors.startDate} maxLength={10} />
+      <Input label={t.forms.endDateLabel} value={endDate} onChangeText={(v) => { setEndDate(v); clearError('endDate'); }} placeholder="2026-12-31" keyboardType="numbers-and-punctuation" error={errors.endDate} maxLength={10} />
+      <Input label={t.forms.notesLabel} value={notes} onChangeText={(v) => { setNotes(v); clearError('notes'); }} placeholder="" multiline numberOfLines={3} maxLength={FIELD_LIMITS.notes} error={errors.notes} style={{ height: 80, textAlignVertical: 'top' }} />
       <Button title={loading ? t.common.saving : isEdit ? t.commitments.updateBtn : t.commitments.addBtn} onPress={handleSave} fullWidth loading={loading} style={{ marginTop: 8 }} />
       {isEdit ? <Button title={t.commitments.deleteBtn} onPress={handleDelete} variant="destructive" fullWidth style={{ marginTop: 10 }} disabled={loading} /> : null}
     </ScrollView>

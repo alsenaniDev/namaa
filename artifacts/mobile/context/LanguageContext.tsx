@@ -16,10 +16,16 @@ const LanguageContext = createContext<LanguageContextType>({
   setLanguage: async () => {},
 });
 
-// Synchronous initial state — used for the very first render before AsyncStorage resolves.
-// On native: _layout.tsx already called I18nManager.forceRTL(true) at module level,
-// so the native bridge is RTL from the start. We default the JS state to 'ar' to match.
-// On web: read from localStorage so there is no direction flash.
+/**
+ * Synchronous initial language — used for the very first render before the
+ * AsyncStorage hydration completes.
+ *
+ *  • Web:    read from localStorage (synchronous), default Arabic.
+ *  • Native: derive from I18nManager.isRTL, which is persisted across launches
+ *            in NSUserDefaults / SharedPreferences.  After the first install
+ *            bootstrap below, isRTL always matches the user's saved language,
+ *            so this gives a flash-free first render.
+ */
 function getInitialLanguage(): Language {
   if (Platform.OS === 'web') {
     try {
@@ -31,37 +37,87 @@ function getInitialLanguage(): Language {
     } catch {}
     return 'ar';
   }
-  // Native: always default to 'ar'. The module-level forceRTL(true) in _layout.tsx
-  // has already set the native bridge to RTL, so this matches that state.
-  return 'ar';
+  // Native: trust the persisted RTL flag.
+  return I18nManager.isRTL ? 'ar' : 'en';
+}
+
+async function reloadApp() {
+  try {
+    await Updates.reloadAsync();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function showRestartAlert(lang: Language) {
+  Alert.alert(
+    lang === 'ar' ? 'إعادة تشغيل مطلوبة' : 'Restart Required',
+    lang === 'ar'
+      ? 'أغلق التطبيق وافتحه مرة أخرى لتطبيق اتجاه اللغة.'
+      : 'Please close and reopen the app to apply the language direction.',
+    [{ text: lang === 'ar' ? 'حسناً' : 'OK' }],
+  );
 }
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
-  // On mount: hydrate from persisted storage. We only update the JS language state
-  // here — we do NOT call forceRTL in this effect to avoid oscillating with the
-  // module-level forceRTL(true) that already ran in _layout.tsx.
+  // On mount: reconcile persisted language with the native RTL flag.
+  // Three cases on native:
+  //   (a) First install   — no stored value. Default to Arabic, force RTL, restart.
+  //   (b) In sync         — stored matches I18nManager.isRTL. Just hydrate state.
+  //   (c) Out of sync     — stored disagrees with native flag (rare; recover by
+  //                         re-applying forceRTL and restarting).
   useEffect(() => {
-    AsyncStorage.getItem(LANG_KEY).then((val) => {
-      const lang: Language = val === 'ar' || val === 'en' ? val : 'ar';
-      setLanguageState(lang);
+    let cancelled = false;
+    AsyncStorage.getItem(LANG_KEY).then(async (val) => {
+      if (cancelled) return;
+      const stored: Language | null = val === 'ar' || val === 'en' ? val : null;
 
       if (Platform.OS === 'web') {
-        if (typeof localStorage === 'undefined') return;
-        if (localStorage.getItem(LANG_KEY) !== lang) {
+        const lang: Language = stored ?? 'ar';
+        setLanguageState(lang);
+        if (typeof localStorage !== 'undefined' && localStorage.getItem(LANG_KEY) !== lang) {
           localStorage.setItem(LANG_KEY, lang);
         }
-        // Web: reload if direction changed since the synchronous initial setup.
         const initialWasRTL = getInitialLanguage() !== 'en';
         const shouldBeRTL = lang === 'ar';
-        if (initialWasRTL !== shouldBeRTL) {
+        if (initialWasRTL !== shouldBeRTL && typeof window !== 'undefined') {
           window.location.reload();
         }
+        return;
       }
-      // Native: no forceRTL here — _layout.tsx module-level handles it.
-      // I18nManager.isRTL is already true (set synchronously before first render).
+
+      // ─── Native ───
+      const nativeIsRTL = I18nManager.isRTL;
+
+      // (a) First install — no preference yet. Bootstrap to Arabic.
+      if (stored === null) {
+        await AsyncStorage.setItem(LANG_KEY, 'ar');
+        setLanguageState('ar');
+        if (!nativeIsRTL) {
+          I18nManager.allowRTL(true);
+          I18nManager.forceRTL(true);
+          const reloaded = await reloadApp();
+          if (!reloaded) showRestartAlert('ar');
+        }
+        return;
+      }
+
+      // (b) / (c) — hydrate, and realign native if needed.
+      setLanguageState(stored);
+      const shouldBeRTL = stored === 'ar';
+      if (nativeIsRTL !== shouldBeRTL) {
+        I18nManager.allowRTL(true);
+        I18nManager.forceRTL(shouldBeRTL);
+        const reloaded = await reloadApp();
+        if (!reloaded) showRestartAlert(stored);
+      }
     });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const setLanguage = async (lang: Language) => {
@@ -78,26 +134,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Native: update the native RTL bridge flag for the next cold start.
-    // Our useDir() hook is reactive, so the UI direction switches immediately
-    // without needing a reload. The native system behaviours (cursor position,
-    // ScrollView inertia) will align on the next cold start.
+    // Native: align the persisted RTL flag with the chosen language.
     const shouldBeRTL = lang === 'ar';
-    I18nManager.allowRTL(shouldBeRTL);
-    I18nManager.forceRTL(shouldBeRTL);
-
-    try {
-      await Updates.reloadAsync();
-    } catch {
-      // expo-updates OTA not configured — show a one-time restart prompt so
-      // users know to close and reopen the app for full native direction change.
-      Alert.alert(
-        lang === 'ar' ? 'تم تغيير اللغة' : 'Language Changed',
-        lang === 'ar'
-          ? 'أعد تشغيل التطبيق لتطبيق التغييرات بالكامل'
-          : 'Please restart the app to fully apply all changes.',
-        [{ text: lang === 'ar' ? 'حسناً' : 'OK' }],
-      );
+    if (I18nManager.isRTL !== shouldBeRTL) {
+      I18nManager.allowRTL(true);
+      I18nManager.forceRTL(shouldBeRTL);
+      const reloaded = await reloadApp();
+      if (!reloaded) showRestartAlert(lang);
     }
   };
 

@@ -35,8 +35,7 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-updates",
-      "./plugins/withForceRTL"
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -20,20 +20,15 @@ import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
 import { isRTL } from '@/utils/dir';
 
-// ─── SYNCHRONOUS PRE-RENDER DIRECTION SETUP ──────────────────────────────────
-// These run at module evaluation time — before the first React render — so the
-// native bridge and Yoga layout engine both start in the correct direction.
+// ─── WEB-ONLY SYNCHRONOUS DIRECTION SETUP ────────────────────────────────────
+// Web has no I18nManager persistence, so we set CSS direction from localStorage
+// (read by isRTL helper) before first paint to avoid a flash.
+// Native direction is fully managed by LanguageContext + I18nManager NSUserDefaults.
 
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
-  // Web: set CSS direction immediately so there is no LTR flash.
   document.documentElement.style.direction = isRTL ? 'rtl' : 'ltr';
 } else {
-  // Native (iOS / Android): forceRTL must be called BEFORE any view is created.
-  // This app defaults to Arabic (RTL). The value is persisted by React Native in
-  // NSUserDefaults / SharedPreferences so subsequent cold starts stay RTL.
-  // LanguageContext.setLanguage handles switching to LTR for English users.
   I18nManager.allowRTL(true);
-  I18nManager.forceRTL(true);
 }
 
 SplashScreen.preventAutoHideAsync();

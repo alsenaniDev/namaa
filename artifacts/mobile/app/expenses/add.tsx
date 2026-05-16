@@ -10,6 +10,14 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { EXPENSE_CATEGORIES } from '@/types';
+import { FIELD_LIMITS, validateAmount, validateDate, validateNotes, validateTitle } from '@/utils/validation';
+
+interface FormErrors {
+  title?: string;
+  amount?: string;
+  expenseDate?: string;
+  notes?: string;
+}
 
 export default function AddExpenseScreen() {
   const colors = useColors();
@@ -31,14 +39,20 @@ export default function AddExpenseScreen() {
   const [expenseDate, setExpenseDate] = useState(existing?.expenseDate ?? todayStr);
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; amount?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validate = () => {
-    const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = t.forms.errorTitle;
-    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
+  const clearError = (field: keyof FormErrors) =>
+    setErrors((e) => ({ ...e, [field]: undefined }));
+
+  const validate = (): boolean => {
+    const errs: FormErrors = {
+      title: validateTitle(title, t),
+      amount: validateAmount(amount, t),
+      expenseDate: validateDate(expenseDate, t, true),
+      notes: validateNotes(notes, t),
+    };
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return !Object.values(errs).some(Boolean);
   };
 
   const handleSave = async () => {
@@ -87,19 +101,21 @@ export default function AddExpenseScreen() {
       <Input
         label={t.forms.titleLabel}
         value={title}
-        onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }}
+        onChangeText={(v) => { setTitle(v); clearError('title'); }}
         placeholder={t.forms.titleLabel}
         error={errors.title}
+        maxLength={FIELD_LIMITS.title}
         autoFocus
       />
 
       <Input
         label={t.forms.amountLabel}
         value={amount}
-        onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }}
+        onChangeText={(v) => { setAmount(v); clearError('amount'); }}
         placeholder="0.00"
         keyboardType="decimal-pad"
         error={errors.amount}
+        maxLength={16}
       />
 
       <Select
@@ -112,18 +128,22 @@ export default function AddExpenseScreen() {
       <Input
         label={t.forms.receivedDateLabel}
         value={expenseDate}
-        onChangeText={setExpenseDate}
+        onChangeText={(v) => { setExpenseDate(v); clearError('expenseDate'); }}
         placeholder="YYYY-MM-DD"
-        keyboardType="default"
+        keyboardType="numbers-and-punctuation"
+        error={errors.expenseDate}
+        maxLength={10}
       />
 
       <Input
         label={t.forms.notesLabel}
         value={notes}
-        onChangeText={setNotes}
+        onChangeText={(v) => { setNotes(v); clearError('notes'); }}
         placeholder=""
         multiline
         numberOfLines={3}
+        maxLength={FIELD_LIMITS.notes}
+        error={errors.notes}
         style={{ height: 80, textAlignVertical: 'top' }}
       />
 

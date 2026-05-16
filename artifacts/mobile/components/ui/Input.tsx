@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
+import { toAsciiDigits } from '@/utils/format';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -11,10 +12,30 @@ interface InputProps extends TextInputProps {
   onRightIconPress?: () => void;
 }
 
-export function Input({ label, error, rightIcon, onRightIconPress, style, ...props }: InputProps) {
+// Keyboards where the user is expected to enter digits — for these we convert
+// Arabic-Indic / Persian digits to ASCII on every keystroke in real time.
+const NUMERIC_KEYBOARDS = new Set([
+  'number-pad',
+  'decimal-pad',
+  'numeric',
+  'numbers-and-punctuation',
+  'phone-pad',
+]);
+
+export function Input({ label, error, rightIcon, onRightIconPress, style, onChangeText, keyboardType, ...props }: InputProps) {
   const colors = useColors();
   const dir = useDir();
   const [focused, setFocused] = useState(false);
+
+  const shouldConvertDigits = !!keyboardType && NUMERIC_KEYBOARDS.has(keyboardType);
+
+  const handleChangeText = useCallback(
+    (text: string) => {
+      const converted = shouldConvertDigits ? toAsciiDigits(text) : text;
+      onChangeText?.(converted);
+    },
+    [onChangeText, shouldConvertDigits],
+  );
 
   return (
     <View style={styles.container}>
@@ -36,6 +57,8 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, ...pro
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           textAlign={dir.textAlign}
+          keyboardType={keyboardType}
+          onChangeText={handleChangeText}
           {...props}
         />
         {rightIcon ? (

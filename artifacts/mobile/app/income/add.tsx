@@ -11,6 +11,15 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { INCOME_TYPES } from '@/types';
+import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
+
+interface FormErrors {
+  title?: string;
+  amount?: string;
+  receivedDay?: string;
+  receivedDate?: string;
+  notes?: string;
+}
 
 export default function AddIncomeScreen() {
   const colors = useColors();
@@ -33,21 +42,36 @@ export default function AddIncomeScreen() {
   const [receivedDate, setReceivedDate] = useState(existing?.receivedDate ?? new Date().toISOString().split('T')[0]);
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; amount?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validate = () => {
-    const errs: { title?: string; amount?: string } = {};
-    if (!title.trim()) errs.title = t.forms.errorTitle;
-    if (!amount || parseFloat(amount) <= 0) errs.amount = t.forms.errorAmount;
+  const clearError = (field: keyof FormErrors) =>
+    setErrors((e) => ({ ...e, [field]: undefined }));
+
+  const validate = (): boolean => {
+    const errs: FormErrors = {
+      title: validateTitle(title, t),
+      amount: validateAmount(amount, t),
+      notes: validateNotes(notes, t),
+      receivedDay: isRecurring ? validateDay(receivedDay, t, true) : undefined,
+      receivedDate: !isRecurring ? validateDate(receivedDate, t, true) : undefined,
+    };
     setErrors(errs);
-    return Object.keys(errs).length === 0;
+    return !Object.values(errs).some(Boolean);
   };
 
   const handleSave = async () => {
     if (!validate()) return;
     setLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const data = { title: title.trim(), amount: parseFloat(amount), type: type as any, isRecurring, receivedDay: parseInt(receivedDay) || 1, receivedDate: isRecurring ? undefined : receivedDate, notes: notes.trim() || undefined };
+    const data = {
+      title: title.trim(),
+      amount: parseFloat(amount),
+      type: type as any,
+      isRecurring,
+      receivedDay: parseInt(receivedDay, 10) || 1,
+      receivedDate: isRecurring ? undefined : receivedDate,
+      notes: notes.trim() || undefined,
+    };
     if (isEdit && params.id) await updateIncome(params.id, data);
     else await addIncome(data);
     setLoading(false);
@@ -65,8 +89,8 @@ export default function AddIncomeScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); setErrors((e) => ({ ...e, title: undefined })); }} placeholder={t.forms.titleLabel} error={errors.title} autoFocus />
-      <Input label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); setErrors((e) => ({ ...e, amount: undefined })); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} />
+      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleLabel} error={errors.title} maxLength={FIELD_LIMITS.title} autoFocus />
+      <Input label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} maxLength={16} />
       <Select label={t.forms.typeLabel} value={type} options={allTypes.map((t) => ({ label: t, value: t }))} onValueChange={(v) => setType(v as typeof type)} />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
@@ -78,11 +102,11 @@ export default function AddIncomeScreen() {
       </View>
 
       {isRecurring
-        ? <Input label={t.forms.recurringDayLabel} value={receivedDay} onChangeText={setReceivedDay} placeholder="1" keyboardType="number-pad" />
-        : <Input label={t.forms.receivedDateLabel} value={receivedDate} onChangeText={setReceivedDate} placeholder="YYYY-MM-DD" />
+        ? <Input label={t.forms.recurringDayLabel} value={receivedDay} onChangeText={(v) => { setReceivedDay(v); clearError('receivedDay'); }} placeholder="1" keyboardType="number-pad" error={errors.receivedDay} maxLength={2} />
+        : <Input label={t.forms.receivedDateLabel} value={receivedDate} onChangeText={(v) => { setReceivedDate(v); clearError('receivedDate'); }} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" error={errors.receivedDate} maxLength={10} />
       }
 
-      <Input label={t.forms.notesLabel} value={notes} onChangeText={setNotes} placeholder="" multiline numberOfLines={3} style={{ height: 80, textAlignVertical: 'top' }} />
+      <Input label={t.forms.notesLabel} value={notes} onChangeText={(v) => { setNotes(v); clearError('notes'); }} placeholder="" multiline numberOfLines={3} maxLength={FIELD_LIMITS.notes} error={errors.notes} style={{ height: 80, textAlignVertical: 'top' }} />
       <Button title={loading ? t.common.saving : isEdit ? t.income.updateBtn : t.income.addBtn} onPress={handleSave} fullWidth loading={loading} style={{ marginTop: 8 }} />
       {isEdit ? <Button title={t.income.deleteBtn} onPress={handleDelete} variant="destructive" fullWidth style={{ marginTop: 10 }} disabled={loading} /> : null}
     </ScrollView>

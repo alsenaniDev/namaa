@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular', flexShrink: 1 },
-  cardRight: { alignItems: 'flex-end', justifyContent: 'center', gap: 3, flexShrink: 0, minWidth: 64 },
-  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: 'left' },
+  cardRight: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold', textAlign: 'right' },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

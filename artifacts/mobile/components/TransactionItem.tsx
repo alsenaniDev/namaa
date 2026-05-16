@@ -124,15 +124,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   right: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    gap: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     flexShrink: 0,
-    minWidth: 64,
   },
   amount: {
     fontSize: 14,
     fontFamily: 'Inter_700Bold',
-    textAlign: 'left',
+    textAlign: 'right',
   },
 });

@@ -53,7 +53,6 @@ export default function CommitmentsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      {/* Summary Header */}
       <Card style={styles.summaryCard} padding={14}>
         <Text style={[styles.summaryLabel, { color: colors.mutedForeground }]}>إجمالي الالتزامات الشهرية</Text>
         <Text style={[styles.summaryAmount, { color: colors.commitment }]}>

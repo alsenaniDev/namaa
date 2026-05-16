@@ -26,13 +26,12 @@ export default function DashboardScreen() {
   const dayName = today.toLocaleDateString('ar-SA', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: topPad + 16, paddingBottom: insets.bottom + bottomPad + 90 }]}
+      contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: insets.bottom + bottomPad + 90 }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Greeting */}

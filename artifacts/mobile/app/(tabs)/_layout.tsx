@@ -1,58 +1,23 @@
 import { BlurView } from 'expo-blur';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { SymbolView } from 'expo-symbols';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, View, useColorScheme } from 'react-native';
+import { Platform, StyleSheet, View, useColorScheme, TouchableOpacity } from 'react-native';
 import { useColors } from '@/hooks/useColors';
+import { useRouter } from 'expo-router';
 
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>الرئيسية</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="income">
-        <Icon sf={{ default: 'arrow.up.circle', selected: 'arrow.up.circle.fill' }} />
-        <Label>الدخل</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="commitments">
-        <Icon sf={{ default: 'list.bullet.circle', selected: 'list.bullet.circle.fill' }} />
-        <Label>الالتزامات</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="expenses">
-        <Icon sf={{ default: 'cart.circle', selected: 'cart.circle.fill' }} />
-        <Label>المصاريف</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="reports">
-        <Icon sf={{ default: 'chart.bar.circle', selected: 'chart.bar.circle.fill' }} />
-        <Label>التقارير</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings">
-        <Icon sf={{ default: 'gear.circle', selected: 'gear.circle.fill' }} />
-        <Label>الإعدادات</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
-
-function ClassicTabLayout() {
+export default function TabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
+  const router = useRouter();
 
   const tabIcon = (name: string) =>
-    ({ color }: { color: string }) =>
-      isIOS ? (
-        <SymbolView name={name} tintColor={color} size={24} />
-      ) : (
-        <Feather name={name as any} size={22} color={color} />
-      );
+    ({ color }: { color: string }) => (
+      <Feather name={name as any} size={22} color={color} />
+    );
 
   return (
     <Tabs
@@ -79,55 +44,66 @@ function ClassicTabLayout() {
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            style={{ marginLeft: 16, padding: 4 }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="settings" size={22} color={colors.foreground} />
+          </TouchableOpacity>
+        ),
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'الرئيسية',
-          tabBarIcon: tabIcon(isIOS ? 'house' : 'home'),
+          tabBarIcon: tabIcon('home'),
+          headerRight: () => (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+              <TouchableOpacity
+                onPress={() => router.push('/reports')}
+                style={{ padding: 4, marginRight: 4 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="bar-chart-2" size={22} color={colors.foreground} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => router.push('/settings')}
+                style={{ padding: 4, marginRight: 8 }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="settings" size={22} color={colors.foreground} />
+              </TouchableOpacity>
+            </View>
+          ),
         }}
       />
       <Tabs.Screen
         name="income"
         options={{
           title: 'الدخل',
-          tabBarIcon: tabIcon(isIOS ? 'arrow.up.circle' : 'trending-up'),
+          tabBarIcon: tabIcon('trending-up'),
         }}
       />
       <Tabs.Screen
         name="commitments"
         options={{
           title: 'الالتزامات',
-          tabBarIcon: tabIcon(isIOS ? 'list.bullet.circle' : 'credit-card'),
+          tabBarIcon: tabIcon('credit-card'),
         }}
       />
       <Tabs.Screen
         name="expenses"
         options={{
           title: 'المصاريف',
-          tabBarIcon: tabIcon(isIOS ? 'cart.circle' : 'shopping-bag'),
+          tabBarIcon: tabIcon('shopping-bag'),
         }}
       />
-      <Tabs.Screen
-        name="reports"
-        options={{
-          title: 'التقارير',
-          tabBarIcon: tabIcon(isIOS ? 'chart.bar.circle' : 'bar-chart-2'),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'الإعدادات',
-          tabBarIcon: tabIcon(isIOS ? 'gear.circle' : 'settings'),
-        }}
-      />
+      {/* Hidden from tab bar — navigated as stack screens */}
+      <Tabs.Screen name="reports" options={{ href: null }} />
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
-}
-
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) return <NativeTabLayout />;
-  return <ClassicTabLayout />;
 }

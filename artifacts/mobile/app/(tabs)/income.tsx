@@ -10,7 +10,7 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import { Income } from '@/types';
+import type { Income } from '@/types';
 
 export default function IncomeScreen() {
   const colors = useColors();

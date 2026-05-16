@@ -60,13 +60,16 @@ function AppLayout() {
         headerTitleAlign: 'center',
         headerShadowVisible: false,
         headerTintColor: colors.primary,
+        headerBackTitle: 'رجوع',
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="setup" options={{ headerShown: false }} />
-      <Stack.Screen name="income/add" options={{ presentation: 'modal', title: 'إضافة دخل' }} />
-      <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: 'إضافة التزام' }} />
-      <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: 'إضافة مصروف' }} />
+      <Stack.Screen name="reports" options={{ title: 'التقارير' }} />
+      <Stack.Screen name="settings" options={{ title: 'الإعدادات' }} />
+      <Stack.Screen name="income/add" options={{ presentation: 'modal', title: 'إضافة / تعديل دخل' }} />
+      <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: 'إضافة / تعديل التزام' }} />
+      <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: 'إضافة / تعديل مصروف' }} />
     </Stack>
   );
 }

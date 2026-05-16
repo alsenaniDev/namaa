@@ -48,11 +48,11 @@ export default function ReportsScreen() {
       {/* Month Selector */}
       <View style={[styles.monthBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <TouchableOpacity onPress={() => changeMonth(-1)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Feather name={dir.chevronBack as any} size={24} color={colors.primary} />
+          <Feather name="chevron-left" size={24} color={colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.monthLabel, { color: colors.foreground }]}>{formatMonthYear(month, year)}</Text>
         <TouchableOpacity onPress={() => changeMonth(1)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-          <Feather name={dir.chevronDetail as any} size={24} color={colors.primary} />
+          <Feather name="chevron-right" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 

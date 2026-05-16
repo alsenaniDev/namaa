@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   right: {
-    flexDirection: 'row',
+    flexDirection: 'row-reverse',
     alignItems: 'center',
     gap: 4,
     flexShrink: 0,

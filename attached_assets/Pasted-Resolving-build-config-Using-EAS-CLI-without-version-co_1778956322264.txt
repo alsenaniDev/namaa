@@ -1,0 +1,65 @@
+Resolving build config...
+Using EAS CLI without version control system is not recommended, use this mode only if you know what you are doing.
+Resolved "production" environment for the build. Learn more: https://docs.expo.dev/eas/environment-variables/#setting-the-environment-for-your-builds
+No environment variables with visibility "Plain text" and "Sensitive" found for the "production" environment on EAS.
+Specified value for "ios.bundleIdentifier" in app.json is ignored because an ios directory was detected in the project.
+EAS Build will use the value found in the native code.
+- Incrementing buildNumber from 6 to 7.
+✔ Incremented buildNumber from 6 to 7.
+✔ Using remote iOS credentials (Expo server)
+Distribution Certificate is not validated for non-interactive builds.
+Skipping Provisioning Profile validation on Apple Servers because we aren't authenticated.
+Project Credentials Configuration
+Project                   @replit-private-050be8a4-32e2-4357-bccd-70e706363fdc/maly-idarh-almyzanyh-alshkhsyh
+Bundle Identifier         app.replit.maly-idarhalmyzanyhalshkhsyh
+                          
+App Store Configuration   
+                          
+Distribution Certificate  
+Serial Number             2110EC2B32ABF55CB649E6C9185A641C
+Expiration Date           Sun, 16 May 2027 02:32:34 PDT
+Apple Team                ZX53HH9VG7 (Mohammed Asiri|1502924039|1)
+Updated                   7 hours ago
+                          
+Provisioning Profile      
+Developer Portal ID       RLX48S24UP
+Status                    active
+Expiration                Sun, 16 May 2027 02:32:34 PDT
+Apple Team                ZX53HH9VG7 (Mohammed Asiri|1502924039|1)
+Updated                   7 hours ago
+All credentials are ready to build @replit-private-050be8a4-32e2-4357-bccd-70e706363fdc/maly-idarh-almyzanyh-alshkhsyh (app.replit.maly-idarhalmyzanyhalshkhsyh)
+PluginError: Unable to resolve a valid config plugin for ./plugins/withForceRTL.
+• No "app.plugin.js" file found in ./plugins/withForceRTL: config plugins are typically exported from an "app.plugin.js" file in the package root.
+• main export of ./plugins/withForceRTL does not appear to be a config plugin: the following error was thrown when importing /Users/expo/workingdir/build/artifacts/mobile/plugins/withForceRTL.js: Cannot find module '@expo/config-plugins'
+Require stack:
+- /Users/expo/workingdir/build/artifacts/mobile/plugins/withForceRTL.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withStaticPlugin.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withPlugins.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/index.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo@54.0.34_@babel+core@7.29.0_@expo+metro-runtime@6.1.2_expo-router@6.0.23_react-nati_3cc7b2874fa1147af8a667959c900031/node_modules/expo/config-plugins.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo-updates@55.0.22_expo@54.0.34_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/expo-updates/cli/build/syncConfigurationToNativeAsync.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo-updates@55.0.22_expo@54.0.34_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/expo-updates/cli/build/syncConfigurationToNative.js MODULE_NOT_FOUND
+Verify that ./plugins/withForceRTL includes a config plugin. If it does not, then remove the entry from plugins in your app config file. Learn more: https://docs.expo.dev/guides/config-plugins/
+Error: Cannot find module '@expo/config-plugins'
+Require stack:
+- /Users/expo/workingdir/build/artifacts/mobile/plugins/withForceRTL.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/utils/plugin-resolver.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withStaticPlugin.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/plugins/withPlugins.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/@expo+config-plugins@54.0.4/node_modules/@expo/config-plugins/build/index.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo@54.0.34_@babel+core@7.29.0_@expo+metro-runtime@6.1.2_expo-router@6.0.23_react-nati_3cc7b2874fa1147af8a667959c900031/node_modules/expo/config-plugins.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo-updates@55.0.22_expo@54.0.34_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/expo-updates/cli/build/syncConfigurationToNativeAsync.js
+- /Users/expo/workingdir/build/node_modules/.pnpm/expo-updates@55.0.22_expo@54.0.34_react-native@0.81.5_@babel+core@7.29.0_@types+react@19.1.17_react@19.1.0__react@19.1.0/node_modules/expo-updates/cli/build/syncConfigurationToNative.js
+    at Module._resolveFilename (node:internal/modules/cjs/loader:1212:15)
+    at Module._load (node:internal/modules/cjs/loader:1043:27)
+    at Module.require (node:internal/modules/cjs/loader:1298:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (/Users/expo/workingdir/build/artifacts/mobile/plugins/withForceRTL.js:11:29)
+    at Module._compile (node:internal/modules/cjs/loader:1529:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
+    at Module.load (node:internal/modules/cjs/loader:1275:32)
+    at Module._load (node:internal/modules/cjs/loader:1096:12)
+    at Module.require (node:internal/modules/cjs/loader:1298:19)
+Error: build:internal command failed.
+Failed to run eas build:internal

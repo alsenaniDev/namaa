@@ -6,6 +6,7 @@ import { Platform, StyleSheet, View, useColorScheme, TouchableOpacity } from 're
 import { useColors } from '@/hooks/useColors';
 import { useRouter } from 'expo-router';
 import { useT } from '@/hooks/useT';
+import { useDir } from '@/hooks/useDir';
 
 export default function TabLayout() {
   const colors = useColors();
@@ -15,11 +16,20 @@ export default function TabLayout() {
   const isWeb = Platform.OS === 'web';
   const router = useRouter();
   const t = useT();
+  const dir = useDir();
 
   const tabIcon = (name: string) =>
     ({ color }: { color: string }) => (
       <Feather name={name as any} size={22} color={color} />
     );
+
+  const headerIconsStyle = dir.isRTL
+    ? { flexDirection: dir.row, alignItems: 'center', marginRight: 12 } as const
+    : { flexDirection: dir.row, alignItems: 'center', marginLeft: 12 } as const;
+
+  const gearStyle = dir.isRTL
+    ? { marginRight: 16, padding: 4 } as const
+    : { marginLeft: 16, padding: 4 } as const;
 
   return (
     <Tabs
@@ -34,6 +44,7 @@ export default function TabLayout() {
         tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
         tabBarStyle: {
           position: 'absolute',
+          flexDirection: dir.row,
           backgroundColor: isIOS ? 'transparent' : colors.background,
           borderTopWidth: isWeb ? 1 : StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
@@ -49,7 +60,7 @@ export default function TabLayout() {
         headerRight: () => (
           <TouchableOpacity
             onPress={() => router.push('/settings')}
-            style={{ marginLeft: 16, padding: 4 }}
+            style={gearStyle}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Feather name="settings" size={22} color={colors.foreground} />
@@ -63,17 +74,17 @@ export default function TabLayout() {
           title: t.tabs.home,
           tabBarIcon: tabIcon('home'),
           headerRight: () => (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 12 }}>
+            <View style={headerIconsStyle}>
               <TouchableOpacity
                 onPress={() => router.push('/reports')}
-                style={{ padding: 4, marginRight: 4 }}
+                style={dir.isRTL ? { padding: 4, marginLeft: 4 } : { padding: 4, marginRight: 4 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Feather name="bar-chart-2" size={22} color={colors.foreground} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => router.push('/settings')}
-                style={{ padding: 4, marginRight: 8 }}
+                style={dir.isRTL ? { padding: 4, marginLeft: 8 } : { padding: 4, marginRight: 8 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Feather name="settings" size={22} color={colors.foreground} />

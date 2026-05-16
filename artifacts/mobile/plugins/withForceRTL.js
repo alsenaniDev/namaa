@@ -1,11 +1,14 @@
 /**
- * Expo config plugin: forces RTL at the iOS native layer.
+ * Expo config plugin: forces RTL at the iOS native layer for React Native.
  *
- * Inserts `UIView.appearance().semanticContentAttribute = .forceRightToLeft`
- * (Swift) or `[UIView appearance].semanticContentAttribute = ...` (ObjC)
- * at the top of `application(_:didFinishLaunchingWithOptions:)` in the iOS
- * AppDelegate.  This runs BEFORE the React Native JavaScript bundle loads,
- * ensuring the native root view and all UIKit components start in RTL mode.
+ * React Native's layout engine (Yoga) reads RTL state from RCTI18nUtil, which
+ * itself reads from NSUserDefaults keys "RCTI18nUtil_allowRTL" and
+ * "RCTI18nUtil_forceRTL". These MUST be set BEFORE the React bridge starts,
+ * otherwise the first JS frame renders LTR and a subsequent forceRTL(true)
+ * only takes effect on the next cold launch.
+ *
+ * We also set UIView.appearance().semanticContentAttribute so native UIKit
+ * chrome (nav bar, modals, etc.) matches.
  */
 
 const { withAppDelegate } = require('@expo/config-plugins');
@@ -20,35 +23,45 @@ module.exports = function withForceRTL(config) {
 
     try {
       if (language === 'swift') {
-        // Swift AppDelegate (Expo SDK 50+, new architecture)
+        const swiftSnippet =
+          '    // ===== withForceRTL: lock app to RTL for Arabic =====\n' +
+          '    let defaults = UserDefaults.standard\n' +
+          '    defaults.set(true, forKey: "RCTI18nUtil_allowRTL")\n' +
+          '    defaults.set(true, forKey: "RCTI18nUtil_forceRTL")\n' +
+          '    defaults.synchronize()\n' +
+          '    UIView.appearance().semanticContentAttribute = .forceRightToLeft\n' +
+          '    // ===== end withForceRTL =====';
+
         const result = mergeContents({
           tag: TAG,
           src: contents,
-          newSrc:
-            '    // Force RTL for Arabic-first app (added by withForceRTL plugin)\n' +
-            '    UIView.appearance().semanticContentAttribute = .forceRightToLeft',
-          anchor: /override\s+func\s+application\s*\(.*didFinishLaunchingWithOptions.*\)\s*->\s*Bool\s*\{/,
+          newSrc: swiftSnippet,
+          anchor: /func\s+application\s*\([\s\S]*?didFinishLaunchingWithOptions[\s\S]*?\)\s*->\s*Bool\s*\{/,
           offset: 1,
           comment: '//',
         });
         modResults.contents = result.contents;
       } else {
-        // ObjC / ObjC++ AppDelegate (.m / .mm)
+        const objcSnippet =
+          '  // ===== withForceRTL: lock app to RTL for Arabic =====\n' +
+          '  NSUserDefaults *_rtlDefaults = [NSUserDefaults standardUserDefaults];\n' +
+          '  [_rtlDefaults setBool:YES forKey:@"RCTI18nUtil_allowRTL"];\n' +
+          '  [_rtlDefaults setBool:YES forKey:@"RCTI18nUtil_forceRTL"];\n' +
+          '  [_rtlDefaults synchronize];\n' +
+          '  [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;\n' +
+          '  // ===== end withForceRTL =====';
+
         const result = mergeContents({
           tag: TAG,
           src: contents,
-          newSrc:
-            '  // Force RTL for Arabic-first app (added by withForceRTL plugin)\n' +
-            '  [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;',
-          anchor: /application:.*didFinishLaunchingWithOptions[^{]*\{/,
+          newSrc: objcSnippet,
+          anchor: /application:[\s\S]*?didFinishLaunchingWithOptions[\s\S]*?\{/,
           offset: 1,
           comment: '//',
         });
         modResults.contents = result.contents;
       }
     } catch (e) {
-      // If the anchor isn't found (unexpected AppDelegate format), warn but
-      // don't fail the build — the JS-layer forceRTL in index.js still applies.
       console.warn('[withForceRTL] Could not patch AppDelegate:', e.message);
     }
 

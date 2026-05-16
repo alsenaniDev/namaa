@@ -33,6 +33,7 @@ interface AppContextType {
   loadSampleData: () => Promise<void>;
   getMonthlyTotals: (month: number, year: number) => MonthlyTotals;
   exportData: () => Promise<string>;
+  importData: (json: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -227,6 +228,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const exportData = useCallback(() => storage.exportAll(), []);
 
+  const importData = useCallback(async (json: string) => {
+    await storage.importAll(json);
+    const [p, i, c, pay, e, ct] = await Promise.all([
+      storage.getUserProfile(),
+      storage.getIncomes(),
+      storage.getCommitments(),
+      storage.getCommitmentPayments(),
+      storage.getExpenses(),
+      storage.getCustomTypes(),
+    ]);
+    setUserProfile(p);
+    setIncomes(i);
+    setCommitments(c);
+    setCommitmentPayments(pay);
+    setExpenses(e);
+    setCustomTypes(ct);
+  }, []);
+
   return (
     <AppContext.Provider value={{
       userProfile, incomes, commitments, commitmentPayments, expenses, customTypes, isLoading,
@@ -235,7 +254,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid,
       addExpense, updateExpense, deleteExpense,
       addCustomType, removeCustomType,
-      clearAllData, loadSampleData, getMonthlyTotals, exportData,
+      clearAllData, loadSampleData, getMonthlyTotals, exportData, importData,
     }}>
       {children}
     </AppContext.Provider>

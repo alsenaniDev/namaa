@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Alert, Platform, Share, TouchableOpacity, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
@@ -77,7 +78,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
-  const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData } = useApp();
+  const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData, importData } = useApp();
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
   const [name, setName] = useState(userProfile?.name ?? '');
@@ -107,6 +108,52 @@ export default function SettingsScreen() {
         await Share.share({ message: data, title: t.settings.exportShare });
       }
     } catch { Alert.alert(t.common.errorTitle, t.settings.exportError); }
+  };
+
+  const doImport = async (json: string) => {
+    try {
+      await importData(json);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert(t.common.done, t.settings.importSuccess);
+    } catch {
+      Alert.alert(t.common.errorTitle, t.settings.importError);
+    }
+  };
+
+  const pickAndImportNative = async () => {
+    try {
+      const res = await DocumentPicker.getDocumentAsync({ type: ['application/json', 'text/plain', '*/*'], copyToCacheDirectory: true });
+      if (res.canceled || !res.assets?.[0]?.uri) return;
+      const uri = res.assets[0].uri;
+      const response = await fetch(uri);
+      const json = await response.text();
+      Alert.alert(t.settings.importConfirmTitle, t.settings.importConfirmMsg, [
+        { text: t.common.cancel, style: 'cancel' },
+        { text: t.settings.importConfirmBtn, style: 'destructive', onPress: () => doImport(json) },
+      ]);
+    } catch {
+      Alert.alert(t.common.errorTitle, t.settings.importError);
+    }
+  };
+
+  const pickAndImportWeb = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'application/json,.json';
+    input.onchange = async (ev: Event) => {
+      const file = (ev.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const json = await file.text();
+      if (confirm(t.settings.importConfirmMsg)) {
+        await doImport(json);
+      }
+    };
+    input.click();
+  };
+
+  const handleImport = () => {
+    if (Platform.OS === 'web') pickAndImportWeb();
+    else pickAndImportNative();
   };
 
   const handleLoadSample = () => {
@@ -150,6 +197,7 @@ export default function SettingsScreen() {
       {[
         { onPress: handleLoadSample, bg: colors.primary + '0E', border: colors.primary + '35', icon: 'database', ic: colors.primary, title: t.settings.sampleTitle, sub: t.settings.sampleDesc, titleColor: colors.foreground },
         { onPress: handleExport, bg: colors.success + '0E', border: colors.success + '35', icon: 'share-2', ic: colors.success, title: t.settings.exportTitle, sub: t.settings.exportDesc, titleColor: colors.foreground },
+        { onPress: handleImport, bg: colors.primary + '0E', border: colors.primary + '35', icon: 'download', ic: colors.primary, title: t.settings.importTitle, sub: t.settings.importDesc, titleColor: colors.foreground },
         { onPress: handleClearData, bg: colors.danger + '0E', border: colors.danger + '35', icon: 'trash-2', ic: colors.danger, title: t.settings.clearTitle, sub: t.settings.clearDesc, titleColor: colors.danger },
       ].map((card) => (
         <TouchableOpacity key={card.title} onPress={card.onPress} activeOpacity={0.8} style={[styles.dataCard, { flexDirection: dir.row, backgroundColor: card.bg, borderColor: card.border }]}>

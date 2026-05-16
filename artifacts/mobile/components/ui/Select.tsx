@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Platform } f
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as dir from '@/utils/dir';
 
 interface SelectOption {
   label: string;
@@ -34,7 +35,7 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
         ]}
         activeOpacity={0.8}
       >
-        <Feather name="chevron-down" size={16} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+        <Feather name="chevron-down" size={16} color={colors.mutedForeground} />
         <Text style={[styles.triggerText, { color: selected ? colors.foreground : colors.mutedForeground }]}>
           {selected ? selected.label : placeholder}
         </Text>
@@ -75,13 +76,13 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, textAlign: 'right', fontFamily: 'Inter_500Medium' },
-  trigger: { flexDirection: 'row-reverse', alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 13, minHeight: 48 },
-  triggerText: { flex: 1, fontSize: 15, textAlign: 'right', fontFamily: 'Inter_400Regular' },
+  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, textAlign: dir.textAlign, fontFamily: 'Inter_500Medium' },
+  trigger: { flexDirection: dir.row, alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 13, minHeight: 48, gap: 8 },
+  triggerText: { flex: 1, fontSize: 15, textAlign: dir.textAlign, fontFamily: 'Inter_400Regular' },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   sheet: { maxHeight: '70%' },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
   sheetTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingVertical: 12, fontFamily: 'Inter_600SemiBold' },
-  option: { flexDirection: 'row-reverse', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth },
-  optionText: { flex: 1, fontSize: 15, textAlign: 'right', fontFamily: 'Inter_400Regular' },
+  option: { flexDirection: dir.row, alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  optionText: { flex: 1, fontSize: 15, textAlign: dir.textAlign, fontFamily: 'Inter_400Regular' },
 });

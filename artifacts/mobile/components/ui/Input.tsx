@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps, TouchableOpacity } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import * as dir from '@/utils/dir';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -36,7 +37,7 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, ...pro
           placeholderTextColor={colors.mutedForeground}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
-          textAlign="right"
+          textAlign={dir.textAlign}
           {...props}
         />
         {rightIcon ? (
@@ -52,9 +53,9 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, ...pro
 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, textAlign: 'right', fontFamily: 'Inter_500Medium' },
-  inputWrap: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, minHeight: 48 },
-  input: { flex: 1, fontSize: 15, paddingVertical: 10, textAlign: 'right', fontFamily: 'Inter_400Regular' },
+  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, textAlign: dir.textAlign, fontFamily: 'Inter_500Medium' },
+  inputWrap: { flexDirection: dir.row, alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, minHeight: 48 },
+  input: { flex: 1, fontSize: 15, paddingVertical: 10, fontFamily: 'Inter_400Regular' },
   icon: { padding: 4, marginLeft: 8 },
-  error: { fontSize: 12, marginTop: 4, textAlign: 'right' },
+  error: { fontSize: 12, marginTop: 4, textAlign: dir.textAlign },
 });

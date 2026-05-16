@@ -24,8 +24,14 @@ uri = "file://attached_assets/generated_images/icon_meem_v2.png"
 type = "image"
 title = "arabic meem letter bold"
 
+[[generated]]
+id = "2PhaAENdb_MAXYmYhnEot"
+uri = "file://attached_assets/generated_images/wallet_icon_green.png"
+type = "image"
+title = "green wallet icon flat"
+
 [[outputs]]
 id = "9USeVi2m7EN3FqtqnEoC0"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
-title = "م Icon (transparent)"
+title = "Wallet App Icon"

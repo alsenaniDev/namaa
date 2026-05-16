@@ -118,7 +118,7 @@ export interface MonthlyTotals {
 }
 
 export const CURRENCIES = [
-  { label: 'ريال سعودي (SAR)', value: 'SAR' },
+  { label: 'ريال سعودي (ر.س)', value: 'SAR' },
   { label: 'درهم إماراتي (AED)', value: 'AED' },
   { label: 'دينار كويتي (KWD)', value: 'KWD' },
   { label: 'دينار بحريني (BHD)', value: 'BHD' },

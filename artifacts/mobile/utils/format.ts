@@ -1,10 +1,24 @@
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  SAR: 'ر.س',
+  USD: '$',
+  EUR: '€',
+  GBP: '£',
+  AED: 'د.إ',
+  KWD: 'د.ك',
+  BHD: 'د.ب',
+  QAR: 'ر.ق',
+  OMR: 'ر.ع',
+  EGP: 'ج.م',
+};
+
 export function formatCurrency(amount: number, currency: string = 'SAR'): string {
   const formatted = Math.abs(amount).toLocaleString('ar-SA', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
   const sign = amount < 0 ? '-' : '';
-  return `${sign}${formatted} ${currency}`;
+  const symbol = CURRENCY_SYMBOLS[currency] ?? currency;
+  return `${sign}${formatted} ${symbol}`;
 }
 
 export function formatPercent(value: number): string {

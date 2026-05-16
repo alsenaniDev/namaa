@@ -18,13 +18,17 @@ import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
 
-// Force RTL for Arabic — if layout was LTR, reload so iOS applies RTL natively
+// Force RTL for Arabic.
+// forceRTL persists in NSUserDefaults (iOS) / SharedPreferences (Android),
+// so after the first reload isRTL will be true and this branch won't fire again.
 if (Platform.OS !== 'web') {
   const wasAlreadyRTL = I18nManager.isRTL;
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
-  if (!wasAlreadyRTL && !__DEV__) {
-    Updates.reloadAsync();
+  if (!wasAlreadyRTL) {
+    // Reload so the native layer picks up RTL before rendering anything.
+    // Safe against loops: after reload isRTL === true, so we never enter again.
+    Updates.reloadAsync().catch(() => {});
   }
 }
 

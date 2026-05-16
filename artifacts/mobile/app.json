@@ -14,9 +14,15 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "CFBundleLocalizations": ["ar", "en"],
+        "CFBundleDevelopmentRegion": "ar"
+      }
     },
-    "android": {},
+    "android": {
+      "supportsRTL": true
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },

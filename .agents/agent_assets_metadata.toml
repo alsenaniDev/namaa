@@ -83,3 +83,15 @@ id = "HolGDS19UcMs-iZJOVYOe"
 uri = "file://attached_assets/generated_images/namaa_full_logo.png"
 type = "image"
 title = "نماء — Full Logo with Wordmark"
+
+[[outputs]]
+id = "cbqr6qS_p5mfuv03TtX-X"
+uri = "file://APP_STORE_SUBMISSION.md"
+type = "text"
+title = "نماء — App Store Submission Package"
+
+[[outputs]]
+id = "ERc255JkcLU0zmG9aGDV_"
+uri = "file://attached_assets/screenshots/namaa_01_home.jpg"
+type = "image"
+title = "Onboarding Screen Preview"

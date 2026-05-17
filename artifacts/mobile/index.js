@@ -1,15 +1,17 @@
 // Custom entry point.
 //
-// We DO NOT force a fixed direction here.  I18nManager.isRTL is persisted in
-// NSUserDefaults / SharedPreferences across launches, so it already reflects
-// the user's last language choice.  LanguageContext handles the very first
-// install (bootstraps to Arabic) and every language switch (calls forceRTL
-// then prompts to restart).  This ensures Arabic → RTL and English → LTR.
+// The app is Arabic-only and renders RTL MANUALLY via 'row-reverse' and
+// 'textAlign: right' throughout. We disable React Native's automatic
+// LTR<->RTL flipping so iOS device/per-app language settings cannot invert
+// our layout. See plugins/withForceRTL.js for the native counterpart.
 
 const { I18nManager, Platform } = require('react-native');
 
 if (Platform.OS !== 'web') {
-  I18nManager.allowRTL(true);
+  try {
+    I18nManager.allowRTL(false);
+    I18nManager.forceRTL(false);
+  } catch {}
 }
 
 require('expo-router/entry');

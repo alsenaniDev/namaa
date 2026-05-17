@@ -1,14 +1,14 @@
 /**
- * Expo config plugin: forces RTL at the iOS native layer for React Native.
+ * Expo config plugin: locks the app to a DETERMINISTIC layout direction.
  *
- * React Native's layout engine (Yoga) reads RTL state from RCTI18nUtil, which
- * itself reads from NSUserDefaults keys "RCTI18nUtil_allowRTL" and
- * "RCTI18nUtil_forceRTL". These MUST be set BEFORE the React bridge starts,
- * otherwise the first JS frame renders LTR and a subsequent forceRTL(true)
- * only takes effect on the next cold launch.
+ * The app is Arabic-only and we render RTL manually via 'row-reverse' +
+ * 'textAlign: right' in every component. We must therefore DISABLE React
+ * Native's automatic LTR<->RTL flipping, otherwise iOS per-app language
+ * settings invert our layout (Arabic device -> double-flip back to LTR,
+ * English device -> single-flip to RTL, etc.).
  *
- * We also set UIView.appearance().semanticContentAttribute so native UIKit
- * chrome (nav bar, modals, etc.) matches.
+ * RCTI18nUtil reads its allow/force flags from NSUserDefaults BEFORE the
+ * React bridge starts, so we set both to NO in didFinishLaunchingWithOptions.
  */
 
 const { withAppDelegate } = require('@expo/config-plugins');
@@ -24,12 +24,11 @@ module.exports = function withForceRTL(config) {
     try {
       if (language === 'swift') {
         const swiftSnippet =
-          '    // ===== withForceRTL: lock app to RTL for Arabic =====\n' +
+          '    // ===== withForceRTL: disable RN auto-flip; layout is manually RTL =====\n' +
           '    let defaults = UserDefaults.standard\n' +
-          '    defaults.set(true, forKey: "RCTI18nUtil_allowRTL")\n' +
-          '    defaults.set(true, forKey: "RCTI18nUtil_forceRTL")\n' +
+          '    defaults.set(false, forKey: "RCTI18nUtil_allowRTL")\n' +
+          '    defaults.set(false, forKey: "RCTI18nUtil_forceRTL")\n' +
           '    defaults.synchronize()\n' +
-          '    UIView.appearance().semanticContentAttribute = .forceRightToLeft\n' +
           '    // ===== end withForceRTL =====';
 
         const result = mergeContents({
@@ -43,12 +42,11 @@ module.exports = function withForceRTL(config) {
         modResults.contents = result.contents;
       } else {
         const objcSnippet =
-          '  // ===== withForceRTL: lock app to RTL for Arabic =====\n' +
+          '  // ===== withForceRTL: disable RN auto-flip; layout is manually RTL =====\n' +
           '  NSUserDefaults *_rtlDefaults = [NSUserDefaults standardUserDefaults];\n' +
-          '  [_rtlDefaults setBool:YES forKey:@"RCTI18nUtil_allowRTL"];\n' +
-          '  [_rtlDefaults setBool:YES forKey:@"RCTI18nUtil_forceRTL"];\n' +
+          '  [_rtlDefaults setBool:NO forKey:@"RCTI18nUtil_allowRTL"];\n' +
+          '  [_rtlDefaults setBool:NO forKey:@"RCTI18nUtil_forceRTL"];\n' +
           '  [_rtlDefaults synchronize];\n' +
-          '  [UIView appearance].semanticContentAttribute = UISemanticContentAttributeForceRightToLeft;\n' +
           '  // ===== end withForceRTL =====';
 
         const result = mergeContents({

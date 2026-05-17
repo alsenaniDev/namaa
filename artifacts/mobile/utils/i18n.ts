@@ -2,7 +2,7 @@ export type Language = 'ar' | 'en';
 
 export const translations = {
   ar: {
-    appName: 'مالي',
+    appName: 'نماء',
     tabs: {
       home: 'الرئيسية',
       income: 'الدخل',
@@ -139,7 +139,7 @@ export const translations = {
       sampleLoadedMsg: 'تم تحميل البيانات التجريبية',
       exportTitle: 'تصدير البيانات',
       exportDesc: 'احفظ نسخة احتياطية من جميع بياناتك',
-      exportShare: 'نسخة احتياطية - مالي',
+      exportShare: 'نسخة احتياطية - نماء',
       exportError: 'تعذّر تصدير البيانات',
       importTitle: 'استيراد البيانات',
       importDesc: 'استرجع بياناتك من ملف نسخة احتياطية',
@@ -155,7 +155,7 @@ export const translations = {
       clearConfirmBtn: 'نعم، احذف كل شيء',
       saveErrorMsg: 'الرجاء إدخال الاسم',
       creditDev: 'تطوير: Mohammed Alsenani',
-      creditSub: 'مالي v1.0 — بياناتك محفوظة على جهازك فقط',
+      creditSub: 'نماء v1.0 — بياناتك محفوظة على جهازك فقط',
     },
     forms: {
       titleLabel: 'العنوان *',
@@ -182,7 +182,7 @@ export const translations = {
       commitmentCategoryLabel: 'فئة الالتزام',
     },
     setup: {
-      title: 'مرحباً في مالي',
+      title: 'مرحباً في نماء',
       subtitle: 'أدخل بياناتك لبدء تتبع ميزانيتك الشخصية',
       basicInfo: 'المعلومات الأساسية',
       nameLabel: 'اسمك الكريم *',
@@ -218,7 +218,7 @@ export const translations = {
   },
 
   en: {
-    appName: 'Mali',
+    appName: 'Namaa',
     tabs: {
       home: 'Home',
       income: 'Income',
@@ -355,7 +355,7 @@ export const translations = {
       sampleLoadedMsg: 'Sample data loaded',
       exportTitle: 'Export Data',
       exportDesc: 'Save a backup copy of all your data',
-      exportShare: 'Backup - Mali',
+      exportShare: 'Backup - Namaa',
       exportError: 'Could not export data',
       importTitle: 'Import Data',
       importDesc: 'Restore your data from a backup file',
@@ -371,7 +371,7 @@ export const translations = {
       clearConfirmBtn: 'Yes, delete everything',
       saveErrorMsg: 'Please enter your name',
       creditDev: 'By: Mohammed Alsenani',
-      creditSub: 'Mali v1.0 — your data is stored on your device only',
+      creditSub: 'Namaa v1.0 — your data is stored on your device only',
     },
     forms: {
       titleLabel: 'Title *',
@@ -398,7 +398,7 @@ export const translations = {
       commitmentCategoryLabel: 'Commitment category',
     },
     setup: {
-      title: 'Welcome to Mali',
+      title: 'Welcome to Namaa',
       subtitle: 'Enter your details to start tracking your personal budget',
       basicInfo: 'Basic Information',
       nameLabel: 'Your Name *',

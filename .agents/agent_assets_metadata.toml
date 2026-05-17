@@ -4,7 +4,7 @@ uploads = []
 id = "wHvM6x9XO04XTO1sxvAMm"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
-title = "mali finance app icon"
+title = "namaa icon emblem"
 
 [[generated]]
 id = "BUjkTTK4Gz3IKdshqsGFP"
@@ -48,11 +48,17 @@ uri = "file://attached_assets/generated_images/logo_option_3_coin_badge.png"
 type = "image"
 title = "coin stack circular badge"
 
+[[generated]]
+id = "ybmO3FQA_5QhGrZWRcT_r"
+uri = "file://attached_assets/generated_images/namaa_full_logo.png"
+type = "image"
+title = "namaa full logo with arabic text"
+
 [[outputs]]
 id = "9USeVi2m7EN3FqtqnEoC0"
 uri = "file://artifacts/mobile/assets/images/icon.png"
 type = "image"
-title = "Wallet App Icon"
+title = "نماء — App Icon"
 
 [[outputs]]
 id = "hi0Lln6hj8zRiLnMS9Ifb"
@@ -71,3 +77,9 @@ id = "0yOrw5JFJhXsK936jo-di"
 uri = "file://attached_assets/generated_images/logo_option_3_coin_badge.png"
 type = "image"
 title = "Option 3 — Coin stack in circular gold-trim badge"
+
+[[outputs]]
+id = "HolGDS19UcMs-iZJOVYOe"
+uri = "file://attached_assets/generated_images/namaa_full_logo.png"
+type = "image"
+title = "نماء — Full Logo with Wordmark"

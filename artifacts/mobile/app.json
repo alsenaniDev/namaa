@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
+      "buildNumber": "2",
       "infoPlist": {
+        "CFBundleName": "نماء",
+        "CFBundleDisplayName": "نماء",
         "CFBundleLocalizations": ["ar", "en"],
         "CFBundleDevelopmentRegion": "ar"
       }

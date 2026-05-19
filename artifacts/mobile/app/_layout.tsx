@@ -14,6 +14,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { HeaderBack } from '@/components/HeaderBack';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
 import { useColors } from '@/hooks/useColors';
@@ -81,6 +82,12 @@ function AppLayout() {
         headerShadowVisible: false,
         headerTintColor: colors.primary,
         headerBackTitle: t.nav.back,
+        // App is manually RTL with native I18nManager pinned LTR, so the
+        // default back button lands on the visual LEFT — wrong side for
+        // Arabic. We hide it and render our own larger chevron on the
+        // visual right via headerRight (see HeaderBack).
+        headerBackVisible: false,
+        headerRight: () => <HeaderBack />,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

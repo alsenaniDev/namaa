@@ -243,11 +243,14 @@ export default function CommitmentDetailScreen() {
       <Stack.Screen
         options={{
           title: commitment.title,
-          headerRight: () => (
+          // headerRight is reserved globally for the back button (see root
+          // _layout). The edit action lives on headerLeft (visual left) so
+          // it doesn't compete with the user's tap target for "back".
+          headerLeft: () => (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/commitments/add', params: { id: commitment.id } })}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={{ paddingHorizontal: 12 }}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+              style={{ paddingHorizontal: 14, paddingVertical: 6 }}
             >
               <Feather name="edit-2" size={20} color={colors.primary} />
             </TouchableOpacity>

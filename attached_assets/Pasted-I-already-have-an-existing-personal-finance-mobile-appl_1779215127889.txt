@@ -1,0 +1,371 @@
+I already have an existing personal finance mobile application with basic features such as:
+- Income tracking
+- Expense tracking
+- Commitments/installments
+- Reports and analytics
+
+I want you to EXPAND and TRANSFORM the existing app into a complete premium fintech-style financial management system.
+
+Do NOT rebuild the app from scratch.
+Enhance the existing architecture, improve the UI/UX, add advanced financial modules, and make the app feel like a smart personal financial assistant.
+
+==================================================
+CORE APP EXPANSION
+==================================================
+
+The application should manage:
+- Income
+- Expenses
+- Commitments
+- Installments
+- Loans
+- Debts
+- Savings goals
+- Financial analytics
+- Reports
+- Notifications
+- Financial calendar
+- Lenders/providers management
+
+The app should feel modern, intelligent, premium, and scalable.
+
+==================================================
+1. HOME DASHBOARD ENHANCEMENT
+==================================================
+
+Redesign the dashboard to include:
+
+- Total monthly income
+- Total monthly expenses
+- Remaining balance
+- Total commitments value
+- Total remaining debt
+- Monthly installment total
+- Upcoming installments
+- Overdue payments
+- Savings progress
+- Financial health score
+- Recent transactions
+- Upcoming bills
+- Subscription renewals
+- Top lenders/providers
+- Spending insights
+
+Add beautiful:
+- Pie charts
+- Trend charts
+- Line graphs
+- Weekly/monthly analytics
+- Spending heatmaps
+- Financial summaries
+- Progress cards
+
+Dashboard should look like a modern banking/fintech app.
+
+==================================================
+2. ADVANCED COMMITMENTS & INSTALLMENTS SYSTEM
+==================================================
+
+This is one of the most important modules.
+
+Users should be able to create:
+- Loans
+- Car installments
+- Credit cards
+- Rent
+- Bills
+- Personal debts
+- Subscription plans
+- Any recurring commitment
+
+Each commitment should support:
+
+- Title
+- Description
+- Total amount
+- Paid amount
+- Remaining amount
+- Monthly installment amount
+- Start date
+- End date
+- Due dates
+- Payment frequency
+- Number of installments
+- Paid installments count
+- Remaining installments count
+- Notes
+- Attachments
+- Invoice images
+- Payment receipts
+
+Automatic calculations:
+- Remaining balance
+- Installments left
+- Progress percentage
+- Total paid
+- Upcoming payment
+- Debt summary
+
+Installment features:
+- Mark installment as paid
+- Edit installment
+- Edit paid installments
+- Edit future installments
+- Skip installment
+- Delay installment
+- Partial payments
+- Installment history
+- Installment timeline
+- Payment logs
+
+Payment features:
+- Attach transfer proof
+- Attach invoice image
+- Save payment reference number
+- Generate payment receipt
+- Share receipt as image or PDF
+
+==================================================
+3. LENDERS / PROVIDERS / CREDIT SOURCES MODULE
+==================================================
+
+Add a completely new module for managing lenders/providers.
+
+This module should manage:
+- Banks
+- Finance companies
+- Telecom providers
+- Government entities
+- Friends
+- Family members
+- Stores
+- Individual people
+- Any custom provider
+
+Each lender/provider should contain:
+
+Basic Information:
+- Name
+- Type
+- Phone number
+- Email
+- Address
+- Website
+- Notes
+
+Payment Information:
+- Payment method type:
+  - Automatic deduction
+  - Manual transfer
+  - Cash
+  - Card
+  - Custom
+
+If manual transfer:
+- IBAN
+- Bank account number
+- Beneficiary name
+- Bank name
+
+Visual Features:
+- Upload logo/image
+- Custom theme color
+- Avatar initials fallback
+
+Each commitment MUST be linked to a lender/provider.
+
+Examples:
+- Car loan → Al Rajhi Bank
+- Internet bill → STC
+- Debt → Friend
+- Installment → Jarir
+
+==================================================
+4. LENDER ANALYTICS & FILTERING
+==================================================
+
+For each lender/provider calculate:
+
+- Total commitments
+- Total paid amount
+- Remaining amount
+- Monthly installment total
+- Upcoming payments
+- Overdue installments
+- Active loans count
+
+Create dedicated lender pages showing:
+- All commitments
+- Payment history
+- Upcoming installments
+- Financial statistics
+- Debt summary
+
+Filtering:
+Allow filtering by:
+- Lender/provider
+- Type
+- Paid/unpaid
+- Active/completed
+- Auto/manual payment
+- Date ranges
+
+==================================================
+5. FINANCIAL GOALS SYSTEM
+==================================================
+
+Allow users to create goals:
+- Car
+- House
+- Travel
+- Emergency fund
+- Marriage
+- Custom goals
+
+Show:
+- Progress percentage
+- Remaining amount
+- Suggested monthly saving
+- Estimated completion date
+
+==================================================
+6. SMART FINANCIAL INSIGHTS
+==================================================
+
+Add AI-like smart analysis:
+- Spending increased this month
+- Highest spending category
+- Budget warnings
+- Saving opportunities
+- Overspending alerts
+- Predicted month-end balance
+- Debt risk analysis
+
+Examples:
+- “Restaurant spending increased by 25%”
+- “You may exceed your budget this month”
+- “You saved more than last month”
+
+==================================================
+7. BUDGET SYSTEM
+==================================================
+
+Allow:
+- Monthly budgets
+- Category budgets
+- Budget tracking
+- Budget warnings
+- Spending limits
+
+==================================================
+8. NOTIFICATIONS & REMINDERS
+==================================================
+
+Add smart reminders:
+- Upcoming installments
+- Bills
+- Subscription renewals
+- Budget alerts
+- Goal reminders
+- Overdue payment alerts
+
+==================================================
+9. FINANCIAL CALENDAR
+==================================================
+
+Create a calendar view showing:
+- Salary dates
+- Installment due dates
+- Bills
+- Financial events
+- Upcoming payments
+
+==================================================
+10. SUBSCRIPTIONS MANAGEMENT
+==================================================
+
+Track recurring subscriptions:
+- Netflix
+- Spotify
+- Gym
+- ChatGPT
+- Any recurring service
+
+Show:
+- Monthly subscription total
+- Yearly subscription total
+- Renewal reminders
+
+==================================================
+11. REPORTS & EXPORTS
+==================================================
+
+Generate:
+- Monthly reports
+- Yearly reports
+- Commitment reports
+- Savings reports
+- Lender reports
+
+Export as:
+- PDF
+- Excel
+- Images
+
+==================================================
+12. SEARCH & FILTERING
+==================================================
+
+Support global search and advanced filtering for:
+- Commitments
+- Expenses
+- Lenders
+- Installments
+- Transactions
+
+==================================================
+13. UI/UX IMPROVEMENTS
+==================================================
+
+The app should feel:
+- Modern
+- Premium
+- Minimal
+- Smooth
+- Fast
+- Fintech-inspired
+
+Use:
+- Smooth animations
+- Responsive layouts
+- Dark mode
+- Rounded cards
+- Clean typography
+- Modern dashboard UI
+- Beautiful charts
+
+==================================================
+14. TECHNICAL REQUIREMENTS
+==================================================
+
+- Keep local storage/database for now
+- Offline-first architecture
+- Modular scalable architecture
+- Clean reusable components
+- State management
+- Optimized performance
+- Clean folder structure
+
+==================================================
+15. FUTURE-READY ARCHITECTURE
+==================================================
+
+Prepare the architecture for future support of:
+- Cloud sync
+- AI assistant
+- OCR invoice scanning
+- SMS bank parsing
+- Shared family budgets
+- Multi-device sync
+
+The final result should feel like a professional financial operating system, not just a basic expense tracker.

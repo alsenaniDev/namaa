@@ -1,0 +1,150 @@
+Expand the existing finance management application by adding a fully advanced “Lenders & Providers Management System”.
+
+The app already supports:
+- Income
+- Expenses
+- Installments
+- Commitments
+- Reports
+- Analytics
+
+Now enhance the system by introducing a complete structure for managing the entities or people the user owes money to.
+
+New Module: Lenders / Providers / Credit Sources
+
+Create a dedicated section called:
+- Lenders
+- Providers
+- Credit Sources
+- Financial Parties
+
+This module should allow users to create and manage entities they owe money to.
+
+Supported Types:
+- Bank
+- Finance company
+- Government entity
+- Store
+- Telecom company
+- Friend
+- Family member
+- Individual person
+- Custom type
+
+Each lender/provider should contain:
+
+Basic Information:
+- Name
+- Type
+- Phone number
+- Email
+- Notes
+- Address
+- Website (optional)
+
+Payment Information:
+- Payment method type:
+  - Automatic deduction
+  - Manual bank transfer
+  - Cash payment
+  - Card payment
+  - Custom method
+
+If payment method is “Manual Transfer”, allow:
+- IBAN number
+- Bank account number
+- Beneficiary name
+- Bank name
+
+Visual Customization:
+- Upload logo or image
+- Custom color/theme
+- Display initials avatar if no logo exists
+
+Statistics for Each Lender:
+Automatically calculate and display:
+- Total commitments
+- Total paid amount
+- Remaining amount
+- Monthly installment total
+- Upcoming installments
+- Overdue payments
+- Number of active loans
+
+Relationship Between Commitments & Lenders:
+Every commitment/installment must be linked to a lender/provider.
+
+Examples:
+- Car loan → Al Rajhi Bank
+- Personal debt → Friend
+- Internet bill → STC
+- Installment plan → Jarir
+
+Filtering & Analytics:
+Allow filtering commitments by:
+- Lender/provider
+- Type
+- Paid/unpaid
+- Active/completed
+- Automatic/manual payment
+
+Create dedicated pages for each lender showing:
+- All related commitments
+- Payment history
+- Upcoming installments
+- Total debt statistics
+- Financial summary
+
+Home Dashboard Enhancements:
+On the dashboard show:
+- Top lenders by remaining debt
+- Monthly payments grouped by lender
+- Upcoming payments by provider
+- Most expensive commitment source
+
+Commitment Enhancements:
+Each commitment should now include:
+- Linked lender/provider
+- Payment method
+- Auto-payment status
+- Invoice/receipt uploads
+- Payment proof attachments
+- Installment timeline
+- Transfer details
+
+Payment Workflow:
+When user marks an installment as paid:
+- Save payment date
+- Save payment method
+- Allow attaching receipt image
+- Allow adding transfer reference number
+- Update lender statistics automatically
+
+Invoice & Sharing Features:
+Allow users to:
+- Generate payment receipt
+- Share transfer details
+- Copy IBAN quickly
+- Share invoice as PDF/image
+- Export lender statement
+
+UI/UX Requirements:
+Design the lenders section like a modern banking/fintech experience.
+
+Include:
+- Beautiful lender cards
+- Logos/avatars
+- Financial summaries
+- Progress indicators
+- Smart filtering
+- Search functionality
+- Smooth animations
+
+Architecture Requirements:
+- Use reusable models and components
+- Separate lender module cleanly
+- Support future cloud sync
+- Support future AI financial assistant
+- Keep database relationships scalable
+
+The goal is to make the app feel like a complete personal financial operating system, not just an expense tracker.

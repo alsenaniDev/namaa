@@ -36,7 +36,7 @@ export default function AddCommitmentScreen() {
   const t = useT();
   const dir = useDir();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { commitments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile, seedPastInstallments } = useApp();
+  const { commitments, commitmentPayments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile, seedPastInstallments } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
@@ -50,9 +50,16 @@ export default function AddCommitmentScreen() {
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
   const [totalAmount, setTotalAmount] = useState(existing?.totalAmount?.toString() ?? '');
   const [installmentCount, setInstallmentCount] = useState(existing?.installmentCount?.toString() ?? '');
-  // Only meaningful for new finite loans — for edits, paid history is tracked
-  // via the existing mark-paid flow so we don't show this field.
-  const [paidSoFar, setPaidSoFar] = useState('');
+  // For new finite loans: the number of past installments to seed as paid.
+  // For edits: the target total paid count — we seed (pNum - existingPaid)
+  // more historical installments via seedPastInstallments (idempotent).
+  // Pre-filled in edit mode with the current paid count so the user sees what's
+  // there and can simply bump the number up to backfill more.
+  const existingPaidCount = useMemo(
+    () => existing ? commitmentPayments.filter((p) => p.commitmentId === existing.id && p.status === 'paid').length : 0,
+    [existing, commitmentPayments],
+  );
+  const [paidSoFar, setPaidSoFar] = useState(existing ? existingPaidCount.toString() : '');
   const [dueDay, setDueDay] = useState(existing?.dueDay?.toString() ?? '1');
   const [isRecurring, setIsRecurring] = useState(existing?.isRecurring ?? true);
   const [isActive, setIsActive] = useState(existing?.isActive ?? true);
@@ -135,6 +142,10 @@ export default function AddCommitmentScreen() {
         const psn = parseInt(ps, 10);
         const icn = parseInt(ic || '0', 10);
         if (psn >= icn) errs.paidSoFar = t.commitments.paidSoFarError;
+        // In edit mode, the field represents the *total* paid count and we
+        // can only add historical installments (never remove). Lowering it
+        // is a destructive op users should do via the schedule editor.
+        if (isEdit && psn < existingPaidCount) errs.paidSoFar = t.commitments.paidSoFarError;
       }
     }
     setErrors(errs);
@@ -161,6 +172,12 @@ export default function AddCommitmentScreen() {
     };
     if (isEdit && params.id) {
       await updateCommitment(params.id, data);
+      // In edit mode the paid-count field is the *target* total. Seed only
+      // the delta (seedPastInstallments is idempotent — it skips months
+      // that already have a payment record).
+      if (isFinite && hasP && data.amount > 0 && data.installmentCount && pNum < data.installmentCount && pNum > existingPaidCount) {
+        await seedPastInstallments(params.id, pNum - existingPaidCount, data.amount, data.dueDay);
+      }
     } else {
       const newId = await addCommitment(data);
       // Seed paid history for new finite loans that the user has already
@@ -254,29 +271,28 @@ export default function AddCommitmentScreen() {
             maxLength={4}
           />
 
-          {!isEdit && (
-            <>
-              <Input
-                label={t.commitments.paidSoFarLabel}
-                value={paidSoFar}
-                onChangeText={(v) => { setPaidSoFar(v); clearError('paidSoFar'); }}
-                placeholder="0"
-                keyboardType="number-pad"
-                error={errors.paidSoFar}
-                maxLength={4}
-              />
-              <Text style={[styles.fieldHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
-                {t.commitments.paidSoFarHint}
+          <Input
+            label={t.commitments.paidSoFarLabel}
+            value={paidSoFar}
+            onChangeText={(v) => { setPaidSoFar(v); clearError('paidSoFar'); }}
+            placeholder="0"
+            keyboardType="number-pad"
+            error={errors.paidSoFar}
+            maxLength={4}
+            selectTextOnFocus
+          />
+          <Text style={[styles.fieldHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+            {isEdit
+              ? t.commitments.paidSoFarEditHint(existingPaidCount)
+              : t.commitments.paidSoFarHint}
+          </Text>
+          {hasP && hasC && remainingInstallments !== null && pNum < cNum && (
+            <View style={[styles.paidSummary, { backgroundColor: colors.success + '10', borderColor: colors.success + '40' }]}>
+              <Feather name="check-circle" size={14} color={colors.success} />
+              <Text style={[styles.paidSummaryText, { color: colors.success, textAlign: dir.textAlign, flex: 1 }]}>
+                {t.commitments.paidSoFarSummary(pNum, cNum, remainingInstallments)}
               </Text>
-              {hasP && hasC && remainingInstallments !== null && pNum < cNum && (
-                <View style={[styles.paidSummary, { backgroundColor: colors.success + '10', borderColor: colors.success + '40' }]}>
-                  <Feather name="check-circle" size={14} color={colors.success} />
-                  <Text style={[styles.paidSummaryText, { color: colors.success, textAlign: dir.textAlign, flex: 1 }]}>
-                    {t.commitments.paidSoFarSummary(pNum, cNum, remainingInstallments)}
-                  </Text>
-                </View>
-              )}
-            </>
+            </View>
           )}
 
           <View style={[styles.helperBox, {

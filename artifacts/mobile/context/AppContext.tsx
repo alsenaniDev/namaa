@@ -35,6 +35,16 @@ interface AppContextType {
   markCommitmentUnpaid: (commitmentId: string, month: number, year: number) => Promise<void>;
   /** Bulk-seed N past paid installments for a finite loan (most recent first). */
   seedPastInstallments: (commitmentId: string, count: number, amount: number, dueDay: number) => Promise<void>;
+  /**
+   * Bulk mark several (month, year) periods of a commitment as paid (upsert
+   * with the given amount) or unpaid (remove). Single storage write per call.
+   */
+  bulkUpdateCommitmentPayments: (
+    commitmentId: string,
+    periods: { month: number; year: number }[],
+    action: 'paid' | 'unpaid',
+    amount?: number,
+  ) => Promise<void>;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
@@ -246,6 +256,46 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = [...commitmentPayments, ...additions];
     await storage.saveCommitmentPayments(updated);
     setCommitmentPayments(updated);
+  }, [commitmentPayments]);
+
+  const bulkUpdateCommitmentPayments = useCallback(async (
+    commitmentId: string,
+    periods: { month: number; year: number }[],
+    action: 'paid' | 'unpaid',
+    amount?: number,
+  ) => {
+    if (periods.length === 0) return;
+    const key = (m: number, y: number) => `${y}-${m}`;
+    const set = new Set(periods.map((p) => key(p.month, p.year)));
+    let next: CommitmentPayment[];
+    if (action === 'unpaid') {
+      next = commitmentPayments.filter(
+        (p) => !(p.commitmentId === commitmentId && set.has(key(p.month, p.year))),
+      );
+    } else {
+      const paidDate = new Date().toISOString();
+      const amt = amount ?? 0;
+      // Update existing matching, then add records for periods that had none.
+      const seen = new Set<string>();
+      next = commitmentPayments.map((p) => {
+        if (p.commitmentId === commitmentId && set.has(key(p.month, p.year))) {
+          seen.add(key(p.month, p.year));
+          return { ...p, status: 'paid' as const, paidDate, amount: amt };
+        }
+        return p;
+      });
+      for (const period of periods) {
+        if (!seen.has(key(period.month, period.year))) {
+          next.push({
+            id: generateId(), commitmentId,
+            month: period.month, year: period.year,
+            amount: amt, paidDate, status: 'paid',
+          });
+        }
+      }
+    }
+    await storage.saveCommitmentPayments(next);
+    setCommitmentPayments(next);
   }, [commitmentPayments]);
 
   const markCommitmentUnpaid = useCallback(async (commitmentId: string, month: number, year: number) => {
@@ -500,7 +550,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
-      addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid, seedPastInstallments,
+      addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid, seedPastInstallments, bulkUpdateCommitmentPayments,
       addExpense, updateExpense, deleteExpense,
       addLender, updateLender, deleteLender,
       addGoal, updateGoal, deleteGoal, addGoalContribution, deleteGoalContribution,

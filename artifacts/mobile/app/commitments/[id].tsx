@@ -31,7 +31,7 @@ export default function CommitmentDetailScreen() {
   const t = useT();
   const dir = useDir();
   const params = useLocalSearchParams<{ id: string }>();
-  const { commitments, commitmentPayments, lenders, userProfile, markCommitmentPaid, markCommitmentUnpaid } = useApp();
+  const { commitments, commitmentPayments, lenders, userProfile, markCommitmentPaid, markCommitmentUnpaid, bulkUpdateCommitmentPayments } = useApp();
 
   const commitment = commitments.find((c) => c.id === params.id);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
@@ -39,6 +39,13 @@ export default function CommitmentDetailScreen() {
 
   const [editing, setEditing] = useState<ScheduleRow | null>(null);
   const [editAmount, setEditAmount] = useState('');
+  // Bulk selection mode: when on, tapping rows toggles selection instead of
+  // opening the single-installment editor. Selected periods are keyed by
+  // "year-month" so we can dedupe across renders.
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [bulkMode, setBulkMode] = useState(false);
+  const periodKey = (m: number, y: number) => `${y}-${m}`;
 
   // Payments for this commitment, sorted oldest → newest by (year, month).
   const myPayments = useMemo(
@@ -117,6 +124,7 @@ export default function CommitmentDetailScreen() {
 
   const openEditor = (row: ScheduleRow) => {
     Haptics.selectionAsync();
+    setBulkMode(false);
     setEditing(row);
     setEditAmount((row.payment?.amount ?? commitment.amount).toString());
   };
@@ -124,13 +132,27 @@ export default function CommitmentDetailScreen() {
   const closeEditor = () => {
     setEditing(null);
     setEditAmount('');
+    setBulkMode(false);
   };
 
   const saveEditor = async (markPaid: boolean) => {
     if (!editing) return;
-    if (markPaid) {
-      const raw = parseFloat(toAsciiDigits(editAmount));
-      const amt = Number.isFinite(raw) && raw > 0 ? raw : commitment.amount;
+    const raw = parseFloat(toAsciiDigits(editAmount));
+    const amt = Number.isFinite(raw) && raw > 0 ? raw : commitment.amount;
+    if (bulkMode) {
+      const periods = Array.from(selectedKeys).map((k) => {
+        const [y, m] = k.split('-').map((n) => parseInt(n, 10));
+        return { month: m, year: y };
+      });
+      Haptics.notificationAsync(
+        markPaid ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
+      );
+      await bulkUpdateCommitmentPayments(
+        commitment.id, periods, markPaid ? 'paid' : 'unpaid', markPaid ? amt : undefined,
+      );
+      setSelectMode(false);
+      setSelectedKeys(new Set());
+    } else if (markPaid) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await markCommitmentPaid(commitment.id, editing.month, editing.year, amt);
     } else {
@@ -138,6 +160,52 @@ export default function CommitmentDetailScreen() {
       await markCommitmentUnpaid(commitment.id, editing.month, editing.year);
     }
     closeEditor();
+  };
+
+  const toggleSelectMode = () => {
+    Haptics.selectionAsync();
+    setSelectMode((v) => !v);
+    setSelectedKeys(new Set());
+  };
+
+  const toggleRowSelected = (row: ScheduleRow) => {
+    Haptics.selectionAsync();
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      const k = periodKey(row.month, row.year);
+      if (next.has(k)) next.delete(k); else next.add(k);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    Haptics.selectionAsync();
+    setSelectedKeys(new Set(schedule.map((r) => periodKey(r.month, r.year))));
+  };
+
+  const clearSelection = () => {
+    Haptics.selectionAsync();
+    setSelectedKeys(new Set());
+  };
+
+  const openBulkEditor = (markPaid: boolean) => {
+    if (selectedKeys.size === 0) return;
+    Haptics.selectionAsync();
+    if (!markPaid) {
+      // No amount needed for unpaid; apply immediately.
+      const periods = Array.from(selectedKeys).map((k) => {
+        const [y, m] = k.split('-').map((n) => parseInt(n, 10));
+        return { month: m, year: y };
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      bulkUpdateCommitmentPayments(commitment.id, periods, 'unpaid');
+      setSelectMode(false);
+      setSelectedKeys(new Set());
+      return;
+    }
+    setBulkMode(true);
+    setEditing({ index: 0, month: 0, year: 0 }); // sentinel; modal renders differently in bulk
+    setEditAmount(commitment.amount.toString());
   };
 
   const kindLabel =
@@ -255,21 +323,45 @@ export default function CommitmentDetailScreen() {
         {/* Installment schedule (finite) OR payment history (recurring) */}
         {isFinite ? (
           <>
-            <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.scheduleTitle}</Text>
+            <View style={[styles.sectionHeader, { flexDirection: dir.row }]}>
+              <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground, marginTop: 0, marginBottom: 0, flex: 1 }]}>{t.commitments.scheduleTitle}</Text>
+              <TouchableOpacity onPress={toggleSelectMode} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                <Text style={[styles.sectionAction, { color: colors.primary }]}>
+                  {selectMode ? t.commitments.scheduleSelectDone : t.commitments.scheduleSelect}
+                </Text>
+              </TouchableOpacity>
+            </View>
             <Card style={styles.card} padding={0}>
               {schedule.map((row, idx) => {
                 const isPaid = row.payment?.status === 'paid';
+                const k = periodKey(row.month, row.year);
+                const isSelected = selectedKeys.has(k);
                 return (
                   <TouchableOpacity
                     key={`${row.year}-${row.month}-${row.index}`}
-                    onPress={() => openEditor(row)}
+                    onPress={() => (selectMode ? toggleRowSelected(row) : openEditor(row))}
+                    onLongPress={() => {
+                      if (!selectMode) { setSelectMode(true); toggleRowSelected(row); }
+                    }}
                     activeOpacity={0.7}
                     style={[
                       styles.scheduleRow,
                       { flexDirection: dir.row, borderBottomColor: colors.border },
                       idx === schedule.length - 1 && { borderBottomWidth: 0 },
+                      isSelected && { backgroundColor: colors.primary + '10' },
                     ]}
                   >
+                    {selectMode ? (
+                      <View style={[
+                        styles.checkbox,
+                        {
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary : 'transparent',
+                        },
+                      ]}>
+                        {isSelected ? <Feather name="check" size={14} color="#fff" /> : null}
+                      </View>
+                    ) : null}
                     <View style={[
                       styles.statusDot,
                       { backgroundColor: isPaid ? colors.success + '20' : colors.muted, borderColor: isPaid ? colors.success : colors.border },
@@ -294,11 +386,23 @@ export default function CommitmentDetailScreen() {
                     <Text style={[styles.scheduleAmount, { color: isPaid ? colors.foreground : colors.mutedForeground }]}>
                       {formatCurrency(row.payment?.amount ?? commitment.amount, currency)}
                     </Text>
-                    <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} />
+                    {!selectMode ? <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} /> : null}
                   </TouchableOpacity>
                 );
               })}
             </Card>
+            {selectMode ? (
+              <View style={[styles.selectBar, { flexDirection: dir.row }]}>
+                <TouchableOpacity onPress={selectAll} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                  <Text style={[styles.selectBarLink, { color: colors.primary }]}>{t.commitments.scheduleSelectAll}</Text>
+                </TouchableOpacity>
+                {selectedKeys.size > 0 ? (
+                  <TouchableOpacity onPress={clearSelection} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                    <Text style={[styles.selectBarLink, { color: colors.mutedForeground }]}>{t.commitments.scheduleSelectClear}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
           </>
         ) : (
           <>
@@ -349,6 +453,34 @@ export default function CommitmentDetailScreen() {
         ) : null}
       </ScrollView>
 
+      {/* Floating bulk action bar: shows when select mode is on AND at least
+          one row is selected. Sits above the system bottom inset. */}
+      {selectMode && selectedKeys.size > 0 ? (
+        <View style={[
+          styles.bulkBar,
+          {
+            bottom: 0,
+            paddingBottom: bottomPad + 12,
+            backgroundColor: colors.card,
+            borderTopColor: colors.border,
+            flexDirection: dir.row,
+          },
+        ]}>
+          <Text style={[styles.bulkBarCount, { color: colors.foreground, textAlign: dir.textAlign }]}>
+            {t.commitments.scheduleSelectedCount(selectedKeys.size)}
+          </Text>
+          <Button
+            title={t.commitments.scheduleBulkMarkUnpaid}
+            onPress={() => openBulkEditor(false)}
+            variant="outline"
+          />
+          <Button
+            title={t.commitments.scheduleBulkMarkPaid}
+            onPress={() => openBulkEditor(true)}
+          />
+        </View>
+      ) : null}
+
       {/* Installment editor modal */}
       <Modal visible={!!editing} transparent animationType="fade" onRequestClose={closeEditor}>
         <KeyboardAvoidingView
@@ -360,10 +492,20 @@ export default function CommitmentDetailScreen() {
             <Text style={[styles.modalTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>
               {t.commitments.scheduleEditTitle}
             </Text>
-            {editing ? (
+            {editing && !bulkMode ? (
               <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
                 {t.commitments.scheduleInstallment(editing.index)} · {String(editing.month).padStart(2, '0')}/{editing.year}
               </Text>
+            ) : null}
+            {bulkMode ? (
+              <>
+                <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+                  {t.commitments.scheduleBulkTitle(selectedKeys.size)}
+                </Text>
+                <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+                  {t.commitments.scheduleBulkHint}
+                </Text>
+              </>
             ) : null}
             <Text style={[styles.modalLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>
               {t.commitments.scheduleAmountLabel}
@@ -389,7 +531,7 @@ export default function CommitmentDetailScreen() {
                 variant="outline"
                 style={{ flex: 1 }}
               />
-              {editing?.payment?.status === 'paid' ? (
+              {!bulkMode && editing?.payment?.status === 'paid' ? (
                 <Button
                   title={t.commitments.scheduleMarkUnpaid}
                   onPress={() => saveEditor(false)}
@@ -398,7 +540,13 @@ export default function CommitmentDetailScreen() {
                 />
               ) : null}
               <Button
-                title={editing?.payment?.status === 'paid' ? t.commitments.scheduleSave : t.commitments.scheduleMarkPaid}
+                title={
+                  bulkMode
+                    ? t.commitments.scheduleSave
+                    : editing?.payment?.status === 'paid'
+                      ? t.commitments.scheduleSave
+                      : t.commitments.scheduleMarkPaid
+                }
                 onPress={() => saveEditor(true)}
                 style={{ flex: 1 }}
               />
@@ -430,6 +578,13 @@ const styles = StyleSheet.create({
   lenderName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
   lenderType: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionHeader: { alignItems: 'center', marginTop: 16, marginBottom: 8, gap: 8 },
+  sectionAction: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
+  selectBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingVertical: 6, gap: 16 },
+  selectBarLink: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  bulkBar: { position: 'absolute', left: 0, right: 0, padding: 12, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 10 },
+  bulkBarCount: { fontSize: 13, fontFamily: 'Inter_600SemiBold', flex: 1 },
   card: { marginBottom: 8 },
   progressHeader: { justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
   progressPercent: { fontSize: 28, fontFamily: 'Inter_700Bold' },

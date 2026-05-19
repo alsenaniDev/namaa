@@ -95,6 +95,12 @@ function AppLayout() {
       <Stack.Screen name="lenders/index" options={{ title: t.screen.lenders }} />
       <Stack.Screen name="lenders/add" options={{ presentation: 'modal', title: t.screen.addEditLender }} />
       <Stack.Screen name="lenders/[id]" options={{ title: t.screen.lenderDetail }} />
+      <Stack.Screen name="goals/index" options={{ title: t.screen.goals }} />
+      <Stack.Screen name="goals/add" options={{ presentation: 'modal', title: t.screen.addEditGoal }} />
+      <Stack.Screen name="goals/[id]" options={{ title: t.screen.goalDetail }} />
+      <Stack.Screen name="budgets" options={{ title: t.screen.budgets }} />
+      <Stack.Screen name="subscriptions/index" options={{ title: t.screen.subscriptions }} />
+      <Stack.Screen name="subscriptions/add" options={{ presentation: 'modal', title: t.screen.addEditSubscription }} />
     </Stack>
   );
 }

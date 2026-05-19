@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender } from '../types';
+import {
+  UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender,
+  SavingsGoal, GoalContribution, CategoryBudget, Subscription,
+} from '../types';
 import { storage, CustomTypes, runStorageMigrations } from '../utils/storage';
 import { generateId } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
@@ -13,6 +16,10 @@ interface AppContextType {
   commitmentPayments: CommitmentPayment[];
   expenses: Expense[];
   lenders: Lender[];
+  goals: SavingsGoal[];
+  goalContributions: GoalContribution[];
+  budgets: CategoryBudget[];
+  subscriptions: Subscription[];
   customTypes: CustomTypes;
   isLoading: boolean;
   saveUserProfile: (profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -31,6 +38,16 @@ interface AppContextType {
   addLender: (lender: Omit<Lender, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateLender: (id: string, lender: Partial<Lender>) => Promise<void>;
   deleteLender: (id: string) => Promise<void>;
+  addGoal: (goal: Omit<SavingsGoal, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateGoal: (id: string, goal: Partial<SavingsGoal>) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
+  addGoalContribution: (c: Omit<GoalContribution, 'id' | 'createdAt'>) => Promise<void>;
+  deleteGoalContribution: (id: string) => Promise<void>;
+  upsertBudget: (category: string, monthlyLimit: number) => Promise<void>;
+  deleteBudget: (id: string) => Promise<void>;
+  addSubscription: (sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateSubscription: (id: string, sub: Partial<Subscription>) => Promise<void>;
+  deleteSubscription: (id: string) => Promise<void>;
   addCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   removeCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -51,6 +68,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [commitmentPayments, setCommitmentPayments] = useState<CommitmentPayment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [lenders, setLenders] = useState<Lender[]>([]);
+  const [goals, setGoals] = useState<SavingsGoal[]>([]);
+  const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
+  const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [customTypes, setCustomTypes] = useState<CustomTypes>(DEFAULT_CUSTOM_TYPES);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -58,7 +79,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async function loadAll() {
       try {
         await runStorageMigrations();
-        const [profile, inc, com, payments, exp, ct, lend] = await Promise.all([
+        const [profile, inc, com, payments, exp, ct, lend, gls, gcs, bgs, subs] = await Promise.all([
           storage.getUserProfile(),
           storage.getIncomes(),
           storage.getCommitments(),
@@ -66,6 +87,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           storage.getExpenses(),
           storage.getCustomTypes(),
           storage.getLenders(),
+          storage.getGoals(),
+          storage.getGoalContributions(),
+          storage.getBudgets(),
+          storage.getSubscriptions(),
         ]);
         setUserProfile(profile);
         setIncomes(inc);
@@ -74,6 +99,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setExpenses(exp);
         setCustomTypes(ct);
         setLenders(lend);
+        setGoals(gls);
+        setGoalContributions(gcs);
+        setBudgets(bgs);
+        setSubscriptions(subs);
       } finally {
         setIsLoading(false);
       }
@@ -202,7 +231,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [lenders]);
 
   const deleteLender = useCallback(async (id: string) => {
-    // Unlink commitments instead of deleting them.
     const updatedLenders = lenders.filter((l) => l.id !== id);
     const updatedCommitments = commitments.map((c) =>
       c.lenderId === id ? { ...c, lenderId: undefined, updatedAt: new Date().toISOString() } : c,
@@ -214,6 +242,88 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLenders(updatedLenders);
     setCommitments(updatedCommitments);
   }, [lenders, commitments]);
+
+  // ─── Goals ───────────────────────────────────────────────────────────────
+  const addGoal = useCallback(async (data: Omit<SavingsGoal, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString();
+    const item: SavingsGoal = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+    const updated = [...goals, item];
+    await storage.saveGoals(updated);
+    setGoals(updated);
+    return item.id;
+  }, [goals]);
+
+  const updateGoal = useCallback(async (id: string, data: Partial<SavingsGoal>) => {
+    const updated = goals.map((g) => g.id === id ? { ...g, ...data, updatedAt: new Date().toISOString() } : g);
+    await storage.saveGoals(updated);
+    setGoals(updated);
+  }, [goals]);
+
+  const deleteGoal = useCallback(async (id: string) => {
+    const updatedG = goals.filter((g) => g.id !== id);
+    const updatedC = goalContributions.filter((c) => c.goalId !== id);
+    await Promise.all([storage.saveGoals(updatedG), storage.saveGoalContributions(updatedC)]);
+    setGoals(updatedG);
+    setGoalContributions(updatedC);
+  }, [goals, goalContributions]);
+
+  const addGoalContribution = useCallback(async (data: Omit<GoalContribution, 'id' | 'createdAt'>) => {
+    const item: GoalContribution = { id: generateId(), ...data, createdAt: new Date().toISOString() };
+    const updated = [...goalContributions, item];
+    await storage.saveGoalContributions(updated);
+    setGoalContributions(updated);
+  }, [goalContributions]);
+
+  const deleteGoalContribution = useCallback(async (id: string) => {
+    const updated = goalContributions.filter((c) => c.id !== id);
+    await storage.saveGoalContributions(updated);
+    setGoalContributions(updated);
+  }, [goalContributions]);
+
+  // ─── Budgets ─────────────────────────────────────────────────────────────
+  // One budget per category. Upsert keeps the screen UI simple.
+  const upsertBudget = useCallback(async (category: string, monthlyLimit: number) => {
+    const now = new Date().toISOString();
+    const existing = budgets.find((b) => b.category === category);
+    let updated: CategoryBudget[];
+    if (existing) {
+      updated = budgets.map((b) =>
+        b.id === existing.id ? { ...b, monthlyLimit, updatedAt: now } : b,
+      );
+    } else {
+      updated = [...budgets, { id: generateId(), category, monthlyLimit, createdAt: now, updatedAt: now }];
+    }
+    await storage.saveBudgets(updated);
+    setBudgets(updated);
+  }, [budgets]);
+
+  const deleteBudget = useCallback(async (id: string) => {
+    const updated = budgets.filter((b) => b.id !== id);
+    await storage.saveBudgets(updated);
+    setBudgets(updated);
+  }, [budgets]);
+
+  // ─── Subscriptions ───────────────────────────────────────────────────────
+  const addSubscription = useCallback(async (data: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString();
+    const item: Subscription = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+    const updated = [...subscriptions, item];
+    await storage.saveSubscriptions(updated);
+    setSubscriptions(updated);
+    return item.id;
+  }, [subscriptions]);
+
+  const updateSubscription = useCallback(async (id: string, data: Partial<Subscription>) => {
+    const updated = subscriptions.map((s) => s.id === id ? { ...s, ...data, updatedAt: new Date().toISOString() } : s);
+    await storage.saveSubscriptions(updated);
+    setSubscriptions(updated);
+  }, [subscriptions]);
+
+  const deleteSubscription = useCallback(async (id: string) => {
+    const updated = subscriptions.filter((s) => s.id !== id);
+    await storage.saveSubscriptions(updated);
+    setSubscriptions(updated);
+  }, [subscriptions]);
 
   const addCustomType = useCallback(async (category: keyof CustomTypes, value: string) => {
     const trimmed = value.trim();
@@ -237,6 +347,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCommitmentPayments([]);
     setExpenses([]);
     setLenders([]);
+    setGoals([]);
+    setGoalContributions([]);
+    setBudgets([]);
+    setSubscriptions([]);
     setCustomTypes(DEFAULT_CUSTOM_TYPES);
   }, []);
 
@@ -247,32 +361,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newCommitments = [...commitments, ...sample.commitments];
     const newPayments = [...commitmentPayments, ...sample.commitmentPayments];
     const newExpenses = [...expenses, ...sample.expenses];
+    const newGoals = [...goals, ...sample.goals];
+    const newContribs = [...goalContributions, ...sample.goalContributions];
+    // Budgets and subscriptions: skip categories/names that already exist to
+    // avoid duplicate-looking rows in the upsert-by-category UI.
+    const existingBudgetCats = new Set(budgets.map((b) => b.category));
+    const newBudgets = [...budgets, ...sample.budgets.filter((b) => !existingBudgetCats.has(b.category))];
+    const existingSubNames = new Set(subscriptions.map((s) => s.name.toLowerCase()));
+    const newSubs = [...subscriptions, ...sample.subscriptions.filter((s) => !existingSubNames.has(s.name.toLowerCase()))];
+
     await Promise.all([
       storage.saveLenders(newLenders),
       storage.saveIncomes(newIncomes),
       storage.saveCommitments(newCommitments),
       storage.saveCommitmentPayments(newPayments),
       storage.saveExpenses(newExpenses),
+      storage.saveGoals(newGoals),
+      storage.saveGoalContributions(newContribs),
+      storage.saveBudgets(newBudgets),
+      storage.saveSubscriptions(newSubs),
     ]);
     setLenders(newLenders);
     setIncomes(newIncomes);
     setCommitments(newCommitments);
     setCommitmentPayments(newPayments);
     setExpenses(newExpenses);
-  }, [incomes, commitments, commitmentPayments, expenses, lenders]);
+    setGoals(newGoals);
+    setGoalContributions(newContribs);
+    setBudgets(newBudgets);
+    setSubscriptions(newSubs);
+  }, [incomes, commitments, commitmentPayments, expenses, lenders, goals, goalContributions, budgets, subscriptions]);
 
   const getMonthlyTotals = useCallback((month: number, year: number): MonthlyTotals => {
     return calculateMonthlyTotals(
       incomes, commitments, commitmentPayments, expenses, month, year,
       userProfile?.monthlySavingGoal ?? 0,
+      'ar',
+      subscriptions,
     );
-  }, [incomes, commitments, commitmentPayments, expenses, userProfile]);
+  }, [incomes, commitments, commitmentPayments, expenses, userProfile, subscriptions]);
 
   const exportData = useCallback(() => storage.exportAll(), []);
 
   const importData = useCallback(async (json: string) => {
     await storage.importAll(json);
-    const [p, i, c, pay, e, ct, l] = await Promise.all([
+    const [p, i, c, pay, e, ct, l, gls, gcs, bgs, subs] = await Promise.all([
       storage.getUserProfile(),
       storage.getIncomes(),
       storage.getCommitments(),
@@ -280,6 +413,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       storage.getExpenses(),
       storage.getCustomTypes(),
       storage.getLenders(),
+      storage.getGoals(),
+      storage.getGoalContributions(),
+      storage.getBudgets(),
+      storage.getSubscriptions(),
     ]);
     setUserProfile(p);
     setIncomes(i);
@@ -288,16 +425,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setExpenses(e);
     setCustomTypes(ct);
     setLenders(l);
+    setGoals(gls);
+    setGoalContributions(gcs);
+    setBudgets(bgs);
+    setSubscriptions(subs);
   }, []);
 
   return (
     <AppContext.Provider value={{
-      userProfile, incomes, commitments, commitmentPayments, expenses, lenders, customTypes, isLoading,
+      userProfile, incomes, commitments, commitmentPayments, expenses, lenders,
+      goals, goalContributions, budgets, subscriptions,
+      customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
       addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid,
       addExpense, updateExpense, deleteExpense,
       addLender, updateLender, deleteLender,
+      addGoal, updateGoal, deleteGoal, addGoalContribution, deleteGoalContribution,
+      upsertBudget, deleteBudget,
+      addSubscription, updateSubscription, deleteSubscription,
       addCustomType, removeCustomType,
       clearAllData, loadSampleData, getMonthlyTotals, exportData, importData,
     }}>

@@ -1,4 +1,7 @@
-import { Income, Commitment, CommitmentPayment, Expense, Lender, LENDER_COLOR_PALETTE } from '../types';
+import {
+  Income, Commitment, CommitmentPayment, Expense, Lender, LENDER_COLOR_PALETTE,
+  SavingsGoal, GoalContribution, CategoryBudget, Subscription, GOAL_COLOR_PALETTE,
+} from '../types';
 import { generateId } from './format';
 
 export function generateSampleData(): {
@@ -7,11 +10,16 @@ export function generateSampleData(): {
   commitmentPayments: CommitmentPayment[];
   expenses: Expense[];
   lenders: Lender[];
+  goals: SavingsGoal[];
+  goalContributions: GoalContribution[];
+  budgets: CategoryBudget[];
+  subscriptions: Subscription[];
 } {
   const now = new Date().toISOString();
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
+  const ym = `${year}-${String(month).padStart(2, '0')}`;
 
   const lenders: Lender[] = [
     {
@@ -64,8 +72,7 @@ export function generateSampleData(): {
       isRecurring: true,
       receivedDay: 1,
       notes: 'الراتب الأساسي',
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
     {
       id: generateId(),
@@ -74,10 +81,9 @@ export function generateSampleData(): {
       type: 'عمل إضافي',
       isRecurring: false,
       receivedDay: 15,
-      receivedDate: `${year}-${String(month).padStart(2, '0')}-15`,
+      receivedDate: `${ym}-15`,
       notes: 'مشروع تصميم',
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
   ];
 
@@ -92,8 +98,7 @@ export function generateSampleData(): {
       dueDay: 1,
       isRecurring: true,
       isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
     {
       id: generateId(),
@@ -108,8 +113,7 @@ export function generateSampleData(): {
       isRecurring: true,
       isActive: true,
       startDate: `${year - 1}-01-10`,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
     {
       id: generateId(),
@@ -121,8 +125,7 @@ export function generateSampleData(): {
       dueDay: 20,
       isRecurring: true,
       isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
     {
       id: generateId(),
@@ -134,8 +137,7 @@ export function generateSampleData(): {
       dueDay: 5,
       isRecurring: true,
       isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
     {
       id: generateId(),
@@ -146,12 +148,10 @@ export function generateSampleData(): {
       dueDay: 15,
       isRecurring: true,
       isActive: true,
-      createdAt: now,
-      updatedAt: now,
+      createdAt: now, updatedAt: now,
     },
   ];
 
-  // Simulate 16 paid installments on the car loan (showing progress).
   const carLoan = commitments[1];
   const carHistory: CommitmentPayment[] = [];
   for (let i = 0; i < 16; i++) {
@@ -172,10 +172,9 @@ export function generateSampleData(): {
     {
       id: generateId(),
       commitmentId: paidCommitmentId,
-      month,
-      year,
+      month, year,
       amount: 3000,
-      paidDate: `${year}-${String(month).padStart(2, '0')}-01`,
+      paidDate: `${ym}-01`,
       status: 'paid',
     },
     ...carHistory,
@@ -198,10 +197,116 @@ export function generateSampleData(): {
     title: e.title,
     category: e.category,
     amount: e.amount,
-    expenseDate: `${year}-${String(month).padStart(2, '0')}-${String(dates[i] ?? today.getDate()).padStart(2, '0')}`,
-    createdAt: now,
-    updatedAt: now,
+    expenseDate: `${ym}-${String(dates[i] ?? today.getDate()).padStart(2, '0')}`,
+    createdAt: now, updatedAt: now,
   }));
 
-  return { incomes, commitments, commitmentPayments, expenses, lenders };
+  // ─── Phase 3 sample data ───────────────────────────────────────────────────
+  const goals: SavingsGoal[] = [
+    {
+      id: generateId(),
+      name: 'صندوق الطوارئ',
+      targetAmount: 30000,
+      currentAmount: 12500,
+      targetDate: `${year + 1}-06-30`,
+      color: GOAL_COLOR_PALETTE[0],
+      icon: 'shield',
+      isCompleted: false,
+      notes: 'يكفي 6 أشهر من المصاريف الأساسية',
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'سفرة العائلة',
+      targetAmount: 15000,
+      currentAmount: 3500,
+      targetDate: `${year + 1}-08-15`,
+      color: GOAL_COLOR_PALETTE[2],
+      icon: 'map',
+      isCompleted: false,
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'تحديث الجوال',
+      targetAmount: 4500,
+      currentAmount: 1200,
+      color: GOAL_COLOR_PALETTE[3],
+      icon: 'gift',
+      isCompleted: false,
+      createdAt: now, updatedAt: now,
+    },
+  ];
+
+  const goalContributions: GoalContribution[] = [
+    {
+      id: generateId(), goalId: goals[0].id, amount: 1000,
+      date: `${ym}-05`, notes: 'تحويل تلقائي', createdAt: now,
+    },
+    {
+      id: generateId(), goalId: goals[1].id, amount: 500,
+      date: `${ym}-08`, createdAt: now,
+    },
+  ];
+
+  const budgets: CategoryBudget[] = [
+    { id: generateId(), category: 'مطاعم', monthlyLimit: 400, createdAt: now, updatedAt: now },
+    { id: generateId(), category: 'قهوة', monthlyLimit: 200, createdAt: now, updatedAt: now },
+    { id: generateId(), category: 'تسوق', monthlyLimit: 500, createdAt: now, updatedAt: now },
+    { id: generateId(), category: 'بنزين', monthlyLimit: 400, createdAt: now, updatedAt: now },
+    { id: generateId(), category: 'ترفيه', monthlyLimit: 250, createdAt: now, updatedAt: now },
+  ];
+
+  // Pick a renewal date a few days out from today to make "renews soon"
+  // insights/sample look meaningful.
+  const soonDay = Math.min(28, today.getDate() + 4);
+  const soonYm = `${ym}-${String(soonDay).padStart(2, '0')}`;
+  const subscriptions: Subscription[] = [
+    {
+      id: generateId(),
+      name: 'Netflix',
+      amount: 56,
+      cycle: 'monthly',
+      nextRenewalDate: soonYm,
+      icon: 'film',
+      color: '#EF4444',
+      isActive: true,
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'Shahid VIP',
+      amount: 350,
+      cycle: 'yearly',
+      nextRenewalDate: `${year + 1}-${String(month).padStart(2, '0')}-10`,
+      icon: 'tv',
+      color: '#8B5CF6',
+      isActive: true,
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'Spotify عائلي',
+      amount: 29,
+      cycle: 'monthly',
+      nextRenewalDate: `${ym}-22`,
+      icon: 'music',
+      color: '#10B981',
+      isActive: true,
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'iCloud 200GB',
+      amount: 11,
+      cycle: 'monthly',
+      nextRenewalDate: `${ym}-18`,
+      icon: 'cloud',
+      color: '#3B82F6',
+      isActive: true,
+      createdAt: now, updatedAt: now,
+    },
+  ];
+
+  return { incomes, commitments, commitmentPayments, expenses, lenders, goals, goalContributions, budgets, subscriptions };
 }

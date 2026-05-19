@@ -194,7 +194,30 @@ export default function SettingsScreen() {
         <TypeManager title={t.settings.expenseCatsTitle} category="expenseCategories" builtins={[...EXPENSE_CATEGORIES]} />
       </Card>
 
-      <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.lendersSection}</Text>
+      <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.planningSection}</Text>
+      {[
+        { route: '/goals', icon: 'target', title: t.settings.goalsTitle, sub: t.settings.goalsDesc },
+        { route: '/budgets', icon: 'pie-chart', title: t.settings.budgetsTitle, sub: t.settings.budgetsDesc },
+        { route: '/subscriptions', icon: 'repeat', title: t.settings.subscriptionsTitle, sub: t.settings.subscriptionsDesc },
+      ].map((nav) => (
+        <TouchableOpacity
+          key={nav.route}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push(nav.route as any); }}
+          activeOpacity={0.8}
+          style={[styles.dataCard, { flexDirection: dir.row, backgroundColor: colors.primary + '0E', borderColor: colors.primary + '35' }]}
+        >
+          <View style={[styles.dataIconCircle, { backgroundColor: colors.primary }]}>
+            <Feather name={nav.icon as any} size={22} color="#fff" />
+          </View>
+          <View style={styles.dataCardText}>
+            <Text style={[styles.dataCardTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{nav.title}</Text>
+            <Text style={[styles.dataCardSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{nav.sub}</Text>
+          </View>
+          <Feather name={dir.chevronDetail as any} size={18} color={colors.mutedForeground} />
+        </TouchableOpacity>
+      ))}
+
+      <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground, marginTop: 14 }]}>{t.settings.lendersSection}</Text>
       <TouchableOpacity
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/lenders'); }}
         activeOpacity={0.8}

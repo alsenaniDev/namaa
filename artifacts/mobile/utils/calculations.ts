@@ -1,4 +1,7 @@
-import { Income, Commitment, CommitmentPayment, Expense, MonthlyTotals, HealthStatus } from '../types';
+import {
+  Income, Commitment, CommitmentPayment, Expense, MonthlyTotals, HealthStatus,
+  Subscription, SavingsGoal, GoalContribution, CategoryBudget,
+} from '../types';
 import { parseDateLocal } from './format';
 
 export function getHealthStatus(commitmentPercent: number, lang = 'ar'): { status: HealthStatus; color: string; message: string } {
@@ -76,6 +79,7 @@ export function calculateMonthlyTotals(
   year: number,
   savingGoal: number = 0,
   lang = 'ar',
+  subscriptions: Subscription[] = [],
 ): MonthlyTotals {
   const totalIncome = incomes.reduce((sum, i) => {
     if (!i.isRecurring && i.receivedDate) {
@@ -89,7 +93,11 @@ export function calculateMonthlyTotals(
   }, 0);
 
   const activeCommitments = commitments.filter((c) => c.isActive);
-  const totalCommitments = activeCommitments.reduce((sum, c) => sum + c.amount, 0);
+  const commitmentSum = activeCommitments.reduce((sum, c) => sum + c.amount, 0);
+  // Subscriptions roll into the committed-outflow line — yearly/quarterly/weekly
+  // are normalized to a monthly equivalent so the budget bar reflects reality.
+  const subscriptionMonthly = getMonthlySubscriptionTotal(subscriptions);
+  const totalCommitments = commitmentSum + subscriptionMonthly;
 
   const monthExpenses = expenses.filter((e) => {
     const d = parseDateLocal(e.expenseDate);
@@ -215,6 +223,139 @@ export function getCommitmentProgress(
     remainingInstallments,
     progressPercent,
   };
+}
+
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+
+/** Normalize a single subscription's cost to a monthly equivalent. */
+export function getSubscriptionMonthlyEquivalent(s: Subscription): number {
+  switch (s.cycle) {
+    case 'monthly': return s.amount;
+    case 'yearly': return s.amount / 12;
+    case 'quarterly': return s.amount / 3;
+    // 52 weeks / 12 months ≈ 4.333 — gives a stable monthly view of a weekly charge.
+    case 'weekly': return (s.amount * 52) / 12;
+    default: return s.amount;
+  }
+}
+
+export function getSubscriptionYearlyEquivalent(s: Subscription): number {
+  switch (s.cycle) {
+    case 'monthly': return s.amount * 12;
+    case 'yearly': return s.amount;
+    case 'quarterly': return s.amount * 4;
+    case 'weekly': return s.amount * 52;
+    default: return s.amount * 12;
+  }
+}
+
+export function getMonthlySubscriptionTotal(subs: Subscription[]): number {
+  return subs
+    .filter((s) => s.isActive)
+    .reduce((sum, s) => sum + getSubscriptionMonthlyEquivalent(s), 0);
+}
+
+export function getYearlySubscriptionTotal(subs: Subscription[]): number {
+  return subs
+    .filter((s) => s.isActive)
+    .reduce((sum, s) => sum + getSubscriptionYearlyEquivalent(s), 0);
+}
+
+/**
+ * Roll a subscription's nextRenewalDate forward until it is strictly greater
+ * than `from`. Stops eventually because each cycle adds time.
+ */
+export function advanceRenewalDate(currentDate: string, cycle: Subscription['cycle'], from: Date = new Date()): string {
+  const d = parseDateLocal(currentDate);
+  if (!d) return currentDate;
+  while (d <= from) {
+    if (cycle === 'monthly') d.setMonth(d.getMonth() + 1);
+    else if (cycle === 'yearly') d.setFullYear(d.getFullYear() + 1);
+    else if (cycle === 'quarterly') d.setMonth(d.getMonth() + 3);
+    else if (cycle === 'weekly') d.setDate(d.getDate() + 7);
+    else break;
+  }
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+export function daysUntil(dateStr: string, from: Date = new Date()): number {
+  const d = parseDateLocal(dateStr);
+  if (!d) return Infinity;
+  const start = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  return Math.round((target.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+// ─── Savings Goals ───────────────────────────────────────────────────────────
+
+export interface GoalProgress {
+  saved: number;
+  remaining: number;
+  percent: number; // 0..100
+  isCompleted: boolean;
+  /** Months until target date (rounded up), or null if no target date. */
+  monthsUntilTarget: number | null;
+  /** Suggested monthly contribution to hit target on time. */
+  suggestedMonthly: number | null;
+}
+
+export function getGoalProgress(goal: SavingsGoal, contributions: GoalContribution[]): GoalProgress {
+  const contribSum = contributions
+    .filter((c) => c.goalId === goal.id)
+    .reduce((s, c) => s + c.amount, 0);
+  // currentAmount (manual baseline) + contributions
+  const saved = Math.max(0, goal.currentAmount + contribSum);
+  const target = Math.max(1, goal.targetAmount);
+  const percent = Math.min(100, (saved / target) * 100);
+  const remaining = Math.max(0, goal.targetAmount - saved);
+  const isCompleted = goal.isCompleted || saved >= goal.targetAmount;
+
+  let monthsUntilTarget: number | null = null;
+  let suggestedMonthly: number | null = null;
+  const td = parseDateLocal(goal.targetDate);
+  if (td) {
+    const now = new Date();
+    const months = (td.getFullYear() - now.getFullYear()) * 12 + (td.getMonth() - now.getMonth());
+    monthsUntilTarget = Math.max(0, months);
+    if (monthsUntilTarget > 0 && remaining > 0) {
+      suggestedMonthly = remaining / monthsUntilTarget;
+    }
+  }
+
+  return { saved, remaining, percent, isCompleted, monthsUntilTarget, suggestedMonthly };
+}
+
+// ─── Category Budgets ────────────────────────────────────────────────────────
+
+export interface BudgetUsage {
+  category: string;
+  limit: number;
+  spent: number;
+  percent: number; // 0..∞ (can exceed 100)
+  remaining: number; // may be negative when over budget
+  status: 'safe' | 'warning' | 'over';
+}
+
+export function getBudgetUsages(
+  budgets: CategoryBudget[],
+  expenses: Expense[],
+  month: number,
+  year: number,
+): BudgetUsage[] {
+  const byCat = getExpensesByCategory(expenses, month, year);
+  return budgets.map((b) => {
+    const spent = byCat[b.category] ?? 0;
+    const limit = Math.max(0, b.monthlyLimit);
+    const percent = limit > 0 ? (spent / limit) * 100 : 0;
+    const remaining = limit - spent;
+    let status: BudgetUsage['status'] = 'safe';
+    if (percent >= 100) status = 'over';
+    else if (percent >= 80) status = 'warning';
+    return { category: b.category, limit, spent, percent, remaining, status };
+  });
 }
 
 // ─── Lender stats ────────────────────────────────────────────────────────────

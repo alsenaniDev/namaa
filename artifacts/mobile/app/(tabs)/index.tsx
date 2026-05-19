@@ -9,20 +9,22 @@ import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
-import { getUpcomingCommitments } from '@/utils/calculations';
+import { getUpcomingCommitments, getBudgetUsages, getGoalProgress } from '@/utils/calculations';
 import { getInsights } from '@/utils/insights';
 import { HealthStatusCard } from '@/components/HealthStatusCard';
 import { BudgetBar } from '@/components/BudgetBar';
 import { QuickActions } from '@/components/QuickActions';
 import { InsightCard } from '@/components/InsightCard';
 import { Card } from '@/components/ui/Card';
+import { GoalCard } from '@/components/GoalCard';
+import { BudgetRow } from '@/components/BudgetRow';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const dir = useDir();
   const router = useRouter();
-  const { userProfile, commitments, commitmentPayments, expenses, getMonthlyTotals } = useApp();
+  const { userProfile, commitments, commitmentPayments, expenses, goals, goalContributions, budgets, subscriptions, getMonthlyTotals } = useApp();
   const { language } = useLanguage();
   const t = useT();
   const { month, year } = getCurrentMonthYear();
@@ -42,8 +44,25 @@ export default function DashboardScreen() {
       currency,
       lang: language as 'ar' | 'en',
       savingGoal: userProfile?.monthlySavingGoal ?? 0,
+      goals,
+      goalContributions,
+      budgets,
+      subscriptions,
     }).slice(0, 3),
-    [totals, commitments, commitmentPayments, expenses, month, year, currency, language, userProfile?.monthlySavingGoal],
+    [totals, commitments, commitmentPayments, expenses, month, year, currency, language, userProfile?.monthlySavingGoal, goals, goalContributions, budgets, subscriptions],
+  );
+
+  const activeGoals = useMemo(
+    () => goals
+      .filter((g) => !g.isCompleted)
+      .sort((a, b) => getGoalProgress(b, goalContributions).percent - getGoalProgress(a, goalContributions).percent)
+      .slice(0, 2),
+    [goals, goalContributions],
+  );
+
+  const budgetWarnings = useMemo(
+    () => getBudgetUsages(budgets, expenses, month, year).filter((u) => u.status !== 'safe').slice(0, 2),
+    [budgets, expenses, month, year],
   );
 
   const today = new Date();
@@ -94,6 +113,39 @@ export default function DashboardScreen() {
               insight={ins}
               onCta={ins.cta ? () => router.push(ins.cta!.route as any) : undefined}
             />
+          ))}
+        </View>
+      ) : null}
+
+      {/* Active Goals */}
+      {activeGoals.length > 0 ? (
+        <View style={styles.section}>
+          <View style={[styles.sectionHeader, { flexDirection: dir.row }]}>
+            <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground, flex: 1 }]}>{t.dashboard.goalsWidgetTitle}</Text>
+            <TouchableOpacity onPress={() => router.push('/goals' as any)} activeOpacity={0.7} style={[styles.linkRow, { flexDirection: dir.row }]}>
+              <Text style={[styles.linkText, { color: colors.primary }]}>{t.dashboard.goalsViewAll}</Text>
+              <Feather name={dir.chevronDetail as any} size={14} color={colors.primary} />
+            </TouchableOpacity>
+          </View>
+          {activeGoals.map((g) => (
+            <GoalCard
+              key={g.id}
+              goal={g}
+              contributions={goalContributions}
+              currency={currency}
+              compact
+              onPress={() => router.push({ pathname: '/goals/[id]', params: { id: g.id } })}
+            />
+          ))}
+        </View>
+      ) : null}
+
+      {/* Budget Warnings */}
+      {budgetWarnings.length > 0 ? (
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.budgetWarningsTitle}</Text>
+          {budgetWarnings.map((u) => (
+            <BudgetRow key={u.category} usage={u} currency={currency} />
           ))}
         </View>
       ) : null}

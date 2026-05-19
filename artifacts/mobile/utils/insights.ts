@@ -1,5 +1,11 @@
-import { Commitment, CommitmentPayment, Expense, MonthlyTotals } from '../types';
-import { calculateMonthlyTotals, getCommitmentProgress, getExpensesByCategory, getLateCommitments } from './calculations';
+import {
+  Commitment, CommitmentPayment, Expense, MonthlyTotals,
+  SavingsGoal, GoalContribution, CategoryBudget, Subscription,
+} from '../types';
+import {
+  calculateMonthlyTotals, getCommitmentProgress, getExpensesByCategory,
+  getLateCommitments, getBudgetUsages, getGoalProgress, daysUntil,
+} from './calculations';
 import { formatCurrency, formatMonthYear } from './format';
 
 export type InsightSeverity = 'info' | 'success' | 'warning' | 'danger';
@@ -25,6 +31,10 @@ interface InsightArgs {
   currency: string;
   lang: 'ar' | 'en';
   savingGoal: number;
+  goals?: SavingsGoal[];
+  goalContributions?: GoalContribution[];
+  budgets?: CategoryBudget[];
+  subscriptions?: Subscription[];
 }
 
 const MILESTONES = [25, 50, 75, 100];
@@ -41,7 +51,10 @@ function getPreviousMonth(month: number, year: number): { month: number; year: n
 }
 
 export function getInsights(args: InsightArgs): Insight[] {
-  const { totals, commitments, payments, expenses, month, year, currency, lang, savingGoal } = args;
+  const {
+    totals, commitments, payments, expenses, month, year, currency, lang, savingGoal,
+    goals = [], goalContributions = [], budgets = [], subscriptions = [],
+  } = args;
   const isEn = lang === 'en';
   const out: Insight[] = [];
 
@@ -203,7 +216,93 @@ export function getInsights(args: InsightArgs): Insight[] {
     }
   }
 
-  // 7) Fallback: healthy + nothing to flag
+  // 7) Budget overruns — surface up to TWO worst offenders (one card each).
+  const usages = getBudgetUsages(budgets, expenses, month, year)
+    .filter((u) => u.limit > 0 && u.percent >= 80)
+    .sort((a, b) => b.percent - a.percent)
+    .slice(0, 2);
+  for (const u of usages) {
+    const over = u.percent >= 100;
+    out.push({
+      id: `budget_${u.category}`,
+      severity: over ? 'danger' : 'warning',
+      icon: over ? 'alert-octagon' : 'alert-circle',
+      // Over-budget is actionable now → close to late. Warning sits below upcoming.
+      priority: over ? 95 : 75,
+      title: over
+        ? (isEn ? 'Budget exceeded' : 'تجاوزت ميزانية الفئة')
+        : (isEn ? 'Budget almost spent' : 'اقتربت من حد الميزانية'),
+      message: isEn
+        ? `${u.category}: ${formatCurrency(u.spent, currency)} of ${formatCurrency(u.limit, currency)} (${Math.round(u.percent)}%).`
+        : `${u.category}: ${formatCurrency(u.spent, currency)} من ${formatCurrency(u.limit, currency)} (${Math.round(u.percent)}٪).`,
+      cta: { label: isEn ? 'Manage budgets' : 'إدارة الميزانيات', route: '/budgets' },
+    });
+  }
+
+  // 8) Subscriptions renewing soon (within 5 days, active only). One combined card.
+  const dueSoonSubs = subscriptions
+    .filter((s) => s.isActive)
+    .map((s) => ({ s, days: daysUntil(s.nextRenewalDate) }))
+    .filter(({ days }) => days >= 0 && days <= 5)
+    .sort((a, b) => a.days - b.days);
+  if (dueSoonSubs.length > 0) {
+    const first = dueSoonSubs[0];
+    const more = dueSoonSubs.length - 1;
+    out.push({
+      id: 'subs_renewing',
+      severity: 'info',
+      icon: 'repeat',
+      priority: 55,
+      title: isEn ? 'Subscription renewing soon' : 'اشتراك يتجدد قريباً',
+      message: isEn
+        ? `"${first.s.name}" renews in ${first.days} day${first.days === 1 ? '' : 's'} (${formatCurrency(first.s.amount, currency)})${more > 0 ? ` and ${more} other${more > 1 ? 's' : ''}.` : '.'}`
+        : `"${first.s.name}" يتجدد خلال ${first.days} ${first.days === 1 ? 'يوم' : 'أيام'} (${formatCurrency(first.s.amount, currency)})${more > 0 ? ` و${more} اشتراك${more > 1 ? 'ات' : ''} آخر.` : '.'}`,
+      cta: { label: isEn ? 'View subscriptions' : 'عرض الاشتراكات', route: '/subscriptions' },
+    });
+  }
+
+  // 9) Goal milestone — pick the goal closest to completion (≥50%, not yet done).
+  if (goals.length > 0) {
+    const goalScored = goals
+      .filter((g) => !g.isCompleted)
+      .map((g) => ({ g, prog: getGoalProgress(g, goalContributions) }))
+      .filter(({ prog }) => prog.percent >= 50 && !prog.isCompleted)
+      .sort((a, b) => b.prog.percent - a.prog.percent);
+    if (goalScored.length > 0) {
+      const { g, prog } = goalScored[0];
+      out.push({
+        id: `goal_${g.id}`,
+        severity: 'success',
+        icon: 'flag',
+        priority: 25,
+        title: isEn ? 'Goal milestone' : 'إنجاز في هدفك',
+        message: isEn
+          ? `"${g.name}" is ${Math.round(prog.percent)}% funded — only ${formatCurrency(prog.remaining, currency)} to go.`
+          : `"${g.name}" أنجزت ${Math.round(prog.percent)}٪ — تبقى ${formatCurrency(prog.remaining, currency)} فقط.`,
+        cta: { label: isEn ? 'Goal details' : 'تفاصيل الهدف', route: `/goals/${g.id}` },
+      });
+    }
+    // Celebrate any newly-completed (still flagged) goal
+    const completedNotFlagged = goals
+      .map((g) => ({ g, prog: getGoalProgress(g, goalContributions) }))
+      .find(({ g, prog }) => prog.isCompleted && !g.isCompleted);
+    if (completedNotFlagged) {
+      const { g } = completedNotFlagged;
+      out.push({
+        id: `goal_done_${g.id}`,
+        severity: 'success',
+        icon: 'award',
+        priority: 85,
+        title: isEn ? 'Goal reached!' : 'حققت هدفك!',
+        message: isEn
+          ? `Congrats — "${g.name}" is fully funded.`
+          : `مبروك — تم تمويل "${g.name}" بالكامل.`,
+        cta: { label: isEn ? 'View goal' : 'عرض الهدف', route: `/goals/${g.id}` },
+      });
+    }
+  }
+
+  // 10) Fallback: healthy + nothing to flag
   if (out.length === 0 && totals.healthStatus === 'ممتاز') {
     out.push({
       id: 'healthy',

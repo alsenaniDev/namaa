@@ -1,5 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender } from '../types';
+import {
+  UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender,
+  SavingsGoal, GoalContribution, CategoryBudget, Subscription,
+} from '../types';
 
 export interface CustomTypes {
   incomeTypes: string[];
@@ -15,11 +18,17 @@ const KEYS = {
   EXPENSES: '@mali/expenses',
   CUSTOM_TYPES: '@mali/custom_types',
   LENDERS: '@mali/lenders',
+  GOALS: '@mali/goals',
+  GOAL_CONTRIBUTIONS: '@mali/goal_contributions',
+  BUDGETS: '@mali/budgets',
+  SUBSCRIPTIONS: '@mali/subscriptions',
   STORAGE_VERSION: '@mali/storage_version',
 };
 
 // Bump when introducing a schema migration that may invalidate older data.
-const CURRENT_STORAGE_VERSION = '2';
+// v3 (Phase 3): adds goals/contributions/budgets/subscriptions. Additive only —
+// no destructive migration needed.
+const CURRENT_STORAGE_VERSION = '3';
 
 async function getItem<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -37,29 +46,27 @@ async function setItem<T>(key: string, value: T): Promise<void> {
 
 const DEFAULT_CUSTOM_TYPES: CustomTypes = { incomeTypes: [], commitmentCategories: [], expenseCategories: [] };
 
+const ALL_DOMAIN_KEYS = [
+  KEYS.USER_PROFILE, KEYS.INCOMES, KEYS.COMMITMENTS, KEYS.COMMITMENT_PAYMENTS,
+  KEYS.EXPENSES, KEYS.CUSTOM_TYPES, KEYS.LENDERS,
+  KEYS.GOALS, KEYS.GOAL_CONTRIBUTIONS, KEYS.BUDGETS, KEYS.SUBSCRIPTIONS,
+];
+
 /**
- * Run once at app startup. If we detect storage from a pre-v2 install (no
- * version marker) we wipe legacy data so the app starts fresh on the new
- * richer Commitment/Lender model. From v2 onward, future migrations should
- * transform data in place rather than wipe.
+ * Run once at app startup. Pre-v2 installs are wiped (legacy commitment model).
+ * v2 → v3 is additive (goals/budgets/subs default to empty arrays). All later
+ * migrations should transform data in place rather than wipe.
  */
 export async function runStorageMigrations(): Promise<void> {
   try {
     const version = await AsyncStorage.getItem(KEYS.STORAGE_VERSION);
     if (version === CURRENT_STORAGE_VERSION) return;
 
-    // Pre-v2: wipe everything (fresh-start migration agreed with product).
     if (version === null) {
-      await AsyncStorage.multiRemove([
-        KEYS.USER_PROFILE,
-        KEYS.INCOMES,
-        KEYS.COMMITMENTS,
-        KEYS.COMMITMENT_PAYMENTS,
-        KEYS.EXPENSES,
-        KEYS.CUSTOM_TYPES,
-        KEYS.LENDERS,
-      ]);
+      // Pre-v2: wipe legacy commitment/lender data.
+      await AsyncStorage.multiRemove(ALL_DOMAIN_KEYS);
     }
+    // v2 → v3: no-op, new keys default to empty arrays.
     await AsyncStorage.setItem(KEYS.STORAGE_VERSION, CURRENT_STORAGE_VERSION);
   } catch {
     // If migration itself fails, fall through — the app can still load.
@@ -88,16 +95,28 @@ export const storage = {
   getLenders: () => getItem<Lender[]>(KEYS.LENDERS, []),
   saveLenders: (items: Lender[]) => setItem(KEYS.LENDERS, items),
 
+  getGoals: () => getItem<SavingsGoal[]>(KEYS.GOALS, []),
+  saveGoals: (items: SavingsGoal[]) => setItem(KEYS.GOALS, items),
+
+  getGoalContributions: () => getItem<GoalContribution[]>(KEYS.GOAL_CONTRIBUTIONS, []),
+  saveGoalContributions: (items: GoalContribution[]) => setItem(KEYS.GOAL_CONTRIBUTIONS, items),
+
+  getBudgets: () => getItem<CategoryBudget[]>(KEYS.BUDGETS, []),
+  saveBudgets: (items: CategoryBudget[]) => setItem(KEYS.BUDGETS, items),
+
+  getSubscriptions: () => getItem<Subscription[]>(KEYS.SUBSCRIPTIONS, []),
+  saveSubscriptions: (items: Subscription[]) => setItem(KEYS.SUBSCRIPTIONS, items),
+
   clearAll: async () => {
-    // Keep STORAGE_VERSION so re-clear in v2 doesn't re-trigger a wipe.
-    await AsyncStorage.multiRemove([
-      KEYS.USER_PROFILE, KEYS.INCOMES, KEYS.COMMITMENTS,
-      KEYS.COMMITMENT_PAYMENTS, KEYS.EXPENSES, KEYS.CUSTOM_TYPES, KEYS.LENDERS,
-    ]);
+    // Keep STORAGE_VERSION so re-clear doesn't re-trigger a wipe.
+    await AsyncStorage.multiRemove(ALL_DOMAIN_KEYS);
   },
 
   exportAll: async (): Promise<string> => {
-    const [profile, incomes, commitments, payments, expenses, customTypes, lenders] = await Promise.all([
+    const [
+      profile, incomes, commitments, payments, expenses, customTypes, lenders,
+      goals, goalContributions, budgets, subscriptions,
+    ] = await Promise.all([
       getItem<UserProfile | null>(KEYS.USER_PROFILE, null),
       getItem<Income[]>(KEYS.INCOMES, []),
       getItem<Commitment[]>(KEYS.COMMITMENTS, []),
@@ -105,23 +124,22 @@ export const storage = {
       getItem<Expense[]>(KEYS.EXPENSES, []),
       getItem<CustomTypes>(KEYS.CUSTOM_TYPES, DEFAULT_CUSTOM_TYPES),
       getItem<Lender[]>(KEYS.LENDERS, []),
+      getItem<SavingsGoal[]>(KEYS.GOALS, []),
+      getItem<GoalContribution[]>(KEYS.GOAL_CONTRIBUTIONS, []),
+      getItem<CategoryBudget[]>(KEYS.BUDGETS, []),
+      getItem<Subscription[]>(KEYS.SUBSCRIPTIONS, []),
     ]);
     return JSON.stringify({
       version: CURRENT_STORAGE_VERSION,
       profile, incomes, commitments, payments, expenses, customTypes, lenders,
+      goals, goalContributions, budgets, subscriptions,
       exportedAt: new Date().toISOString(),
     });
   },
 
   importAll: async (jsonString: string): Promise<void> => {
     const data = JSON.parse(jsonString);
-    // Settings copy promises "replace all current data" — so clear every domain
-    // key first, then write the imported values (with safe defaults for any
-    // collection missing from the backup file).
-    await AsyncStorage.multiRemove([
-      KEYS.USER_PROFILE, KEYS.INCOMES, KEYS.COMMITMENTS,
-      KEYS.COMMITMENT_PAYMENTS, KEYS.EXPENSES, KEYS.CUSTOM_TYPES, KEYS.LENDERS,
-    ]);
+    await AsyncStorage.multiRemove(ALL_DOMAIN_KEYS);
     await Promise.all([
       data.profile ? setItem(KEYS.USER_PROFILE, data.profile) : Promise.resolve(),
       setItem(KEYS.INCOMES, Array.isArray(data.incomes) ? data.incomes : []),
@@ -130,6 +148,10 @@ export const storage = {
       setItem(KEYS.EXPENSES, Array.isArray(data.expenses) ? data.expenses : []),
       setItem(KEYS.CUSTOM_TYPES, data.customTypes ?? DEFAULT_CUSTOM_TYPES),
       setItem(KEYS.LENDERS, Array.isArray(data.lenders) ? data.lenders : []),
+      setItem(KEYS.GOALS, Array.isArray(data.goals) ? data.goals : []),
+      setItem(KEYS.GOAL_CONTRIBUTIONS, Array.isArray(data.goalContributions) ? data.goalContributions : []),
+      setItem(KEYS.BUDGETS, Array.isArray(data.budgets) ? data.budgets : []),
+      setItem(KEYS.SUBSCRIPTIONS, Array.isArray(data.subscriptions) ? data.subscriptions : []),
     ]);
     await AsyncStorage.setItem(KEYS.STORAGE_VERSION, CURRENT_STORAGE_VERSION);
   },

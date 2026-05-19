@@ -194,6 +194,73 @@ export interface MonthlyTotals {
   remainingAfterCommitments: number;
 }
 
+// ─── Savings Goals ───────────────────────────────────────────────────────────
+
+export const GOAL_COLOR_PALETTE = [
+  '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444',
+  '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#06B6D4',
+];
+
+export const GOAL_ICONS = [
+  'target', 'home', 'gift', 'umbrella', 'briefcase',
+  'heart', 'star', 'map', 'shield', 'shopping-bag',
+  'truck', 'book',
+];
+
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  targetDate?: string;
+  color: string;
+  icon: string;
+  isCompleted: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalContribution {
+  id: string;
+  goalId: string;
+  amount: number;
+  date: string; // YYYY-MM-DD
+  notes?: string;
+  createdAt: string;
+}
+
+// ─── Category Budgets ────────────────────────────────────────────────────────
+
+export interface CategoryBudget {
+  id: string;
+  category: ExpenseCategory | string;
+  monthlyLimit: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Subscriptions ───────────────────────────────────────────────────────────
+
+export type BillingCycle = 'monthly' | 'yearly' | 'quarterly' | 'weekly';
+
+export const BILLING_CYCLES: BillingCycle[] = ['monthly', 'yearly', 'quarterly', 'weekly'];
+
+export interface Subscription {
+  id: string;
+  name: string;
+  amount: number;
+  cycle: BillingCycle;
+  nextRenewalDate: string; // YYYY-MM-DD
+  category?: string;
+  icon: string;
+  color: string;
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const CURRENCIES = [
   { label: 'ريال سعودي (ر.س)', value: 'SAR' },
   { label: 'درهم إماراتي (AED)', value: 'AED' },

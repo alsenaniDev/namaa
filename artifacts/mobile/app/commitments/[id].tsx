@@ -559,6 +559,12 @@ export default function CommitmentDetailScreen() {
               keyboardType="decimal-pad"
               placeholder={commitment.amount.toString()}
               placeholderTextColor={colors.mutedForeground}
+              // The field is pre-filled with the existing installment amount.
+              // Without selectTextOnFocus, tapping just lands the cursor at the
+              // end and users end up appending digits (e.g. 500 → 5007) instead
+              // of replacing — the "can't update paid installment" symptom.
+              selectTextOnFocus
+              autoFocus
               style={[styles.modalInput, {
                 color: colors.foreground,
                 backgroundColor: colors.background,
@@ -583,11 +589,11 @@ export default function CommitmentDetailScreen() {
                 />
               ) : null}
               {/* "Save amount only" keeps the installment unpaid but persists
-                  the custom amount. Available in bulk mode, and in single mode
-                  for installments that aren't already paid. */}
-              {/* In bulk mode the selection may include paid rows; saving as
-                  amount-only will flip them back to unpaid. Use a clearer
-                  label there so the side-effect is explicit. */}
+                  the custom amount. In bulk mode it may include paid rows and
+                  flip them back to unpaid — labelled accordingly so the
+                  side-effect is explicit. For paid single rows it's hidden:
+                  the "Save" button (action='paid') below already updates the
+                  amount in place while keeping paid status. */}
               {bulkMode || editing?.payment?.status !== 'paid' ? (
                 <Button
                   title={

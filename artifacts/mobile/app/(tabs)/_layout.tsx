@@ -42,6 +42,13 @@ export default function TabLayout() {
       : { flexDirection: 'row', alignItems: 'center', marginLeft: 14 }
     }>
       <TouchableOpacity
+        onPress={() => router.push('/calendar')}
+        style={{ padding: 4, marginHorizontal: 4 }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Feather name="calendar" size={22} color={colors.foreground} />
+      </TouchableOpacity>
+      <TouchableOpacity
         onPress={() => router.push('/reports')}
         style={{ padding: 4, marginHorizontal: 4 }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

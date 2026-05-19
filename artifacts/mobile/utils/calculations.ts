@@ -1,4 +1,5 @@
 import { Income, Commitment, CommitmentPayment, Expense, MonthlyTotals, HealthStatus } from '../types';
+import { parseDateLocal } from './format';
 
 export function getHealthStatus(commitmentPercent: number, lang = 'ar'): { status: HealthStatus; color: string; message: string } {
   const isEn = lang === 'en';
@@ -78,8 +79,8 @@ export function calculateMonthlyTotals(
 ): MonthlyTotals {
   const totalIncome = incomes.reduce((sum, i) => {
     if (!i.isRecurring && i.receivedDate) {
-      const d = new Date(i.receivedDate);
-      if (d.getMonth() + 1 === month && d.getFullYear() === year) {
+      const d = parseDateLocal(i.receivedDate);
+      if (d && d.getMonth() + 1 === month && d.getFullYear() === year) {
         return sum + i.amount;
       }
       return sum;
@@ -91,8 +92,8 @@ export function calculateMonthlyTotals(
   const totalCommitments = activeCommitments.reduce((sum, c) => sum + c.amount, 0);
 
   const monthExpenses = expenses.filter((e) => {
-    const d = new Date(e.expenseDate);
-    return d.getMonth() + 1 === month && d.getFullYear() === year;
+    const d = parseDateLocal(e.expenseDate);
+    return !!d && d.getMonth() + 1 === month && d.getFullYear() === year;
   });
   const totalExpenses = monthExpenses.reduce((sum, e) => sum + e.amount, 0);
 
@@ -123,8 +124,8 @@ export function getExpensesByCategory(expenses: Expense[], month: number, year: 
   const result: Record<string, number> = {};
   expenses
     .filter((e) => {
-      const d = new Date(e.expenseDate);
-      return d.getMonth() + 1 === month && d.getFullYear() === year;
+      const d = parseDateLocal(e.expenseDate);
+      return !!d && d.getMonth() + 1 === month && d.getFullYear() === year;
     })
     .forEach((e) => {
       result[e.category] = (result[e.category] ?? 0) + e.amount;

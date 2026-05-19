@@ -25,29 +25,39 @@ export function formatPercent(value: number): string {
   return `${Math.round(value)}%`;
 }
 
-export function formatDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ar-SA', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
+/**
+ * Parses a date string into a local-timezone Date. `YYYY-MM-DD` strings — which
+ * we use for expenses, start/end dates etc. — would otherwise be interpreted
+ * by `new Date(str)` as UTC midnight, shifting users in negative timezones to
+ * the previous day. This helper anchors to local midnight instead.
+ */
+export function parseDateLocal(dateStr: string | undefined | null): Date | null {
+  if (!dateStr) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateStr);
+  if (m) {
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   }
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+export function formatDate(dateStr: string): string {
+  const date = parseDateLocal(dateStr);
+  if (!date) return dateStr;
+  return date.toLocaleDateString('ar-SA', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 }
 
 export function formatShortDate(dateStr: string): string {
-  try {
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('ar-SA', {
-      month: 'short',
-      day: 'numeric',
-    });
-  } catch {
-    return dateStr;
-  }
+  const date = parseDateLocal(dateStr);
+  if (!date) return dateStr;
+  return date.toLocaleDateString('ar-SA', {
+    month: 'short',
+    day: 'numeric',
+  });
 }
 
 export function formatMonthYear(month: number, year: number): string {

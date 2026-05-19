@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { COMMITMENT_CATEGORIES, CommitmentKind } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
-import { toAsciiDigits } from '@/utils/format';
+import { toAsciiDigits, formatCurrency } from '@/utils/format';
 
 interface FormErrors {
   title?: string;
@@ -35,7 +35,8 @@ export default function AddCommitmentScreen() {
   const t = useT();
   const dir = useDir();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { commitments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes } = useApp();
+  const { commitments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile } = useApp();
+  const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
   const isEdit = !!existing;
@@ -58,6 +59,36 @@ export default function AddCommitmentScreen() {
   const [errors, setErrors] = useState<FormErrors>({});
 
   const isFinite = kind === 'finite_loan';
+
+  // ── Installment balance helper ────────────────────────────────────────────
+  // Lets the user fill any two of (monthly amount, total, count) and compute
+  // the third. Also surfaces mismatch warnings so values like 200 × 50 ≠ 100000
+  // are caught before save.
+  const aNum = parseFloat(toAsciiDigits(amount));
+  const tNum = parseFloat(toAsciiDigits(totalAmount));
+  const cNum = parseInt(toAsciiDigits(installmentCount), 10);
+  const hasA = Number.isFinite(aNum) && aNum > 0;
+  const hasT = Number.isFinite(tNum) && tNum > 0;
+  const hasC = Number.isFinite(cNum) && cNum > 0;
+  const computedTotal = hasA && hasC ? aNum * cNum : null;
+  // Tolerate small rounding diffs (1 currency unit) so 99.99 vs 100 isn't flagged.
+  const mismatch = hasA && hasT && hasC && Math.abs((computedTotal ?? 0) - tNum) > 1;
+
+  const fixMonthly = () => {
+    if (!hasT || !hasC) return;
+    setAmount((tNum / cNum).toFixed(2));
+    clearError('amount');
+  };
+  const fixCount = () => {
+    if (!hasT || !hasA) return;
+    setInstallmentCount(String(Math.max(1, Math.round(tNum / aNum))));
+    clearError('installmentCount');
+  };
+  const fixTotal = () => {
+    if (!hasA || !hasC) return;
+    setTotalAmount((aNum * cNum).toFixed(2));
+    clearError('totalAmount');
+  };
 
   const lenderOptions = useMemo<{ label: string; value: string }[]>(() => {
     const sorted = [...lenders].sort((a, b) => a.name.localeCompare(b.name, 'ar'));
@@ -96,12 +127,9 @@ export default function AddCommitmentScreen() {
     return !Object.values(errs).some(Boolean);
   };
 
-  const handleSave = async () => {
-    if (!validate()) return;
+  const persist = async () => {
     setLoading(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    // Normalize any Arabic-Indic digits before numeric parsing — otherwise
-    // parseInt/parseFloat would silently produce NaN and break progress math.
     const data = {
       title: title.trim(),
       category: category as any,
@@ -121,6 +149,23 @@ export default function AddCommitmentScreen() {
     else await addCommitment(data);
     setLoading(false);
     router.back();
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+    if (isFinite && mismatch) {
+      Alert.alert(
+        t.commitments.installmentMismatchTitle,
+        t.commitments.installmentMismatchMsg,
+        [
+          { text: t.common.cancel, style: 'cancel' },
+          { text: t.commitments.installmentFixTotal, onPress: () => { fixTotal(); } },
+          { text: t.commitments.installmentSaveAnyway, style: 'destructive', onPress: () => { persist(); } },
+        ],
+      );
+      return;
+    }
+    await persist();
   };
 
   const handleDelete = () => {
@@ -186,6 +231,63 @@ export default function AddCommitmentScreen() {
             error={errors.installmentCount}
             maxLength={4}
           />
+
+          <View style={[styles.helperBox, {
+            backgroundColor: mismatch ? colors.danger + '10' : colors.muted,
+            borderColor: mismatch ? colors.danger + '50' : colors.border,
+          }]}>
+            <View style={[styles.helperHeader, { flexDirection: dir.row }]}>
+              <Feather
+                name={mismatch ? 'alert-triangle' : 'check-circle'}
+                size={14}
+                color={mismatch ? colors.danger : colors.success}
+              />
+              <Text style={[styles.helperTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>
+                {t.commitments.installmentHelperTitle}
+              </Text>
+            </View>
+            <Text style={[styles.helperHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+              {t.commitments.installmentHelperHint}
+            </Text>
+            {computedTotal !== null && (
+              <Text style={[styles.helperStatus, {
+                textAlign: dir.textAlign,
+                color: mismatch ? colors.danger : colors.success,
+              }]}>
+                {hasT && mismatch
+                  ? t.commitments.installmentMismatch(formatCurrency(computedTotal, currency), formatCurrency(tNum, currency))
+                  : hasT
+                    ? t.commitments.installmentMatch
+                    : `${formatCurrency(aNum, currency)} × ${cNum} = ${formatCurrency(computedTotal, currency)}`}
+              </Text>
+            )}
+            <View style={[styles.helperBtnRow, { flexDirection: dir.row }]}>
+              <TouchableOpacity
+                onPress={fixMonthly}
+                disabled={!hasT || !hasC}
+                style={[styles.helperBtn, { borderColor: colors.border, opacity: !hasT || !hasC ? 0.4 : 1 }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.helperBtnText, { color: colors.primary }]}>{t.commitments.installmentFixMonthly}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={fixCount}
+                disabled={!hasT || !hasA}
+                style={[styles.helperBtn, { borderColor: colors.border, opacity: !hasT || !hasA ? 0.4 : 1 }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.helperBtnText, { color: colors.primary }]}>{t.commitments.installmentFixCount}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={fixTotal}
+                disabled={!hasA || !hasC}
+                style={[styles.helperBtn, { borderColor: colors.border, opacity: !hasA || !hasC ? 0.4 : 1 }]}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.helperBtnText, { color: colors.primary }]}>{t.commitments.installmentFixTotal}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </>
       ) : null}
 
@@ -258,4 +360,12 @@ const styles = StyleSheet.create({
   lenderRow: { alignItems: 'flex-start' },
   addLenderLink: { alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 14, paddingVertical: 4 },
   addLenderText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  helperBox: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 14, gap: 6 },
+  helperHeader: { alignItems: 'center', gap: 6 },
+  helperTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold', flex: 1 },
+  helperHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
+  helperStatus: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 2 },
+  helperBtnRow: { flexWrap: 'wrap', gap: 6, marginTop: 6 },
+  helperBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
+  helperBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
 });

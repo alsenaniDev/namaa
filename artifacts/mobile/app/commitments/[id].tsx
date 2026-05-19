@@ -1,5 +1,8 @@
-import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform,
+  Modal, TextInput, Image, KeyboardAvoidingView,
+} from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -8,10 +11,18 @@ import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
-import { formatCurrency, formatDate, getCurrentMonthYear } from '@/utils/format';
+import { formatCurrency, formatDate, getCurrentMonthYear, toAsciiDigits } from '@/utils/format';
 import { getCommitmentProgress } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import type { CommitmentPayment } from '@/types';
+
+type ScheduleRow = {
+  index: number;          // 1-based installment number
+  month: number;          // 1..12
+  year: number;
+  payment?: CommitmentPayment;
+};
 
 export default function CommitmentDetailScreen() {
   const colors = useColors();
@@ -26,6 +37,17 @@ export default function CommitmentDetailScreen() {
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const [editing, setEditing] = useState<ScheduleRow | null>(null);
+  const [editAmount, setEditAmount] = useState('');
+
+  // Payments for this commitment, sorted oldest → newest by (year, month).
+  const myPayments = useMemo(
+    () => commitmentPayments
+      .filter((p) => p.commitmentId === params.id)
+      .sort((a, b) => (a.year - b.year) || (a.month - b.month)),
+    [commitmentPayments, params.id],
+  );
+
   if (!commitment) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
@@ -37,24 +59,85 @@ export default function CommitmentDetailScreen() {
   const lender = commitment.lenderId ? lenders.find((l) => l.id === commitment.lenderId) : undefined;
   const accent = lender?.color ?? colors.commitment;
   const progress = getCommitmentProgress(commitment, commitmentPayments);
+  const isFinite = commitment.kind === 'finite_loan' && !!commitment.installmentCount && commitment.installmentCount > 0;
 
-  const { month, year } = getCurrentMonthYear();
+  const { month: curMonth, year: curYear } = getCurrentMonthYear();
   const thisMonthPayment = commitmentPayments.find(
-    (p) => p.commitmentId === commitment.id && p.month === month && p.year === year,
+    (p) => p.commitmentId === commitment.id && p.month === curMonth && p.year === curYear,
   );
   const isPaidThisMonth = thisMonthPayment?.status === 'paid';
 
-  const history = commitmentPayments
-    .filter((p) => p.commitmentId === commitment.id)
-    .sort((a, b) => {
-      if (b.year !== a.year) return b.year - a.year;
-      return b.month - a.month;
-    });
+  // Build the full installment schedule for finite loans.
+  // Anchor priority: explicit startDate (YYYY-MM-DD) → earliest recorded
+  // payment → current month. This keeps installment numbering aligned with
+  // the real loan start when the user provided it, but degrades gracefully.
+  // Installments walk forward from anchor for `installmentCount` months.
+  const schedule: ScheduleRow[] = useMemo(() => {
+    if (!isFinite) return [];
+    const count = commitment.installmentCount!;
+    let anchor: { y: number; m: number } | null = null;
+    if (commitment.startDate) {
+      const parts = commitment.startDate.split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10);
+      if (Number.isFinite(y) && Number.isFinite(m) && m >= 1 && m <= 12) {
+        anchor = { y, m };
+      }
+    }
+    if (!anchor && myPayments[0]) {
+      anchor = { y: myPayments[0].year, m: myPayments[0].month };
+    }
+    if (!anchor) anchor = { y: curYear, m: curMonth };
 
-  const togglePaid = () => {
+    const rows: ScheduleRow[] = [];
+    let y = anchor.y;
+    let m = anchor.m;
+    for (let i = 1; i <= count; i++) {
+      const payment = commitmentPayments.find(
+        (p) => p.commitmentId === commitment.id && p.year === y && p.month === m,
+      );
+      rows.push({ index: i, month: m, year: y, payment });
+      m += 1;
+      if (m === 13) { m = 1; y += 1; }
+    }
+    return rows;
+  }, [isFinite, commitment, myPayments, commitmentPayments, curMonth, curYear]);
+
+  // History for non-finite (recurring bills): show all recorded payments newest first.
+  const history = useMemo(
+    () => [...myPayments].sort((a, b) => (b.year - a.year) || (b.month - a.month)),
+    [myPayments],
+  );
+
+  const togglePaidThisMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (isPaidThisMonth) markCommitmentUnpaid(commitment.id, month, year);
-    else markCommitmentPaid(commitment.id, month, year, commitment.amount);
+    if (isPaidThisMonth) markCommitmentUnpaid(commitment.id, curMonth, curYear);
+    else markCommitmentPaid(commitment.id, curMonth, curYear, commitment.amount);
+  };
+
+  const openEditor = (row: ScheduleRow) => {
+    Haptics.selectionAsync();
+    setEditing(row);
+    setEditAmount((row.payment?.amount ?? commitment.amount).toString());
+  };
+
+  const closeEditor = () => {
+    setEditing(null);
+    setEditAmount('');
+  };
+
+  const saveEditor = async (markPaid: boolean) => {
+    if (!editing) return;
+    if (markPaid) {
+      const raw = parseFloat(toAsciiDigits(editAmount));
+      const amt = Number.isFinite(raw) && raw > 0 ? raw : commitment.amount;
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await markCommitmentPaid(commitment.id, editing.month, editing.year, amt);
+    } else {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      await markCommitmentUnpaid(commitment.id, editing.month, editing.year);
+    }
+    closeEditor();
   };
 
   const kindLabel =
@@ -114,7 +197,11 @@ export default function CommitmentDetailScreen() {
             style={[styles.lenderCard, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
           >
             <View style={[styles.lenderAvatar, { backgroundColor: lender.color + '22' }]}>
-              <Text style={[styles.lenderAvatarText, { color: lender.color }]}>{lender.name.charAt(0)}</Text>
+              {lender.imageUri ? (
+                <Image source={{ uri: lender.imageUri }} style={styles.lenderAvatarImg} />
+              ) : (
+                <Text style={[styles.lenderAvatarText, { color: lender.color }]}>{lender.name.charAt(0)}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.lenderName, { textAlign: dir.textAlign, color: colors.foreground }]} numberOfLines={1}>{lender.name}</Text>
@@ -159,46 +246,100 @@ export default function CommitmentDetailScreen() {
         <View style={{ marginTop: 14 }}>
           <Button
             title={isPaidThisMonth ? t.commitments.markUnpaid : t.commitments.markPaid}
-            onPress={togglePaid}
+            onPress={togglePaidThisMonth}
             variant={isPaidThisMonth ? 'outline' : 'primary'}
             fullWidth
           />
         </View>
 
-        {/* Payment history */}
-        <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.paymentHistory}</Text>
-        {history.length === 0 ? (
-          <Card style={styles.card}>
-            <Text style={[styles.emptyText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.noPayments}</Text>
-          </Card>
-        ) : (
-          <Card style={styles.card} padding={0}>
-            {history.map((p, idx) => (
-              <View
-                key={p.id}
-                style={[
-                  styles.historyRow,
-                  { flexDirection: dir.row, borderBottomColor: colors.border },
-                  idx === history.length - 1 && { borderBottomWidth: 0 },
-                ]}
-              >
-                <View style={[styles.historyIcon, { backgroundColor: colors.success + '18' }]}>
-                  <Feather name="check" size={14} color={colors.success} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.historyMonth, { textAlign: dir.textAlign, color: colors.foreground }]}>
-                    {p.month}/{p.year}
-                  </Text>
-                  {p.paidDate ? (
-                    <Text style={[styles.historyDate, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
-                      {formatDate(p.paidDate)}
+        {/* Installment schedule (finite) OR payment history (recurring) */}
+        {isFinite ? (
+          <>
+            <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.scheduleTitle}</Text>
+            <Card style={styles.card} padding={0}>
+              {schedule.map((row, idx) => {
+                const isPaid = row.payment?.status === 'paid';
+                return (
+                  <TouchableOpacity
+                    key={`${row.year}-${row.month}-${row.index}`}
+                    onPress={() => openEditor(row)}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.scheduleRow,
+                      { flexDirection: dir.row, borderBottomColor: colors.border },
+                      idx === schedule.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                  >
+                    <View style={[
+                      styles.statusDot,
+                      { backgroundColor: isPaid ? colors.success + '20' : colors.muted, borderColor: isPaid ? colors.success : colors.border },
+                    ]}>
+                      {isPaid
+                        ? <Feather name="check" size={14} color={colors.success} />
+                        : <Text style={[styles.statusDotText, { color: colors.mutedForeground }]}>{row.index}</Text>}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.scheduleMonth, { textAlign: dir.textAlign, color: colors.foreground }]}>
+                        {t.commitments.scheduleInstallment(row.index)} · {String(row.month).padStart(2, '0')}/{row.year}
+                      </Text>
+                      <Text style={[
+                        styles.scheduleStatus,
+                        { textAlign: dir.textAlign, color: isPaid ? colors.success : colors.mutedForeground },
+                      ]}>
+                        {isPaid
+                          ? `${t.commitments.scheduleStatusPaid}${row.payment?.paidDate ? ` · ${formatDate(row.payment.paidDate)}` : ''}`
+                          : t.commitments.scheduleStatusUnpaid}
+                      </Text>
+                    </View>
+                    <Text style={[styles.scheduleAmount, { color: isPaid ? colors.foreground : colors.mutedForeground }]}>
+                      {formatCurrency(row.payment?.amount ?? commitment.amount, currency)}
                     </Text>
-                  ) : null}
-                </View>
-                <Text style={[styles.historyAmount, { color: colors.foreground }]}>{formatCurrency(p.amount, currency)}</Text>
-              </View>
-            ))}
-          </Card>
+                    <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} />
+                  </TouchableOpacity>
+                );
+              })}
+            </Card>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.paymentHistory}</Text>
+            {history.length === 0 ? (
+              <Card style={styles.card}>
+                <Text style={[styles.emptyText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.noPayments}</Text>
+              </Card>
+            ) : (
+              <Card style={styles.card} padding={0}>
+                {history.map((p, idx) => (
+                  <TouchableOpacity
+                    key={p.id}
+                    onPress={() => openEditor({ index: idx + 1, month: p.month, year: p.year, payment: p })}
+                    activeOpacity={0.7}
+                    style={[
+                      styles.historyRow,
+                      { flexDirection: dir.row, borderBottomColor: colors.border },
+                      idx === history.length - 1 && { borderBottomWidth: 0 },
+                    ]}
+                  >
+                    <View style={[styles.historyIcon, { backgroundColor: colors.success + '18' }]}>
+                      <Feather name="check" size={14} color={colors.success} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.historyMonth, { textAlign: dir.textAlign, color: colors.foreground }]}>
+                        {String(p.month).padStart(2, '0')}/{p.year}
+                      </Text>
+                      {p.paidDate ? (
+                        <Text style={[styles.historyDate, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+                          {formatDate(p.paidDate)}
+                        </Text>
+                      ) : null}
+                    </View>
+                    <Text style={[styles.historyAmount, { color: colors.foreground }]}>{formatCurrency(p.amount, currency)}</Text>
+                    <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} />
+                  </TouchableOpacity>
+                ))}
+              </Card>
+            )}
+          </>
         )}
 
         {commitment.notes ? (
@@ -207,6 +348,64 @@ export default function CommitmentDetailScreen() {
           </Card>
         ) : null}
       </ScrollView>
+
+      {/* Installment editor modal */}
+      <Modal visible={!!editing} transparent animationType="fade" onRequestClose={closeEditor}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.modalBackdrop}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.modalBackdropTouch} onPress={closeEditor} />
+          <View style={[styles.modalCard, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}>
+            <Text style={[styles.modalTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>
+              {t.commitments.scheduleEditTitle}
+            </Text>
+            {editing ? (
+              <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+                {t.commitments.scheduleInstallment(editing.index)} · {String(editing.month).padStart(2, '0')}/{editing.year}
+              </Text>
+            ) : null}
+            <Text style={[styles.modalLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>
+              {t.commitments.scheduleAmountLabel}
+            </Text>
+            <TextInput
+              value={editAmount}
+              onChangeText={setEditAmount}
+              keyboardType="decimal-pad"
+              placeholder={commitment.amount.toString()}
+              placeholderTextColor={colors.mutedForeground}
+              style={[styles.modalInput, {
+                color: colors.foreground,
+                backgroundColor: colors.background,
+                borderColor: colors.border,
+                textAlign: dir.textAlign,
+              }]}
+              maxLength={16}
+            />
+            <View style={[styles.modalActions, { flexDirection: dir.row }]}>
+              <Button
+                title={t.commitments.scheduleCancel}
+                onPress={closeEditor}
+                variant="outline"
+                style={{ flex: 1 }}
+              />
+              {editing?.payment?.status === 'paid' ? (
+                <Button
+                  title={t.commitments.scheduleMarkUnpaid}
+                  onPress={() => saveEditor(false)}
+                  variant="destructive"
+                  style={{ flex: 1 }}
+                />
+              ) : null}
+              <Button
+                title={editing?.payment?.status === 'paid' ? t.commitments.scheduleSave : t.commitments.scheduleMarkPaid}
+                onPress={() => saveEditor(true)}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </>
   );
 }
@@ -225,8 +424,9 @@ const styles = StyleSheet.create({
   amountValue: { fontSize: 22, fontFamily: 'Inter_700Bold' },
   dueValue: { fontSize: 22, fontFamily: 'Inter_700Bold' },
   lenderCard: { alignItems: 'center', padding: 12, borderWidth: 1, gap: 12, marginBottom: 4 },
-  lenderAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  lenderAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   lenderAvatarText: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  lenderAvatarImg: { width: '100%', height: '100%' },
   lenderName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
   lenderType: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -241,10 +441,24 @@ const styles = StyleSheet.create({
   breakdownValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },
   totalLine: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
+  scheduleRow: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
+  statusDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
+  statusDotText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  scheduleMonth: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  scheduleStatus: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  scheduleAmount: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   historyRow: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
   historyIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   historyMonth: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   historyDate: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
   historyAmount: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   notesText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
+  modalBackdropTouch: { ...StyleSheet.absoluteFillObject },
+  modalCard: { padding: 18, borderWidth: 1, gap: 10 },
+  modalTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  modalSubtitle: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  modalLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 6 },
+  modalInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Inter_500Medium' },
+  modalActions: { gap: 8, marginTop: 8 },
 });

@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Image } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -69,7 +69,11 @@ export default function LenderDetailScreen() {
         <Card style={styles.headerCard}>
           <View style={[styles.headerRow, { flexDirection: dir.row }]}>
             <View style={[styles.avatar, { backgroundColor: lender.color + '22', borderColor: lender.color + '55' }]}>
-              <Text style={[styles.avatarText, { color: lender.color }]}>{initial}</Text>
+              {lender.imageUri ? (
+                <Image source={{ uri: lender.imageUri }} style={styles.avatarImg} />
+              ) : (
+                <Text style={[styles.avatarText, { color: lender.color }]}>{initial}</Text>
+              )}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, { textAlign: dir.textAlign, color: colors.foreground }]}>{lender.name}</Text>
@@ -223,8 +227,9 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   headerCard: { marginBottom: 12 },
   headerRow: { alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
+  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 2, overflow: 'hidden' },
   avatarText: { fontSize: 22, fontFamily: 'Inter_700Bold' },
+  avatarImg: { width: '100%', height: '100%' },
   name: { fontSize: 18, fontFamily: 'Inter_700Bold', marginBottom: 6 },
   typeRow: { alignItems: 'center', gap: 8 },
   typePill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10 },

@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Alert, Platform, TouchableOpacity } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Alert, Platform, TouchableOpacity, Image } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
+import { File, Directory, Paths } from 'expo-file-system';
+import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
@@ -33,6 +36,7 @@ export default function AddLenderScreen() {
   const [name, setName] = useState(existing?.name ?? '');
   const [type, setType] = useState<LenderType>(existing?.type ?? 'bank');
   const [color, setColor] = useState(existing?.color ?? LENDER_COLOR_PALETTE[0]);
+  const [imageUri, setImageUri] = useState<string | undefined>(existing?.imageUri);
   const [phone, setPhone] = useState(existing?.phone ?? '');
   const [email, setEmail] = useState(existing?.email ?? '');
   const [website, setWebsite] = useState(existing?.website ?? '');
@@ -65,6 +69,7 @@ export default function AddLenderScreen() {
       name: name.trim(),
       type,
       color,
+      imageUri: imageUri || undefined,
       phone: phone.trim() || undefined,
       email: email.trim() || undefined,
       website: website.trim() || undefined,
@@ -99,6 +104,51 @@ export default function AddLenderScreen() {
 
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
+  const pickImage = async () => {
+    if (Platform.OS !== 'web') {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert(t.lenders.imagePermissionTitle, t.lenders.imagePermissionMsg);
+        return;
+      }
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (result.canceled || !result.assets[0]?.uri) return;
+    const pickedUri = result.assets[0].uri;
+    Haptics.selectionAsync();
+    // On native, the picker returns a cache URI that the OS may evict. Copy
+    // the file into the app's document directory so it survives restarts and
+    // low-storage cleanups. On web, the URI is a blob: and we keep it as-is
+    // (web persistence isn't expected for this offline app).
+    if (Platform.OS === 'web') {
+      setImageUri(pickedUri);
+      return;
+    }
+    try {
+      const dir = new Directory(Paths.document, 'lenders');
+      if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
+      const ext = (pickedUri.split('.').pop() || 'jpg').split('?')[0].slice(0, 5);
+      const filename = `lender_${Date.now()}.${ext}`;
+      const src = new File(pickedUri);
+      const dest = new File(dir, filename);
+      src.copy(dest);
+      setImageUri(dest.uri);
+    } catch (e) {
+      // Fall back to the raw picker URI if copy fails for any reason.
+      setImageUri(pickedUri);
+    }
+  };
+
+  const removeImage = () => {
+    Haptics.selectionAsync();
+    setImageUri(undefined);
+  };
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -121,6 +171,39 @@ export default function AddLenderScreen() {
         options={LENDER_TYPES.map((tp) => ({ label: t.lenders.typeLabels[tp] ?? tp, value: tp }))}
         onValueChange={(v) => setType(v as LenderType)}
       />
+
+      <Text style={[styles.label, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.lenders.fieldImage}</Text>
+      <View style={[styles.imageRow, { flexDirection: dir.row }]}>
+        <View style={[styles.imagePreview, { backgroundColor: color + '22', borderColor: color + '55' }]}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.imagePreviewImg} />
+          ) : (
+            <Feather name="image" size={26} color={color} />
+          )}
+        </View>
+        <View style={{ flex: 1, gap: 8 }}>
+          <TouchableOpacity
+            onPress={pickImage}
+            activeOpacity={0.78}
+            style={[styles.imageBtn, { borderColor: colors.border, backgroundColor: colors.card }]}
+          >
+            <Feather name={imageUri ? 'refresh-cw' : 'upload'} size={14} color={colors.primary} />
+            <Text style={[styles.imageBtnText, { color: colors.foreground }]}>
+              {imageUri ? t.lenders.imageChange : t.lenders.imageAdd}
+            </Text>
+          </TouchableOpacity>
+          {imageUri ? (
+            <TouchableOpacity
+              onPress={removeImage}
+              activeOpacity={0.78}
+              style={[styles.imageBtn, { borderColor: colors.danger + '50', backgroundColor: colors.danger + '10' }]}
+            >
+              <Feather name="trash-2" size={14} color={colors.danger} />
+              <Text style={[styles.imageBtnText, { color: colors.danger }]}>{t.lenders.imageRemove}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
 
       <Text style={[styles.label, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.lenders.fieldColor}</Text>
       <View style={[styles.colorRow, { flexDirection: dir.row }]}>
@@ -194,4 +277,9 @@ const styles = StyleSheet.create({
   section: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 8, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   colorRow: { flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2.5 },
+  imageRow: { alignItems: 'center', gap: 12, marginBottom: 18 },
+  imagePreview: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  imagePreviewImg: { width: '100%', height: '100%' },
+  imageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
+  imageBtnText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
 });

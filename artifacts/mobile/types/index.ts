@@ -73,6 +73,8 @@ export interface Lender {
   name: string;
   type: LenderType;
   color: string;
+  /** Local file URI (file:// on native, blob: on web) for the lender logo/avatar image. */
+  imageUri?: string;
   phone?: string;
   email?: string;
   website?: string;

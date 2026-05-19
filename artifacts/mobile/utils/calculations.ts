@@ -173,3 +173,86 @@ export function getLateCommitments(commitments: Commitment[], payments: Commitme
     return c.dueDay < currentDay;
   });
 }
+
+// ─── Commitment progress (finite loans) ──────────────────────────────────────
+
+export interface CommitmentProgress {
+  isFinite: boolean;
+  totalAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
+  installmentCount: number;
+  paidInstallmentCount: number;
+  remainingInstallments: number;
+  progressPercent: number; // 0..100
+}
+
+export function getCommitmentProgress(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+): CommitmentProgress {
+  const myPaid = payments.filter((p) => p.commitmentId === commitment.id && p.status === 'paid');
+  const paidInstallmentCount = myPaid.length;
+  const paidAmount = myPaid.reduce((s, p) => s + p.amount, 0);
+
+  const isFinite = !!(commitment.totalAmount && commitment.installmentCount);
+  const totalAmount = commitment.totalAmount ?? 0;
+  const installmentCount = commitment.installmentCount ?? 0;
+  const remainingAmount = isFinite ? Math.max(0, totalAmount - paidAmount) : 0;
+  const remainingInstallments = isFinite ? Math.max(0, installmentCount - paidInstallmentCount) : 0;
+  const progressPercent = isFinite && totalAmount > 0
+    ? Math.min(100, (paidAmount / totalAmount) * 100)
+    : 0;
+
+  return {
+    isFinite,
+    totalAmount,
+    paidAmount,
+    remainingAmount,
+    installmentCount,
+    paidInstallmentCount,
+    remainingInstallments,
+    progressPercent,
+  };
+}
+
+// ─── Lender stats ────────────────────────────────────────────────────────────
+
+export interface LenderStats {
+  activeCommitmentCount: number;
+  monthlyTotal: number;
+  totalContracted: number; // sum of totalAmount for finite loans
+  totalPaid: number;       // sum of paid payments across linked commitments
+  totalRemaining: number;  // totalContracted - totalPaid (only for finite loans)
+}
+
+export function getLenderStats(
+  lenderId: string,
+  commitments: Commitment[],
+  payments: CommitmentPayment[],
+): LenderStats {
+  const linked = commitments.filter((c) => c.lenderId === lenderId);
+  const active = linked.filter((c) => c.isActive);
+  const monthlyTotal = active.reduce((s, c) => s + c.amount, 0);
+
+  // Only finite loans contribute to contracted/paid/remaining totals — mixing
+  // open-ended recurring bills would inflate "paid" and break the math.
+  let totalContracted = 0;
+  let totalPaid = 0;
+  for (const c of linked) {
+    if (!c.totalAmount || !c.installmentCount) continue;
+    totalContracted += c.totalAmount;
+    const paid = payments
+      .filter((p) => p.commitmentId === c.id && p.status === 'paid')
+      .reduce((s, p) => s + p.amount, 0);
+    totalPaid += paid;
+  }
+  const totalRemaining = Math.max(0, totalContracted - totalPaid);
+  return {
+    activeCommitmentCount: active.length,
+    monthlyTotal,
+    totalContracted,
+    totalPaid,
+    totalRemaining,
+  };
+}

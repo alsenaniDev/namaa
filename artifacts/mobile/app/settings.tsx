@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ScrollView, View, Text, StyleSheet, Alert, Platform, Share, TouchableOpacity, TextInput } from 'react-native';
 import { Feather } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,6 +77,7 @@ function TypeManager({ title, category, builtins }: { title: string; category: T
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const t = useT();
   const dir = useDir();
   const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData, importData } = useApp();
@@ -191,6 +193,22 @@ export default function SettingsScreen() {
         <View style={[styles.divider, { backgroundColor: colors.border }]} />
         <TypeManager title={t.settings.expenseCatsTitle} category="expenseCategories" builtins={[...EXPENSE_CATEGORIES]} />
       </Card>
+
+      <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.lendersSection}</Text>
+      <TouchableOpacity
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/lenders'); }}
+        activeOpacity={0.8}
+        style={[styles.dataCard, { flexDirection: dir.row, backgroundColor: colors.primary + '0E', borderColor: colors.primary + '35', marginBottom: 24 }]}
+      >
+        <View style={[styles.dataIconCircle, { backgroundColor: colors.primary }]}>
+          <Feather name="briefcase" size={22} color="#fff" />
+        </View>
+        <View style={styles.dataCardText}>
+          <Text style={[styles.dataCardTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.settings.lendersSection}</Text>
+          <Text style={[styles.dataCardSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.lendersDesc}</Text>
+        </View>
+        <Feather name={dir.chevronDetail as any} size={18} color={colors.mutedForeground} />
+      </TouchableOpacity>
 
       <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.dataSection}</Text>
 

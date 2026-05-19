@@ -1,4 +1,4 @@
-import { Income, Commitment, CommitmentPayment, Expense } from '../types';
+import { Income, Commitment, CommitmentPayment, Expense, Lender, LENDER_COLOR_PALETTE } from '../types';
 import { generateId } from './format';
 
 export function generateSampleData(): {
@@ -6,11 +6,54 @@ export function generateSampleData(): {
   commitments: Commitment[];
   commitmentPayments: CommitmentPayment[];
   expenses: Expense[];
+  lenders: Lender[];
 } {
   const now = new Date().toISOString();
   const today = new Date();
   const month = today.getMonth() + 1;
   const year = today.getFullYear();
+
+  const lenders: Lender[] = [
+    {
+      id: generateId(),
+      name: 'البنك الأهلي السعودي',
+      type: 'bank',
+      color: LENDER_COLOR_PALETTE[0],
+      paymentMethod: 'auto_debit',
+      bankName: 'البنك الأهلي',
+      iban: 'SA00 8000 0000 0000 0000 0000',
+      notes: 'قرض السيارة',
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'شركة الاتصالات السعودية',
+      type: 'telecom',
+      color: LENDER_COLOR_PALETTE[2],
+      paymentMethod: 'auto_debit',
+      website: 'stc.com.sa',
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'الشركة السعودية للكهرباء',
+      type: 'utility',
+      color: LENDER_COLOR_PALETTE[3],
+      paymentMethod: 'bank_transfer',
+      createdAt: now, updatedAt: now,
+    },
+    {
+      id: generateId(),
+      name: 'أبو سامي - مالك العقار',
+      type: 'landlord',
+      color: LENDER_COLOR_PALETTE[4],
+      paymentMethod: 'bank_transfer',
+      phone: '05XXXXXXXX',
+      createdAt: now, updatedAt: now,
+    },
+  ];
+
+  const [bankLender, telecomLender, electricLender, landlordLender] = lenders;
 
   const incomes: Income[] = [
     {
@@ -43,6 +86,8 @@ export function generateSampleData(): {
       id: generateId(),
       title: 'إيجار الشقة',
       category: 'إيجار',
+      kind: 'recurring_bill',
+      lenderId: landlordLender.id,
       amount: 3000,
       dueDay: 1,
       isRecurring: true,
@@ -54,10 +99,15 @@ export function generateSampleData(): {
       id: generateId(),
       title: 'قرض السيارة',
       category: 'قرض سيارة',
+      kind: 'finite_loan',
+      lenderId: bankLender.id,
       amount: 1500,
+      totalAmount: 72000,
+      installmentCount: 48,
       dueDay: 10,
       isRecurring: true,
       isActive: true,
+      startDate: `${year - 1}-01-10`,
       createdAt: now,
       updatedAt: now,
     },
@@ -65,6 +115,8 @@ export function generateSampleData(): {
       id: generateId(),
       title: 'فاتورة الكهرباء',
       category: 'كهرباء',
+      kind: 'recurring_bill',
+      lenderId: electricLender.id,
       amount: 300,
       dueDay: 20,
       isRecurring: true,
@@ -76,6 +128,8 @@ export function generateSampleData(): {
       id: generateId(),
       title: 'اشتراك الإنترنت',
       category: 'إنترنت',
+      kind: 'recurring_bill',
+      lenderId: telecomLender.id,
       amount: 200,
       dueDay: 5,
       isRecurring: true,
@@ -87,6 +141,7 @@ export function generateSampleData(): {
       id: generateId(),
       title: 'تأمين صحي',
       category: 'تأمين',
+      kind: 'recurring_bill',
       amount: 400,
       dueDay: 15,
       isRecurring: true,
@@ -95,6 +150,22 @@ export function generateSampleData(): {
       updatedAt: now,
     },
   ];
+
+  // Simulate 16 paid installments on the car loan (showing progress).
+  const carLoan = commitments[1];
+  const carHistory: CommitmentPayment[] = [];
+  for (let i = 0; i < 16; i++) {
+    const d = new Date(year, month - 1 - i - 1, 10);
+    carHistory.push({
+      id: generateId(),
+      commitmentId: carLoan.id,
+      month: d.getMonth() + 1,
+      year: d.getFullYear(),
+      amount: 1500,
+      paidDate: d.toISOString(),
+      status: 'paid',
+    });
+  }
 
   const paidCommitmentId = commitments[0].id;
   const commitmentPayments: CommitmentPayment[] = [
@@ -107,6 +178,7 @@ export function generateSampleData(): {
       paidDate: `${year}-${String(month).padStart(2, '0')}-01`,
       status: 'paid',
     },
+    ...carHistory,
   ];
 
   const dates = [3, 5, 7, 10, 12, 14, 16, 18];
@@ -131,5 +203,5 @@ export function generateSampleData(): {
     updatedAt: now,
   }));
 
-  return { incomes, commitments, commitmentPayments, expenses };
+  return { incomes, commitments, commitmentPayments, expenses, lenders };
 }

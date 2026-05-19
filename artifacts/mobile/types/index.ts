@@ -13,7 +13,7 @@ export interface UserProfile {
 export type IncomeType = 'راتب' | 'عمل إضافي' | 'مكافأة' | 'تجارة' | 'استثمار' | 'أخرى';
 
 export const INCOME_TYPES: IncomeType[] = [
-  'راتب', 'عمل إضافي', 'مكافأة', 'تجارة', 'استثمار', 'أخرى',
+  'راتب', 'عمل إضافي', 'مكافأة' , 'تجارة', 'استثمار', 'أخرى',
 ];
 
 export interface Income {
@@ -28,6 +28,65 @@ export interface Income {
   createdAt: string;
   updatedAt: string;
 }
+
+// ─── Lenders / Providers ─────────────────────────────────────────────────────
+
+export type LenderType =
+  | 'bank'
+  | 'finance_company'
+  | 'telecom'
+  | 'utility'
+  | 'government'
+  | 'landlord'
+  | 'store'
+  | 'individual'
+  | 'family'
+  | 'employer'
+  | 'other';
+
+export const LENDER_TYPES: LenderType[] = [
+  'bank', 'finance_company', 'telecom', 'utility', 'government',
+  'landlord', 'store', 'individual', 'family', 'employer', 'other',
+];
+
+export type PaymentMethodKind =
+  | 'auto_debit'
+  | 'bank_transfer'
+  | 'cash'
+  | 'card'
+  | 'cheque'
+  | 'wallet'
+  | 'other';
+
+export const PAYMENT_METHODS: PaymentMethodKind[] = [
+  'auto_debit', 'bank_transfer', 'cash', 'card', 'cheque', 'wallet', 'other',
+];
+
+export const LENDER_COLOR_PALETTE = [
+  '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#EF4444',
+  '#EC4899', '#14B8A6', '#F97316', '#6366F1', '#06B6D4',
+];
+
+export interface Lender {
+  id: string;
+  name: string;
+  type: LenderType;
+  color: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  paymentMethod?: PaymentMethodKind;
+  iban?: string;
+  bankAccount?: string;
+  bankName?: string;
+  beneficiaryName?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ─── Commitments (rich) ──────────────────────────────────────────────────────
 
 export type CommitmentCategory =
   | 'قرض شخصي'
@@ -48,11 +107,29 @@ export const COMMITMENT_CATEGORIES: CommitmentCategory[] = [
   'إنترنت', 'اشتراك', 'تأمين', 'أقساط دراسية', 'مصروف عائلي', 'أخرى',
 ];
 
+/**
+ * `kind` distinguishes how the commitment behaves financially.
+ * - `finite_loan` → has totalAmount + installmentCount, can show progress / remaining
+ * - `recurring_bill` → open-ended monthly bill (rent, utility, subscription)
+ * - `one_time` → a single planned payment
+ */
+export type CommitmentKind = 'finite_loan' | 'recurring_bill' | 'one_time';
+
 export interface Commitment {
   id: string;
   title: string;
   category: CommitmentCategory;
+  /** Monthly installment amount — used by all existing aggregations. */
   amount: number;
+
+  // ─── Optional richer fields (added in v2). Older records may not have them. ──
+  kind?: CommitmentKind;
+  lenderId?: string;
+  /** For finite loans: the total contract value (sum of all installments). */
+  totalAmount?: number;
+  /** For finite loans: total number of installments planned. */
+  installmentCount?: number;
+
   startDate?: string;
   endDate?: string;
   dueDay: number;

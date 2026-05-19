@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { UserProfile, Income, Commitment, CommitmentPayment, Expense } from '../types';
-import { storage, CustomTypes } from '../utils/storage';
-import { generateId, getCurrentMonthYear } from '../utils/format';
+import { UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender } from '../types';
+import { storage, CustomTypes, runStorageMigrations } from '../utils/storage';
+import { generateId } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
 import { MonthlyTotals } from '../types';
 import { calculateMonthlyTotals } from '../utils/calculations';
@@ -12,6 +12,7 @@ interface AppContextType {
   commitments: Commitment[];
   commitmentPayments: CommitmentPayment[];
   expenses: Expense[];
+  lenders: Lender[];
   customTypes: CustomTypes;
   isLoading: boolean;
   saveUserProfile: (profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -19,7 +20,7 @@ interface AppContextType {
   addIncome: (income: Omit<Income, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateIncome: (id: string, income: Partial<Income>) => Promise<void>;
   deleteIncome: (id: string) => Promise<void>;
-  addCommitment: (commitment: Omit<Commitment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addCommitment: (commitment: Omit<Commitment, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateCommitment: (id: string, commitment: Partial<Commitment>) => Promise<void>;
   deleteCommitment: (id: string) => Promise<void>;
   markCommitmentPaid: (commitmentId: string, month: number, year: number, amount: number) => Promise<void>;
@@ -27,6 +28,9 @@ interface AppContextType {
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  addLender: (lender: Omit<Lender, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
+  updateLender: (id: string, lender: Partial<Lender>) => Promise<void>;
+  deleteLender: (id: string) => Promise<void>;
   addCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   removeCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -46,19 +50,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [commitmentPayments, setCommitmentPayments] = useState<CommitmentPayment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [lenders, setLenders] = useState<Lender[]>([]);
   const [customTypes, setCustomTypes] = useState<CustomTypes>(DEFAULT_CUSTOM_TYPES);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadAll() {
       try {
-        const [profile, inc, com, payments, exp, ct] = await Promise.all([
+        await runStorageMigrations();
+        const [profile, inc, com, payments, exp, ct, lend] = await Promise.all([
           storage.getUserProfile(),
           storage.getIncomes(),
           storage.getCommitments(),
           storage.getCommitmentPayments(),
           storage.getExpenses(),
           storage.getCustomTypes(),
+          storage.getLenders(),
         ]);
         setUserProfile(profile);
         setIncomes(inc);
@@ -66,6 +73,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCommitmentPayments(payments);
         setExpenses(exp);
         setCustomTypes(ct);
+        setLenders(lend);
       } finally {
         setIsLoading(false);
       }
@@ -113,6 +121,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = [...commitments, item];
     await storage.saveCommitments(updated);
     setCommitments(updated);
+    return item.id;
   }, [commitments]);
 
   const updateCommitment = useCallback(async (id: string, data: Partial<Commitment>) => {
@@ -177,6 +186,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setExpenses(updated);
   }, [expenses]);
 
+  const addLender = useCallback(async (data: Omit<Lender, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const now = new Date().toISOString();
+    const item: Lender = { id: generateId(), ...data, createdAt: now, updatedAt: now };
+    const updated = [...lenders, item];
+    await storage.saveLenders(updated);
+    setLenders(updated);
+    return item.id;
+  }, [lenders]);
+
+  const updateLender = useCallback(async (id: string, data: Partial<Lender>) => {
+    const updated = lenders.map((l) => l.id === id ? { ...l, ...data, updatedAt: new Date().toISOString() } : l);
+    await storage.saveLenders(updated);
+    setLenders(updated);
+  }, [lenders]);
+
+  const deleteLender = useCallback(async (id: string) => {
+    // Unlink commitments instead of deleting them.
+    const updatedLenders = lenders.filter((l) => l.id !== id);
+    const updatedCommitments = commitments.map((c) =>
+      c.lenderId === id ? { ...c, lenderId: undefined, updatedAt: new Date().toISOString() } : c,
+    );
+    await Promise.all([
+      storage.saveLenders(updatedLenders),
+      storage.saveCommitments(updatedCommitments),
+    ]);
+    setLenders(updatedLenders);
+    setCommitments(updatedCommitments);
+  }, [lenders, commitments]);
+
   const addCustomType = useCallback(async (category: keyof CustomTypes, value: string) => {
     const trimmed = value.trim();
     if (!trimmed || customTypes[category].includes(trimmed)) return;
@@ -198,26 +236,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCommitments([]);
     setCommitmentPayments([]);
     setExpenses([]);
+    setLenders([]);
     setCustomTypes(DEFAULT_CUSTOM_TYPES);
   }, []);
 
   const loadSampleData = useCallback(async () => {
-    const { incomes: si, commitments: sc, commitmentPayments: sp, expenses: se } = generateSampleData();
-    const newIncomes = [...incomes, ...si];
-    const newCommitments = [...commitments, ...sc];
-    const newPayments = [...commitmentPayments, ...sp];
-    const newExpenses = [...expenses, ...se];
+    const sample = generateSampleData();
+    const newLenders = [...lenders, ...sample.lenders];
+    const newIncomes = [...incomes, ...sample.incomes];
+    const newCommitments = [...commitments, ...sample.commitments];
+    const newPayments = [...commitmentPayments, ...sample.commitmentPayments];
+    const newExpenses = [...expenses, ...sample.expenses];
     await Promise.all([
+      storage.saveLenders(newLenders),
       storage.saveIncomes(newIncomes),
       storage.saveCommitments(newCommitments),
       storage.saveCommitmentPayments(newPayments),
       storage.saveExpenses(newExpenses),
     ]);
+    setLenders(newLenders);
     setIncomes(newIncomes);
     setCommitments(newCommitments);
     setCommitmentPayments(newPayments);
     setExpenses(newExpenses);
-  }, [incomes, commitments, commitmentPayments, expenses]);
+  }, [incomes, commitments, commitmentPayments, expenses, lenders]);
 
   const getMonthlyTotals = useCallback((month: number, year: number): MonthlyTotals => {
     return calculateMonthlyTotals(
@@ -230,13 +272,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const importData = useCallback(async (json: string) => {
     await storage.importAll(json);
-    const [p, i, c, pay, e, ct] = await Promise.all([
+    const [p, i, c, pay, e, ct, l] = await Promise.all([
       storage.getUserProfile(),
       storage.getIncomes(),
       storage.getCommitments(),
       storage.getCommitmentPayments(),
       storage.getExpenses(),
       storage.getCustomTypes(),
+      storage.getLenders(),
     ]);
     setUserProfile(p);
     setIncomes(i);
@@ -244,15 +287,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCommitmentPayments(pay);
     setExpenses(e);
     setCustomTypes(ct);
+    setLenders(l);
   }, []);
 
   return (
     <AppContext.Provider value={{
-      userProfile, incomes, commitments, commitmentPayments, expenses, customTypes, isLoading,
+      userProfile, incomes, commitments, commitmentPayments, expenses, lenders, customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
       addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid,
       addExpense, updateExpense, deleteExpense,
+      addLender, updateLender, deleteLender,
       addCustomType, removeCustomType,
       clearAllData, loadSampleData, getMonthlyTotals, exportData, importData,
     }}>

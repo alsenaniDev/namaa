@@ -24,6 +24,7 @@ interface FormErrors {
   notes?: string;
   totalAmount?: string;
   installmentCount?: string;
+  paidSoFar?: string;
 }
 
 const NO_LENDER = '__none__';
@@ -35,7 +36,7 @@ export default function AddCommitmentScreen() {
   const t = useT();
   const dir = useDir();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { commitments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile } = useApp();
+  const { commitments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile, seedPastInstallments } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
@@ -49,6 +50,9 @@ export default function AddCommitmentScreen() {
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
   const [totalAmount, setTotalAmount] = useState(existing?.totalAmount?.toString() ?? '');
   const [installmentCount, setInstallmentCount] = useState(existing?.installmentCount?.toString() ?? '');
+  // Only meaningful for new finite loans — for edits, paid history is tracked
+  // via the existing mark-paid flow so we don't show this field.
+  const [paidSoFar, setPaidSoFar] = useState('');
   const [dueDay, setDueDay] = useState(existing?.dueDay?.toString() ?? '1');
   const [isRecurring, setIsRecurring] = useState(existing?.isRecurring ?? true);
   const [isActive, setIsActive] = useState(existing?.isActive ?? true);
@@ -73,6 +77,10 @@ export default function AddCommitmentScreen() {
   const computedTotal = hasA && hasC ? aNum * cNum : null;
   // Tolerate small rounding diffs (1 currency unit) so 99.99 vs 100 isn't flagged.
   const mismatch = hasA && hasT && hasC && Math.abs((computedTotal ?? 0) - tNum) > 1;
+
+  const pNum = parseInt(toAsciiDigits(paidSoFar), 10);
+  const hasP = Number.isFinite(pNum) && pNum > 0;
+  const remainingInstallments = hasC ? Math.max(0, cNum - (hasP ? pNum : 0)) : null;
 
   const fixMonthly = () => {
     if (!hasT || !hasC) return;
@@ -122,6 +130,12 @@ export default function AddCommitmentScreen() {
       if (!ic || !/^\d+$/.test(ic) || parseInt(ic, 10) < 1) {
         errs.installmentCount = t.forms.errorCount;
       }
+      const ps = toAsciiDigits(paidSoFar).trim();
+      if (ps && /^\d+$/.test(ps)) {
+        const psn = parseInt(ps, 10);
+        const icn = parseInt(ic || '0', 10);
+        if (psn >= icn) errs.paidSoFar = t.commitments.paidSoFarError;
+      }
     }
     setErrors(errs);
     return !Object.values(errs).some(Boolean);
@@ -145,8 +159,16 @@ export default function AddCommitmentScreen() {
       endDate: endDate || undefined,
       notes: notes.trim() || undefined,
     };
-    if (isEdit && params.id) await updateCommitment(params.id, data);
-    else await addCommitment(data);
+    if (isEdit && params.id) {
+      await updateCommitment(params.id, data);
+    } else {
+      const newId = await addCommitment(data);
+      // Seed paid history for new finite loans that the user has already
+      // partially paid before tracking them in the app.
+      if (isFinite && hasP && data.amount > 0 && data.installmentCount && pNum < data.installmentCount) {
+        await seedPastInstallments(newId, pNum, data.amount, data.dueDay);
+      }
+    }
     setLoading(false);
     router.back();
   };
@@ -231,6 +253,31 @@ export default function AddCommitmentScreen() {
             error={errors.installmentCount}
             maxLength={4}
           />
+
+          {!isEdit && (
+            <>
+              <Input
+                label={t.commitments.paidSoFarLabel}
+                value={paidSoFar}
+                onChangeText={(v) => { setPaidSoFar(v); clearError('paidSoFar'); }}
+                placeholder="0"
+                keyboardType="number-pad"
+                error={errors.paidSoFar}
+                maxLength={4}
+              />
+              <Text style={[styles.fieldHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+                {t.commitments.paidSoFarHint}
+              </Text>
+              {hasP && hasC && remainingInstallments !== null && pNum < cNum && (
+                <View style={[styles.paidSummary, { backgroundColor: colors.success + '10', borderColor: colors.success + '40' }]}>
+                  <Feather name="check-circle" size={14} color={colors.success} />
+                  <Text style={[styles.paidSummaryText, { color: colors.success, textAlign: dir.textAlign, flex: 1 }]}>
+                    {t.commitments.paidSoFarSummary(pNum, cNum, remainingInstallments)}
+                  </Text>
+                </View>
+              )}
+            </>
+          )}
 
           <View style={[styles.helperBox, {
             backgroundColor: mismatch ? colors.danger + '10' : colors.muted,
@@ -368,4 +415,7 @@ const styles = StyleSheet.create({
   helperBtnRow: { flexWrap: 'wrap', gap: 6, marginTop: 6 },
   helperBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
   helperBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  fieldHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16, marginTop: -8, marginBottom: 12 },
+  paidSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 14 },
+  paidSummaryText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
 });

@@ -33,6 +33,8 @@ interface AppContextType {
   deleteCommitment: (id: string) => Promise<void>;
   markCommitmentPaid: (commitmentId: string, month: number, year: number, amount: number) => Promise<void>;
   markCommitmentUnpaid: (commitmentId: string, month: number, year: number) => Promise<void>;
+  /** Bulk-seed N past paid installments for a finite loan (most recent first). */
+  seedPastInstallments: (commitmentId: string, count: number, amount: number, dueDay: number) => Promise<void>;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
@@ -197,6 +199,51 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       };
       updated = [...commitmentPayments, newPayment];
     }
+    await storage.saveCommitmentPayments(updated);
+    setCommitmentPayments(updated);
+  }, [commitmentPayments]);
+
+  /**
+   * Seed N historical "paid" installments for a finite loan, ending with the
+   * most recent past due-month before today. Skips months that already have a
+   * recorded payment so re-runs don't duplicate. Used when adding a loan that
+   * was opened in the past and already has some installments paid.
+   */
+  const seedPastInstallments = useCallback(async (
+    commitmentId: string,
+    count: number,
+    amount: number,
+    dueDay: number,
+  ) => {
+    if (count <= 0) return;
+    const now = new Date();
+    const dd = Math.max(1, Math.min(28, dueDay || 1));
+    // Most recent fully-elapsed due month = current month if today >= dueDay,
+    // otherwise previous month.
+    let m = now.getMonth() + 1; // 1..12
+    let y = now.getFullYear();
+    if (now.getDate() < dd) {
+      m -= 1;
+      if (m === 0) { m = 12; y -= 1; }
+    }
+    const additions: CommitmentPayment[] = [];
+    let remaining = count;
+    while (remaining > 0) {
+      const already = commitmentPayments.some(
+        (p) => p.commitmentId === commitmentId && p.month === m && p.year === y,
+      ) || additions.some((p) => p.month === m && p.year === y);
+      if (!already) {
+        const paidDate = new Date(y, m - 1, dd, 12, 0, 0, 0).toISOString();
+        additions.push({
+          id: generateId(), commitmentId, month: m, year: y, amount,
+          paidDate, status: 'paid',
+        });
+        remaining -= 1;
+      }
+      m -= 1;
+      if (m === 0) { m = 12; y -= 1; }
+    }
+    const updated = [...commitmentPayments, ...additions];
     await storage.saveCommitmentPayments(updated);
     setCommitmentPayments(updated);
   }, [commitmentPayments]);
@@ -453,7 +500,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
-      addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid,
+      addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid, seedPastInstallments,
       addExpense, updateExpense, deleteExpense,
       addLender, updateLender, deleteLender,
       addGoal, updateGoal, deleteGoal, addGoalContribution, deleteGoalContribution,

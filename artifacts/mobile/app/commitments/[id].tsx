@@ -145,7 +145,12 @@ export default function CommitmentDetailScreen() {
   const saveEditor = async (action: SaveAction) => {
     if (!editing) return;
     const raw = parseFloat(toAsciiDigits(editAmount));
-    const amt = Number.isFinite(raw) && raw > 0 ? raw : commitment.amount;
+    // Allow 0 explicitly (e.g. a waived/skipped installment, or a partial
+    // amount-only override of 0). Only fall back to the default installment
+    // amount when the field is empty or non-numeric. Negative values clamp to 0.
+    const amt = Number.isFinite(raw)
+      ? Math.max(0, raw)
+      : (editAmount.trim() === '' ? commitment.amount : 0);
     if (bulkMode) {
       const periods = Array.from(selectedKeys).map((k) => {
         const [y, m] = k.split('-').map((n) => parseInt(n, 10));

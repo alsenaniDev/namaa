@@ -135,7 +135,14 @@ export default function CommitmentDetailScreen() {
     setBulkMode(false);
   };
 
-  const saveEditor = async (markPaid: boolean) => {
+  // Editor action: what should the save button do?
+  //  - 'paid'    → mark the installment(s) paid with the entered amount
+  //  - 'unpaid'  → clear payment records entirely (single mode only)
+  //  - 'amount'  → keep status unpaid but persist an amount override so the
+  //                schedule row shows the custom value instead of the default
+  type SaveAction = 'paid' | 'unpaid' | 'amount';
+
+  const saveEditor = async (action: SaveAction) => {
     if (!editing) return;
     const raw = parseFloat(toAsciiDigits(editAmount));
     const amt = Number.isFinite(raw) && raw > 0 ? raw : commitment.amount;
@@ -145,19 +152,31 @@ export default function CommitmentDetailScreen() {
         return { month: m, year: y };
       });
       Haptics.notificationAsync(
-        markPaid ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning,
+        action === 'paid'
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning,
       );
       await bulkUpdateCommitmentPayments(
-        commitment.id, periods, markPaid ? 'paid' : 'unpaid', markPaid ? amt : undefined,
+        commitment.id, periods, action, action === 'unpaid' ? undefined : amt,
       );
       setSelectMode(false);
       setSelectedKeys(new Set());
-    } else if (markPaid) {
+    } else if (action === 'paid') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await markCommitmentPaid(commitment.id, editing.month, editing.year, amt);
-    } else {
+    } else if (action === 'unpaid') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       await markCommitmentUnpaid(commitment.id, editing.month, editing.year);
+    } else {
+      // amount-only override for a single installment via bulk method (single
+      // period). Keeps status unpaid but stores the custom amount.
+      Haptics.selectionAsync();
+      await bulkUpdateCommitmentPayments(
+        commitment.id,
+        [{ month: editing.month, year: editing.year }],
+        'amount',
+        amt,
+      );
     }
     closeEditor();
   };
@@ -188,21 +207,27 @@ export default function CommitmentDetailScreen() {
     setSelectedKeys(new Set());
   };
 
-  const openBulkEditor = (markPaid: boolean) => {
+  /**
+   * "Mark unpaid" in the bulk bar applies immediately (no amount needed).
+   * "Update" opens the editor modal in bulk mode so the user can enter a
+   * single amount and choose to either save it as paid for all selected
+   * installments, or save it as an amount override only (still unpaid).
+   */
+  const bulkMarkUnpaid = () => {
+    if (selectedKeys.size === 0) return;
+    const periods = Array.from(selectedKeys).map((k) => {
+      const [y, m] = k.split('-').map((n) => parseInt(n, 10));
+      return { month: m, year: y };
+    });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    bulkUpdateCommitmentPayments(commitment.id, periods, 'unpaid');
+    setSelectMode(false);
+    setSelectedKeys(new Set());
+  };
+
+  const openBulkEditor = () => {
     if (selectedKeys.size === 0) return;
     Haptics.selectionAsync();
-    if (!markPaid) {
-      // No amount needed for unpaid; apply immediately.
-      const periods = Array.from(selectedKeys).map((k) => {
-        const [y, m] = k.split('-').map((n) => parseInt(n, 10));
-        return { month: m, year: y };
-      });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      bulkUpdateCommitmentPayments(commitment.id, periods, 'unpaid');
-      setSelectMode(false);
-      setSelectedKeys(new Set());
-      return;
-    }
     setBulkMode(true);
     setEditing({ index: 0, month: 0, year: 0 }); // sentinel; modal renders differently in bulk
     setEditAmount(commitment.amount.toString());
@@ -334,6 +359,11 @@ export default function CommitmentDetailScreen() {
             <Card style={styles.card} padding={0}>
               {schedule.map((row, idx) => {
                 const isPaid = row.payment?.status === 'paid';
+                // An "override" row is one where the user saved a custom
+                // amount without marking the installment as paid. It still
+                // counts as unpaid for totals, but the row shows the custom
+                // amount + a small badge so it's clear it's not the default.
+                const isOverride = !!row.payment && row.payment.status !== 'paid';
                 const k = periodKey(row.month, row.year);
                 const isSelected = selectedKeys.has(k);
                 return (
@@ -376,14 +406,19 @@ export default function CommitmentDetailScreen() {
                       </Text>
                       <Text style={[
                         styles.scheduleStatus,
-                        { textAlign: dir.textAlign, color: isPaid ? colors.success : colors.mutedForeground },
+                        {
+                          textAlign: dir.textAlign,
+                          color: isPaid ? colors.success : isOverride ? colors.primary : colors.mutedForeground,
+                        },
                       ]}>
                         {isPaid
                           ? `${t.commitments.scheduleStatusPaid}${row.payment?.paidDate ? ` · ${formatDate(row.payment.paidDate)}` : ''}`
-                          : t.commitments.scheduleStatusUnpaid}
+                          : isOverride
+                            ? `${t.commitments.scheduleStatusUnpaid} · ${t.commitments.scheduleStatusOverride}`
+                            : t.commitments.scheduleStatusUnpaid}
                       </Text>
                     </View>
-                    <Text style={[styles.scheduleAmount, { color: isPaid ? colors.foreground : colors.mutedForeground }]}>
+                    <Text style={[styles.scheduleAmount, { color: isPaid || isOverride ? colors.foreground : colors.mutedForeground }]}>
                       {formatCurrency(row.payment?.amount ?? commitment.amount, currency)}
                     </Text>
                     {!selectMode ? <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} /> : null}
@@ -471,12 +506,12 @@ export default function CommitmentDetailScreen() {
           </Text>
           <Button
             title={t.commitments.scheduleBulkMarkUnpaid}
-            onPress={() => openBulkEditor(false)}
+            onPress={bulkMarkUnpaid}
             variant="outline"
           />
           <Button
-            title={t.commitments.scheduleBulkMarkPaid}
-            onPress={() => openBulkEditor(true)}
+            title={t.commitments.scheduleBulkUpdate}
+            onPress={openBulkEditor}
           />
         </View>
       ) : null}
@@ -534,20 +569,38 @@ export default function CommitmentDetailScreen() {
               {!bulkMode && editing?.payment?.status === 'paid' ? (
                 <Button
                   title={t.commitments.scheduleMarkUnpaid}
-                  onPress={() => saveEditor(false)}
+                  onPress={() => saveEditor('unpaid')}
                   variant="destructive"
                   style={{ flex: 1 }}
+                />
+              ) : null}
+              {/* "Save amount only" keeps the installment unpaid but persists
+                  the custom amount. Available in bulk mode, and in single mode
+                  for installments that aren't already paid. */}
+              {/* In bulk mode the selection may include paid rows; saving as
+                  amount-only will flip them back to unpaid. Use a clearer
+                  label there so the side-effect is explicit. */}
+              {bulkMode || editing?.payment?.status !== 'paid' ? (
+                <Button
+                  title={
+                    bulkMode
+                      ? `${t.commitments.scheduleSaveAmountOnly} (${t.commitments.scheduleStatusUnpaid})`
+                      : t.commitments.scheduleSaveAmountOnly
+                  }
+                  onPress={() => saveEditor('amount')}
+                  variant="outline"
+                  style={{ flexBasis: '100%' }}
                 />
               ) : null}
               <Button
                 title={
                   bulkMode
-                    ? t.commitments.scheduleSave
+                    ? t.commitments.scheduleBulkMarkPaid
                     : editing?.payment?.status === 'paid'
                       ? t.commitments.scheduleSave
                       : t.commitments.scheduleMarkPaid
                 }
-                onPress={() => saveEditor(true)}
+                onPress={() => saveEditor('paid')}
                 style={{ flex: 1 }}
               />
             </View>
@@ -615,5 +668,5 @@ const styles = StyleSheet.create({
   modalSubtitle: { fontSize: 12, fontFamily: 'Inter_400Regular' },
   modalLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 6 },
   modalInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Inter_500Medium' },
-  modalActions: { gap: 8, marginTop: 8 },
+  modalActions: { gap: 8, marginTop: 8, flexWrap: 'wrap', rowGap: 8 },
 });

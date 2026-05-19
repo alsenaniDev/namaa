@@ -36,13 +36,19 @@ interface AppContextType {
   /** Bulk-seed N past paid installments for a finite loan (most recent first). */
   seedPastInstallments: (commitmentId: string, count: number, amount: number, dueDay: number) => Promise<void>;
   /**
-   * Bulk mark several (month, year) periods of a commitment as paid (upsert
-   * with the given amount) or unpaid (remove). Single storage write per call.
+   * Bulk update several (month, year) periods of a commitment:
+   *  - 'paid':    upsert with status='paid' + the given amount.
+   *  - 'unpaid':  delete the records (treat as never-paid, fall back to the
+   *               commitment's default monthly amount when displayed).
+   *  - 'amount':  upsert with status='unpaid' + the given amount. Used when
+   *               the user wants to override the displayed amount of a
+   *               specific installment without marking it as paid.
+   * Single storage write per call.
    */
   bulkUpdateCommitmentPayments: (
     commitmentId: string,
     periods: { month: number; year: number }[],
-    action: 'paid' | 'unpaid',
+    action: 'paid' | 'unpaid' | 'amount',
     amount?: number,
   ) => Promise<void>;
   addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -261,7 +267,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const bulkUpdateCommitmentPayments = useCallback(async (
     commitmentId: string,
     periods: { month: number; year: number }[],
-    action: 'paid' | 'unpaid',
+    action: 'paid' | 'unpaid' | 'amount',
     amount?: number,
   ) => {
     if (periods.length === 0) return;
@@ -273,14 +279,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         (p) => !(p.commitmentId === commitmentId && set.has(key(p.month, p.year))),
       );
     } else {
-      const paidDate = new Date().toISOString();
+      const markPaid = action === 'paid';
+      const paidDate = markPaid ? new Date().toISOString() : undefined;
       const amt = amount ?? 0;
       // Update existing matching, then add records for periods that had none.
       const seen = new Set<string>();
       next = commitmentPayments.map((p) => {
         if (p.commitmentId === commitmentId && set.has(key(p.month, p.year))) {
           seen.add(key(p.month, p.year));
-          return { ...p, status: 'paid' as const, paidDate, amount: amt };
+          if (markPaid) {
+            return { ...p, status: 'paid' as const, paidDate, amount: amt };
+          }
+          // amount-only: preserve any existing paidDate but flip status to
+          // unpaid and update the amount.
+          return { ...p, status: 'unpaid' as const, amount: amt };
         }
         return p;
       });
@@ -289,7 +301,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           next.push({
             id: generateId(), commitmentId,
             month: period.month, year: period.year,
-            amount: amt, paidDate, status: 'paid',
+            amount: amt,
+            paidDate,
+            status: markPaid ? 'paid' : 'unpaid',
           });
         }
       }

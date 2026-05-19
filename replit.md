@@ -16,6 +16,7 @@ A fully offline Arabic RTL personal finance app built with Expo (React Native). 
 - State: React Context (AppContext)
 - UI: React Native + Feather icons, Inter font (Arabic-compatible)
 - RTL: I18nManager.forceRTL(true), CSS direction for web
+- Notifications: expo-notifications (native only; web no-op)
 
 ## Where things live
 
@@ -46,8 +47,10 @@ A fully offline Arabic RTL personal finance app built with Expo (React Native). 
 - Commitment management (CRUD): loans, rent, utilities, subscriptions with paid/unpaid toggle
 - Expense tracking (CRUD): categorized daily spending with date
 - Reports: monthly bar chart + category breakdown (expenses + commitments)
-- Settings: profile, currency, saving goal, data export, sample data, clear all
+- Settings: profile, currency, saving goal, notifications toggle, data export, sample data, clear all
 - 4-step onboarding wizard with optional sample data preload
+- Planning: savings goals (with contributions), category budgets, subscriptions
+- Local notifications: monthly reminders for commitments (dueDay 09:00) + one-day-before subscription renewals; cancel-all + reschedule on every change
 
 ## User preferences
 

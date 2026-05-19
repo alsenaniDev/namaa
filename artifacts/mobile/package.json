@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "expo-document-picker": "~14.0.8",
+    "expo-notifications": "~0.32.17",
     "expo-updates": "^55.0.22"
   }
 }

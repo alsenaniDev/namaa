@@ -39,6 +39,12 @@
       "expo-font",
       "expo-web-browser",
       "expo-updates",
+      [
+        "expo-notifications",
+        {
+          "color": "#10B981"
+        }
+      ],
       "./plugins/withForceRTL"
     ],
     "experiments": {

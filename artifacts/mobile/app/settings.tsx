@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ScrollView, View, Text, StyleSheet, Alert, Platform, Share, TouchableOpacity, TextInput } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, Alert, Platform, Share, TouchableOpacity, TextInput, Switch } from 'react-native';
+import { requestPermissions } from '@/utils/notifications';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -89,6 +90,23 @@ export default function SettingsScreen() {
   const [savingGoal, setSavingGoal] = useState(userProfile?.monthlySavingGoal?.toString() ?? '');
   const [monthStartDay, setMonthStartDay] = useState(userProfile?.financialMonthStartDay?.toString() ?? '1');
   const [saving, setSaving] = useState(false);
+  const notificationsEnabled = !!userProfile?.notificationsEnabled;
+
+  const handleToggleNotifications = async (next: boolean) => {
+    if (Platform.OS === 'web') {
+      Alert.alert(t.settings.notificationsWebTitle, t.settings.notificationsWebMsg);
+      return;
+    }
+    if (next) {
+      const granted = await requestPermissions();
+      if (!granted) {
+        Alert.alert(t.settings.notificationsDeniedTitle, t.settings.notificationsDeniedMsg);
+        return;
+      }
+    }
+    await updateUserProfile({ notificationsEnabled: next });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const handleSave = async () => {
     if (!name.trim()) { Alert.alert(t.common.errorTitle, t.settings.saveErrorMsg); return; }
@@ -183,6 +201,19 @@ export default function SettingsScreen() {
         <Input label={t.settings.monthStartLabel} value={monthStartDay} onChangeText={setMonthStartDay} placeholder="1" keyboardType="number-pad" />
 
         <Button title={saving ? t.common.saving : t.common.saveChanges} onPress={handleSave} fullWidth loading={saving} />
+
+        <View style={[styles.toggleRow, { flexDirection: dir.row, borderTopColor: colors.border }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.toggleLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.settings.notificationsLabel}</Text>
+            <Text style={[styles.toggleHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.notificationsHint}</Text>
+          </View>
+          <Switch
+            value={notificationsEnabled}
+            onValueChange={handleToggleNotifications}
+            trackColor={{ false: colors.muted, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
       </Card>
 
       <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.categoriesSection}</Text>
@@ -287,4 +318,7 @@ const styles = StyleSheet.create({
   creditBox: { alignItems: 'center', paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 14, gap: 10 },
   creditName: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
   creditSub: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  toggleRow: { alignItems: 'center', gap: 12, paddingTop: 14, marginTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
+  toggleLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
+  toggleHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
 });

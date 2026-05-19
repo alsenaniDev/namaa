@@ -6,6 +6,7 @@ export interface UserProfile {
   monthlySavingGoal: number;
   financialMonthStartDay: number;
   isDarkMode: boolean;
+  notificationsEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }

@@ -7,7 +7,11 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { formatCurrency, formatMonthYear } from '@/utils/format';
-import { getExpensesByCategory, getCommitmentsByCategory } from '@/utils/calculations';
+import {
+  getExpensesByCategory, getCommitmentsByCategory,
+  getGoalProgress, getBudgetUsages,
+  getMonthlySubscriptionTotal, getYearlySubscriptionTotal,
+} from '@/utils/calculations';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Card } from '@/components/ui/Card';
 
@@ -16,7 +20,7 @@ export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
-  const { getMonthlyTotals, expenses, commitments, userProfile } = useApp();
+  const { getMonthlyTotals, expenses, commitments, userProfile, goals, goalContributions, budgets, subscriptions } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const today = new Date();
@@ -38,6 +42,22 @@ export default function ReportsScreen() {
   const sortedComCats = Object.entries(comCats).sort((a, b) => b[1] - a[1]);
   const maxBar = Math.max(totals.totalIncome, totals.totalCommitments, totals.totalExpenses, 1);
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
+
+  // Phase 4 sections — derived per current data, not month-scoped.
+  const goalProgress = goals.map((g) => ({ g, p: getGoalProgress(g, goalContributions) }));
+  const activeGoals = goalProgress.filter((x) => !x.p.isCompleted);
+  const completedGoals = goalProgress.filter((x) => x.p.isCompleted);
+  const goalsSaved = goalProgress.reduce((s, x) => s + x.p.saved, 0);
+  const goalsTarget = goals.reduce((s, g) => s + g.targetAmount, 0);
+  const goalsTopFour = [...goalProgress].sort((a, b) => b.p.percent - a.p.percent).slice(0, 4);
+
+  const activeSubs = subscriptions.filter((s) => s.isActive);
+  const subsMonthly = getMonthlySubscriptionTotal(subscriptions);
+  const subsYearly = getYearlySubscriptionTotal(subscriptions);
+
+  const budgetUsages = getBudgetUsages(budgets, expenses, month, year);
+  const budgetStatusColor = (s: 'safe' | 'warning' | 'over') =>
+    s === 'over' ? colors.danger : s === 'warning' ? colors.warning : colors.success;
 
   return (
     <ScrollView
@@ -151,7 +171,95 @@ export default function ReportsScreen() {
         </Card>
       )}
 
-      {totals.totalIncome === 0 && totals.totalCommitments === 0 && totals.totalExpenses === 0 && (
+      {/* Goals overview — not month-scoped */}
+      <Card style={styles.section}>
+        <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.reports.goalsSection}</Text>
+        {goals.length === 0 ? (
+          <Text style={[styles.emptyText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.reports.goalsEmpty}</Text>
+        ) : (
+          <>
+            <View style={[styles.metaRow, { flexDirection: dir.row }]}>
+              <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t.reports.goalsTotal}</Text>
+              <Text style={[styles.metaValue, { color: colors.foreground }]}>
+                {formatCurrency(goalsSaved, currency)} / {formatCurrency(goalsTarget, currency)}
+              </Text>
+            </View>
+            <View style={[styles.pillRow, { flexDirection: dir.row }]}>
+              <View style={[styles.pill, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]}>
+                <Text style={[styles.pillText, { color: colors.primary }]}>{t.reports.goalsActiveCount(activeGoals.length)}</Text>
+              </View>
+              {completedGoals.length > 0 && (
+                <View style={[styles.pill, { backgroundColor: colors.success + '15', borderColor: colors.success + '40' }]}>
+                  <Text style={[styles.pillText, { color: colors.success }]}>{t.reports.goalsCompletedCount(completedGoals.length)}</Text>
+                </View>
+              )}
+            </View>
+            {goalsTopFour.map(({ g, p }) => (
+              <View key={g.id} style={{ marginTop: 12 }}>
+                <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
+                  <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(p.percent)}٪</Text>
+                  <Text style={[styles.catName, { color: colors.foreground }]} numberOfLines={1}>{g.name}</Text>
+                </View>
+                <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
+                  <View style={[styles.catFill, { width: `${Math.min(100, p.percent)}%` as any, backgroundColor: g.color, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
+                </View>
+              </View>
+            ))}
+          </>
+        )}
+      </Card>
+
+      {/* Subscriptions overview */}
+      <Card style={styles.section}>
+        <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.reports.subscriptionsSection}</Text>
+        {activeSubs.length === 0 ? (
+          <Text style={[styles.emptyText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.reports.subsEmpty}</Text>
+        ) : (
+          <>
+            <View style={[styles.metaRow, { flexDirection: dir.row }]}>
+              <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t.reports.subsMonthlyEq}</Text>
+              <Text style={[styles.metaValue, { color: colors.commitment }]}>{formatCurrency(subsMonthly, currency)}</Text>
+            </View>
+            <View style={[styles.metaRow, { flexDirection: dir.row }]}>
+              <Text style={[styles.metaLabel, { color: colors.mutedForeground }]}>{t.reports.subsYearlyEq}</Text>
+              <Text style={[styles.metaValue, { color: colors.foreground }]}>{formatCurrency(subsYearly, currency)}</Text>
+            </View>
+            <View style={[styles.pillRow, { flexDirection: dir.row, marginTop: 4 }]}>
+              <View style={[styles.pill, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '40' }]}>
+                <Text style={[styles.pillText, { color: colors.primary }]}>{t.reports.subsActiveCount(activeSubs.length)}</Text>
+              </View>
+            </View>
+          </>
+        )}
+      </Card>
+
+      {/* Budgets vs actual — month-scoped */}
+      <Card style={styles.section}>
+        <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.reports.budgetsSection}</Text>
+        {budgetUsages.length === 0 ? (
+          <Text style={[styles.emptyText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.reports.budgetsEmpty}</Text>
+        ) : (
+          budgetUsages.map((u) => {
+            const c = budgetStatusColor(u.status);
+            return (
+              <View key={u.category} style={{ marginBottom: 12 }}>
+                <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
+                  <Text style={[styles.catPct, { color: c }]}>{Math.round(u.percent)}٪</Text>
+                  <Text style={[styles.catName, { color: colors.foreground }]}>{u.category}</Text>
+                </View>
+                <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
+                  <View style={[styles.catFill, { width: `${Math.min(100, u.percent)}%` as any, backgroundColor: c, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
+                </View>
+                <Text style={[styles.budgetMeta, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+                  {formatCurrency(u.spent, currency)} {t.reports.ofLimit(formatCurrency(u.limit, currency))}
+                </Text>
+              </View>
+            );
+          })
+        )}
+      </Card>
+
+      {totals.totalIncome === 0 && totals.totalCommitments === 0 && totals.totalExpenses === 0 && goals.length === 0 && activeSubs.length === 0 && budgetUsages.length === 0 && (
         <View style={styles.noData}>
           <Feather name="bar-chart-2" size={56} color={colors.mutedForeground} />
           <Text style={[styles.noDataTitle, { color: colors.foreground }]}>{t.reports.noDataTitle}</Text>
@@ -185,6 +293,14 @@ const styles = StyleSheet.create({
   catAmt: { fontSize: 13, fontFamily: 'Inter_700Bold', minWidth: 80 },
   catBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
   catFill: { height: 6, borderRadius: 3, top: 0, bottom: 0 },
+  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  metaRow: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  metaLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  metaValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  pillRow: { flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
+  pillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  budgetMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 4 },
   noData: { alignItems: 'center', paddingVertical: 48, gap: 10 },
   noDataTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
   noDataSub: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },

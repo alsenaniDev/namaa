@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform,
   Modal, TextInput, Image, KeyboardAvoidingView,
@@ -55,32 +55,20 @@ export default function CommitmentDetailScreen() {
     [commitmentPayments, params.id],
   );
 
-  if (!commitment) {
-    return (
-      <View style={[styles.center, { backgroundColor: colors.background }]}>
-        <Text style={{ color: colors.mutedForeground }}>—</Text>
-      </View>
-    );
-  }
-
-  const lender = commitment.lenderId ? lenders.find((l) => l.id === commitment.lenderId) : undefined;
-  const accent = lender?.color ?? colors.commitment;
-  const progress = getCommitmentProgress(commitment, commitmentPayments);
-  const isFinite = commitment.kind === 'finite_loan' && !!commitment.installmentCount && commitment.installmentCount > 0;
-
+  const isFinite = commitment?.kind === 'finite_loan' && !!commitment.installmentCount && commitment.installmentCount > 0;
   const { month: curMonth, year: curYear } = getCurrentMonthYear();
-  const thisMonthPayment = commitmentPayments.find(
-    (p) => p.commitmentId === commitment.id && p.month === curMonth && p.year === curYear,
-  );
-  const isPaidThisMonth = thisMonthPayment?.status === 'paid';
 
   // Build the full installment schedule for finite loans.
   // Anchor priority: explicit startDate (YYYY-MM-DD) → earliest recorded
   // payment → current month. This keeps installment numbering aligned with
   // the real loan start when the user provided it, but degrades gracefully.
   // Installments walk forward from anchor for `installmentCount` months.
+  //
+  // NOTE: this useMemo MUST run on every render (including when commitment
+  // is undefined after a delete), otherwise React throws "Rendered fewer
+  // hooks than expected" and the error screen appears.
   const schedule: ScheduleRow[] = useMemo(() => {
-    if (!isFinite) return [];
+    if (!commitment || !isFinite) return [];
     const count = commitment.installmentCount!;
     let anchor: { y: number; m: number } | null = null;
     if (commitment.startDate) {
@@ -109,6 +97,32 @@ export default function CommitmentDetailScreen() {
     }
     return rows;
   }, [isFinite, commitment, myPayments, commitmentPayments, curMonth, curYear]);
+
+  // If the commitment is deleted (or the id is invalid), bounce back to the
+  // list instead of trying to render against undefined data.
+  useEffect(() => {
+    if (!commitment) {
+      if (router.canGoBack()) router.back();
+      else router.replace('/(tabs)/commitments');
+    }
+  }, [commitment, router]);
+
+  if (!commitment) {
+    return (
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <Text style={{ color: colors.mutedForeground }}>—</Text>
+      </View>
+    );
+  }
+
+  const lender = commitment.lenderId ? lenders.find((l) => l.id === commitment.lenderId) : undefined;
+  const accent = lender?.color ?? colors.commitment;
+  const progress = getCommitmentProgress(commitment, commitmentPayments);
+
+  const thisMonthPayment = commitmentPayments.find(
+    (p) => p.commitmentId === commitment.id && p.month === curMonth && p.year === curYear,
+  );
+  const isPaidThisMonth = thisMonthPayment?.status === 'paid';
 
   // History for non-finite (recurring bills): show all recorded payments newest first.
   const history = useMemo(

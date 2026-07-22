@@ -19,9 +19,15 @@
       "infoPlist": {
         "CFBundleName": "نماء",
         "CFBundleDisplayName": "نماء",
-        "CFBundleLocalizations": ["ar", "en"],
+        "CFBundleLocalizations": [
+          "ar",
+          "en",
+          "ar",
+          "en"
+        ],
         "CFBundleDevelopmentRegion": "ar"
-      }
+      },
+      "bundleIdentifier": "com.anonymous.mobile"
     },
     "android": {
       "supportsRTL": true
@@ -50,6 +56,14 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "origin": "https://replit.com/"
+      },
+      "eas": {
+        "projectId": "9e238281-3dd4-4399-856e-9bbb6a24a5bc"
+      }
     }
   }
 }

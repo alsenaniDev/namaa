@@ -421,6 +421,8 @@ export const translations = {
     },
     forms: {
       titleLabel: 'العنوان *',
+      titleExpensePlaceholder: 'أدخل عنوان المصروف',
+      titleIncomePlaceholder: 'أدخل عنوان الدخل',
       amountLabel: 'المبلغ *',
       typeLabel: 'النوع',
       categoryLabel: 'الفئة',
@@ -900,6 +902,8 @@ export const translations = {
     },
     forms: {
       titleLabel: 'Title *',
+      titleExpensePlaceholder: 'Enter expense title',
+      titleIncomePlaceholder: 'Enter income title',
       amountLabel: 'Amount *',
       typeLabel: 'Type',
       categoryLabel: 'Category',

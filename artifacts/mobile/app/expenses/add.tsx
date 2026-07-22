@@ -102,7 +102,7 @@ export default function AddExpenseScreen() {
         label={t.forms.titleLabel}
         value={title}
         onChangeText={(v) => { setTitle(v); clearError('title'); }}
-        placeholder={t.forms.titleLabel}
+        placeholder={t.forms.titleExpensePlaceholder}
         error={errors.title}
         maxLength={FIELD_LIMITS.title}
         autoFocus

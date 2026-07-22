@@ -89,7 +89,7 @@ export default function AddIncomeScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleLabel} error={errors.title} maxLength={FIELD_LIMITS.title} autoFocus />
+      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleIncomePlaceholder} error={errors.title} maxLength={FIELD_LIMITS.title} autoFocus />
       <Input label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} maxLength={16} />
       <Select label={t.forms.typeLabel} value={type} options={allTypes.map((t) => ({ label: t, value: t }))} onValueChange={(v) => setType(v as typeof type)} />
 

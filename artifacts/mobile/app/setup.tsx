@@ -25,7 +25,7 @@ export default function SetupScreen() {
   const [currency, setCurrency] = useState('SAR');
   const [salary, setSalary] = useState('');
   const [savingGoal, setSavingGoal] = useState('');
-  const [monthStartDay, setMonthStartDay] = useState('1');
+  const [monthStartDay, setMonthStartDay] = useState('27');
   const [loading, setLoading] = useState(false);
   const [nameError, setNameError] = useState('');
 

@@ -210,15 +210,17 @@ export default function AddCommitmentScreen() {
   const handleDelete = () => {
     Alert.alert(t.commitments.deleteTitle, t.commitments.deleteMsg(existing?.title ?? ''), [
       { text: t.common.cancel, style: 'cancel' },
-      { text: t.common.delete, style: 'destructive', onPress: async () => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-        await deleteCommitment(params.id!);
-        // router.back() would land on the now-stale commitment detail screen
-        // (the one that opened this edit modal). Replace straight to the list
-        // so the deleted commitment's detail page never gets to re-render
-        // against an undefined record.
-        router.replace('/(tabs)/commitments');
-      } },
+      {
+        text: t.common.delete, style: 'destructive', onPress: async () => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          await deleteCommitment(params.id!);
+          // router.back() would land on the now-stale commitment detail screen
+          // (the one that opened this edit modal). Replace straight to the list
+          // so the deleted commitment's detail page never gets to re-render
+          // against an undefined record.
+          router.replace('/(tabs)/commitments');
+        }
+      },
     ]);
   };
 

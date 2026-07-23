@@ -21,17 +21,13 @@
         "CFBundleDisplayName": "نماء",
         "CFBundleLocalizations": [
           "ar",
-          "en",
-          "ar",
           "en"
         ],
         "CFBundleDevelopmentRegion": "ar"
       },
       "bundleIdentifier": "com.alsenanidev.mobile"
     },
-    "android": {
-      "supportsRTL": true
-    },
+    "android": {},
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -42,6 +38,21 @@
           "origin": "https://replit.com/"
         }
       ],
+      [
+        "expo-localization",
+        {
+          "supportedLocales": {
+            "ios": [
+              "ar",
+              "en"
+            ],
+            "android": [
+              "ar",
+              "en"
+            ]
+          }
+        }
+      ],
       "expo-font",
       "expo-web-browser",
       "expo-updates",
@@ -50,14 +61,15 @@
         {
           "color": "#10B981"
         }
-      ],
-      "./plugins/withForceRTL"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
     "extra": {
+      "supportsRTL": true,
+      "forcesRTL": false,
       "router": {
         "origin": "https://replit.com/"
       },

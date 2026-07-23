@@ -8,7 +8,7 @@ import { generateId } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
 import { MonthlyTotals } from '../types';
 import { calculateMonthlyTotals } from '../utils/calculations';
-import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
+// import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
 
 interface AppContextType {
   userProfile: UserProfile | null;
@@ -128,18 +128,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     loadAll();
     // Configure foreground handler + Android channel once at startup.
-    initNotifications();
+    // initNotifications();
   }, []);
 
   // Reschedule local reminders whenever the inputs that drive them change.
   // Stateless sync — cancel all + reschedule from current data.
   useEffect(() => {
     if (isLoading) return;
-    syncReminders({
-      enabled: !!userProfile?.notificationsEnabled,
-      commitments,
-      subscriptions,
-    });
+    // syncReminders({
+    //   enabled: !!userProfile?.notificationsEnabled,
+    //   commitments,
+    //   subscriptions,
+    // });
   }, [isLoading, userProfile?.notificationsEnabled, commitments, subscriptions]);
 
   const saveUserProfile = useCallback(async (data: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
@@ -465,7 +465,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [customTypes]);
 
   const clearAllData = useCallback(async () => {
-    await cancelAllScheduled();
+    // await cancelAllScheduled();
     await storage.clearAll();
     setUserProfile(null);
     setIncomes([]);

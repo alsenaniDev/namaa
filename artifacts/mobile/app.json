@@ -27,7 +27,7 @@
         ],
         "CFBundleDevelopmentRegion": "ar"
       },
-      "bundleIdentifier": "com.anonymous.mobile"
+      "bundleIdentifier": "com.alsenanidev.mobile"
     },
     "android": {
       "supportsRTL": true

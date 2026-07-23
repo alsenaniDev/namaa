@@ -86,8 +86,8 @@ function AppLayout() {
         // default back button lands on the visual LEFT — wrong side for
         // Arabic. We hide it and render our own larger chevron on the
         // visual right via headerRight (see HeaderBack).
-        headerBackVisible: false,
-        headerRight: () => <HeaderBack />,
+        headerBackVisible: true,
+        // headerRight: () => <HeaderBack />,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

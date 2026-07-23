@@ -23,11 +23,15 @@
           "ar",
           "en"
         ],
-        "CFBundleDevelopmentRegion": "ar"
+        "CFBundleDevelopmentRegion": "ar",
+        "ExpoLocalization_supportsRTL": true,
+        "ExpoLocalization_forcesRTL": false
       },
       "bundleIdentifier": "com.alsenanidev.mobile"
     },
-    "android": {},
+    "android": {
+      "package": "com.alsenanidev.mobile"
+    },
     "web": {
       "favicon": "./assets/images/icon.png"
     },
@@ -55,13 +59,7 @@
       ],
       "expo-font",
       "expo-web-browser",
-      "expo-updates",
-      [
-        "expo-notifications",
-        {
-          "color": "#10B981"
-        }
-      ]
+      "expo-updates"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -401,19 +401,19 @@ export default function AddCommitmentScreen() {
       />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
-        <Switch value={isRecurring} onValueChange={setIsRecurring} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.switchLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.commitments.recurringLabel}</Text>
           <Text style={[styles.switchSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{isRecurring ? t.commitments.recurringYes : t.commitments.recurringNo}</Text>
         </View>
+        <Switch value={isRecurring} onValueChange={setIsRecurring} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
       </View>
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
-        <Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: colors.border, true: colors.success }} thumbColor="#fff" />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.switchLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.commitments.activeLabel}</Text>
           <Text style={[styles.switchSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{isActive ? t.commitments.activeYes : t.commitments.activeNo}</Text>
         </View>
+        <Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: colors.border, true: colors.success }} thumbColor="#fff" />
       </View>
 
       <Input label={t.forms.startDateLabel} value={startDate} onChangeText={(v) => { setStartDate(v); clearError('startDate'); }} placeholder="2024-01-01" keyboardType="numbers-and-punctuation" error={errors.startDate} maxLength={10} />

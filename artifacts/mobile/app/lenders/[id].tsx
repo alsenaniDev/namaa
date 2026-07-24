@@ -51,7 +51,7 @@ export default function LenderDetailScreen() {
           title: lender.name,
           // headerRight is reserved globally for the back button (see root
           // _layout). The edit action lives on headerLeft (visual left).
-          headerLeft: () => (
+          headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/lenders/add', params: { id: lender.id } })}
               hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}

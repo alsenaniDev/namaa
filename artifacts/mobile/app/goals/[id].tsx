@@ -185,9 +185,6 @@ export default function GoalDetailScreen() {
         myContribs.map((c) => (
           <Card key={c.id} padding={12} style={{ marginBottom: 8 }}>
             <View style={[styles.contribRow, { flexDirection: dir.row }]}>
-              <TouchableOpacity onPress={() => handleDeleteContrib(c.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Feather name="trash-2" size={16} color={colors.danger} />
-              </TouchableOpacity>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.contribAmt, { textAlign: dir.textAlign, color: goal.color }]}>
                   + {formatCurrency(c.amount, currency)}
@@ -196,6 +193,9 @@ export default function GoalDetailScreen() {
                   {formatShortDate(c.date)}
                 </Text>
               </View>
+              <TouchableOpacity onPress={() => handleDeleteContrib(c.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Feather name="trash-2" size={16} color={colors.danger} />
+              </TouchableOpacity>
             </View>
           </Card>
         ))

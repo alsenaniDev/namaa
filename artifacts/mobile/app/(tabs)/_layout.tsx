@@ -28,7 +28,7 @@ export default function TabLayout() {
   const GearButton = () => (
     <TouchableOpacity
       onPress={() => router.push('/settings')}
-      style={dir.isRTL ? { marginRight: 14, padding: 4 } : { marginLeft: 14, padding: 4 }}
+      style={dir.isRTL ? { marginRight: 14, padding: 4, marginInlineStart: 10 } : { marginLeft: 14, padding: 4 }}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <Feather name="settings" size={22} color={colors.foreground} />
@@ -43,7 +43,7 @@ export default function TabLayout() {
     }>
       <TouchableOpacity
         onPress={() => router.push('/calendar')}
-        style={{ padding: 4, marginHorizontal: 4 }}
+        style={{ padding: 4, marginHorizontal: 4, marginInlineStart: 12 }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <Feather name="calendar" size={22} color={colors.foreground} />

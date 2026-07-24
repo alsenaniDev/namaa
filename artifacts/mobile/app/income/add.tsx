@@ -94,11 +94,11 @@ export default function AddIncomeScreen() {
       <Select label={t.forms.typeLabel} value={type} options={allTypes.map((t) => ({ label: t, value: t }))} onValueChange={(v) => setType(v as typeof type)} />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
-        <Switch value={isRecurring} onValueChange={setIsRecurring} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
         <View style={{ flex: 1, marginLeft: 12 }}>
           <Text style={[styles.switchLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.forms.monthlyRecurring}</Text>
           <Text style={[styles.switchSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{isRecurring ? t.commitments.recurringYes : t.commitments.recurringNo}</Text>
         </View>
+        <Switch value={isRecurring} onValueChange={setIsRecurring} trackColor={{ false: colors.border, true: colors.primary }} thumbColor="#fff" />
       </View>
 
       {isRecurring

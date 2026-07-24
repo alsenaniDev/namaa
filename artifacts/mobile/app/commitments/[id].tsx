@@ -265,7 +265,7 @@ export default function CommitmentDetailScreen() {
           // headerRight is reserved globally for the back button (see root
           // _layout). The edit action lives on headerLeft (visual left) so
           // it doesn't compete with the user's tap target for "back".
-          headerLeft: () => (
+          headerRight: () => (
             <TouchableOpacity
               onPress={() => router.push({ pathname: '/commitments/add', params: { id: commitment.id } })}
               hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}

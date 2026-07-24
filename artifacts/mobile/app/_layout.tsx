@@ -87,7 +87,6 @@ function AppLayout() {
         // Arabic. We hide it and render our own larger chevron on the
         // visual right via headerRight (see HeaderBack).
         headerBackVisible: true,
-        // headerRight: () => <HeaderBack />,
       }}
     >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />

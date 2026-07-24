@@ -254,8 +254,8 @@ export default function CommitmentDetailScreen() {
 
   const kindLabel =
     commitment.kind === 'finite_loan' ? t.commitments.kindFiniteLoan
-    : commitment.kind === 'one_time' ? t.commitments.kindOneTime
-    : t.commitments.kindRecurringBill;
+      : commitment.kind === 'one_time' ? t.commitments.kindOneTime
+        : t.commitments.kindRecurringBill;
 
   return (
     <>

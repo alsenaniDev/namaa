@@ -8,7 +8,7 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { useLanguage } from '@/context/LanguageContext';
-import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
+import { formatCurrency, formatShortDate, getCurrentMonthYear, parseDateLocal } from '@/utils/format';
 import { getUpcomingCommitments, getBudgetUsages, getGoalProgress } from '@/utils/calculations';
 import { getInsights } from '@/utils/insights';
 import { HealthStatusCard } from '@/components/HealthStatusCard';
@@ -63,6 +63,18 @@ export default function DashboardScreen() {
   const budgetWarnings = useMemo(
     () => getBudgetUsages(budgets, expenses, month, year).filter((u) => u.status !== 'safe').slice(0, 2),
     [budgets, expenses, month, year],
+  );
+
+  const recentExpenses = useMemo(
+    () => [...expenses]
+      .sort((a, b) => {
+        const bd = parseDateLocal(b.expenseDate)?.getTime() ?? 0;
+        const ad = parseDateLocal(a.expenseDate)?.getTime() ?? 0;
+        if (bd !== ad) return bd - ad;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      })
+      .slice(0, 3),
+    [expenses],
   );
 
   const today = new Date();
@@ -179,18 +191,22 @@ export default function DashboardScreen() {
       ) : null}
 
       {/* Recent Expenses */}
-      {expenses.length > 0 ? (
+      {recentExpenses.length > 0 ? (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.recentExpenses}</Text>
-          {[...expenses].reverse().slice(0, 3).map((e) => (
+          {recentExpenses.map((e) => (
             <Card key={e.id} style={styles.listItem} padding={12}>
-              <View style={[styles.listRow, { flexDirection: dir.row }]}>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => router.push({ pathname: '/expenses/add', params: { id: e.id } })}
+                style={[styles.listRow, { flexDirection: dir.row }]}
+              >
                 <Text style={[styles.listAmt, { color: colors.expense }]}>{formatCurrency(e.amount, currency)}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.listTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{e.title}</Text>
-                  <Text style={[styles.listSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{e.category}</Text>
+                  <Text style={[styles.listSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{e.category} · {formatShortDate(e.expenseDate)}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             </Card>
           ))}
         </View>

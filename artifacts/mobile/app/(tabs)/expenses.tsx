@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
-import { formatCurrency, formatShortDate, getCurrentMonthYear } from '@/utils/format';
+import { formatCurrency, formatMonthYear, formatShortDate, getCurrentMonthYear, parseDateLocal } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
@@ -30,21 +30,72 @@ export default function ExpensesScreen() {
   const dir = useDir();
   const { expenses, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
-  const totals = getMonthlyTotals(month, year);
+  const [viewMonth, setViewMonth] = useState(month);
+  const [viewYear, setViewYear] = useState(year);
+  const totals = getMonthlyTotals(viewMonth, viewYear);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
+  const isCurrentMonth = viewMonth === month && viewYear === year;
 
-  const monthExpenses = expenses
-    .filter((e) => { const d = new Date(e.expenseDate); return d.getMonth() + 1 === month && d.getFullYear() === year; })
-    .sort((a, b) => new Date(b.expenseDate).getTime() - new Date(a.expenseDate).getTime());
+  const changeMonth = (delta: number) => {
+    const next = new Date(viewYear, viewMonth - 1 + delta, 1);
+    setViewMonth(next.getMonth() + 1);
+    setViewYear(next.getFullYear());
+  };
+
+  const monthExpenses = useMemo(
+    () => expenses
+      .filter((e) => {
+        const d = parseDateLocal(e.expenseDate);
+        return !!d && d.getMonth() + 1 === viewMonth && d.getFullYear() === viewYear;
+      })
+      .sort((a, b) => {
+        const bd = parseDateLocal(b.expenseDate)?.getTime() ?? 0;
+        const ad = parseDateLocal(a.expenseDate)?.getTime() ?? 0;
+        return bd - ad;
+      }),
+    [expenses, viewMonth, viewYear],
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Card style={styles.summaryCard} padding={14}>
-        <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.expenses.totalLabel}</Text>
+        <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.expenses.filteredTotalLabel}</Text>
         <Text style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.expense }]}>{formatCurrency(totals.totalExpenses, currency)}</Text>
         <Text style={[styles.summaryCount, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{monthExpenses.length} {t.expenses.countSuffix}</Text>
       </Card>
+
+      <View style={[styles.filterBar, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border }]}>
+        <TouchableOpacity
+          style={[styles.monthButton, { backgroundColor: colors.muted }]}
+          onPress={() => changeMonth(-1)}
+          activeOpacity={0.75}
+          accessibilityLabel={t.expenses.previousMonth}
+        >
+          <Feather name={dir.isRTL ? 'chevron-right' : 'chevron-left'} size={18} color={colors.foreground} />
+        </TouchableOpacity>
+        <View style={styles.monthTitleWrap}>
+          <Text style={[styles.monthTitle, { textAlign: 'center', color: colors.foreground }]}>{formatMonthYear(viewMonth, viewYear)}</Text>
+          {!isCurrentMonth ? (
+            <TouchableOpacity
+              onPress={() => { setViewMonth(month); setViewYear(year); }}
+              activeOpacity={0.75}
+              style={[styles.todayChip, { backgroundColor: colors.primary + '14' }]}
+            >
+              <Text style={[styles.todayChipText, { color: colors.primary }]}>{t.expenses.currentMonth}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+        <TouchableOpacity
+          style={[styles.monthButton, { backgroundColor: colors.muted }]}
+          onPress={() => changeMonth(1)}
+          activeOpacity={0.75}
+          accessibilityLabel={t.expenses.nextMonth}
+        >
+          <Feather name={dir.isRTL ? 'chevron-left' : 'chevron-right'} size={18} color={colors.foreground} />
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={monthExpenses}
         keyExtractor={(item) => item.id}
@@ -86,6 +137,12 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   summaryCount: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  filterBar: { alignItems: 'center', borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 8, padding: 8, gap: 10 },
+  monthButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  monthTitleWrap: { flex: 1, alignItems: 'center', minHeight: 38, justifyContent: 'center' },
+  monthTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
+  todayChip: { marginTop: 5, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
+  todayChipText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },

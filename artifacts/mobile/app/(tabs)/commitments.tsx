@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -12,7 +12,11 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { getCommitmentProgress } from '@/utils/calculations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
+import { Select } from '@/components/ui/Select';
 import type { Commitment } from '@/types';
+
+type CommitmentFilter = 'all' | 'paid' | 'unpaid' | 'late';
+type CommitmentSort = 'dueDayAsc' | 'amountAsc' | 'amountDesc' | 'titleAsc';
 
 export default function CommitmentsScreen() {
   const colors = useColors();
@@ -25,6 +29,8 @@ export default function CommitmentsScreen() {
   const totals = getMonthlyTotals(month, year);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
+  const [statusFilter, setStatusFilter] = useState<CommitmentFilter>('all');
+  const [sortBy, setSortBy] = useState<CommitmentSort>('dueDayAsc');
 
   const getPayment = (commitmentId: string) =>
     commitmentPayments.find((p) => p.commitmentId === commitmentId && p.month === month && p.year === year);
@@ -42,6 +48,38 @@ export default function CommitmentsScreen() {
   const activeCommitments = commitments.filter((c) => c.isActive);
   const paidCount = activeCommitments.filter((c) => getPayment(c.id)?.status === 'paid').length;
   const lateCount = activeCommitments.filter((c) => !getPayment(c.id) && c.dueDay < today).length;
+  const statusOptions = [
+    { value: 'all', label: t.commitments.filterAll },
+    { value: 'paid', label: t.commitments.paid },
+    { value: 'unpaid', label: t.commitments.unpaid },
+    { value: 'late', label: t.commitments.late },
+  ];
+  const sortOptions = [
+    { value: 'dueDayAsc', label: t.commitments.sortDueDayAsc },
+    { value: 'amountAsc', label: t.common.sortAmountAsc },
+    { value: 'amountDesc', label: t.common.sortAmountDesc },
+    { value: 'titleAsc', label: t.common.sortTitleAsc },
+  ];
+  const visibleCommitments = useMemo(
+    () => {
+      const filtered = activeCommitments.filter((item) => {
+        const payment = getPayment(item.id);
+        const isPaid = payment?.status === 'paid';
+        const isLate = !isPaid && item.dueDay < today;
+        if (statusFilter === 'paid') return isPaid;
+        if (statusFilter === 'late') return isLate;
+        if (statusFilter === 'unpaid') return !isPaid && !isLate;
+        return true;
+      });
+      const sorted = [...filtered];
+      if (sortBy === 'dueDayAsc') sorted.sort((a, b) => a.dueDay - b.dueDay);
+      if (sortBy === 'amountAsc') sorted.sort((a, b) => a.amount - b.amount);
+      if (sortBy === 'amountDesc') sorted.sort((a, b) => b.amount - a.amount);
+      if (sortBy === 'titleAsc') sorted.sort((a, b) => a.title.localeCompare(b.title, 'ar'));
+      return sorted;
+    },
+    [activeCommitments, commitmentPayments, sortBy, statusFilter, today],
+  );
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -72,15 +110,36 @@ export default function CommitmentsScreen() {
             <Feather name="check-circle" size={11} color={colors.success} />
             <Text style={[styles.statText, { color: colors.success }]}>{paidCount} {t.commitments.paidSuffix}</Text>
           </View>
-          <Text style={[styles.statTotal, { color: colors.mutedForeground }]}>{activeCommitments.length} {t.commitments.countSuffix}</Text>
+          <Text style={[styles.statTotal, { color: colors.mutedForeground }]}>{visibleCommitments.length} {t.commitments.countSuffix}</Text>
+        </View>
+      </Card>
+
+      <Card style={styles.controlsCard} padding={12}>
+        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
+          <View style={styles.controlCell}>
+            <Select
+              label={t.common.filter}
+              value={statusFilter}
+              options={statusOptions}
+              onValueChange={(value) => setStatusFilter(value as CommitmentFilter)}
+            />
+          </View>
+          <View style={styles.controlCell}>
+            <Select
+              label={t.common.sort}
+              value={sortBy}
+              options={sortOptions}
+              onValueChange={(value) => setSortBy(value as CommitmentSort)}
+            />
+          </View>
         </View>
       </Card>
 
       <FlatList
-        data={activeCommitments}
+        data={visibleCommitments}
         keyExtractor={(item) => item.id}
         scrollEnabled
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !activeCommitments.length && styles.emptyList]}
+        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !visibleCommitments.length && styles.emptyList]}
         ListEmptyComponent={
           <EmptyState icon="credit-card" title={t.commitments.emptyTitle} description={t.commitments.emptyDesc} actionLabel={t.commitments.addLabel} onAction={() => router.push('/commitments/add')} />
         }
@@ -170,6 +229,9 @@ const styles = StyleSheet.create({
   statBadge: { alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  controlsCard: { marginHorizontal: 16, marginBottom: 8 },
+  controlsRow: { gap: 10 },
+  controlCell: { flex: 1 },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   cardWrapper: { borderWidth: 1, marginBottom: 8, overflow: 'hidden' },

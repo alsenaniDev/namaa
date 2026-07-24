@@ -167,6 +167,11 @@
 // }
 
 
+export async function requestPermissions(): Promise<boolean> {
+    console.log('Notifications are disabled in this development build.');
+    return false;
+}
+
 export async function registerForPushNotificationsAsync(): Promise<null> {
     console.log('Push notifications are disabled in this development build.');
     return null;

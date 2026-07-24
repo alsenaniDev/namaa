@@ -96,6 +96,7 @@ function AppLayout() {
       <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
       <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />
       <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: t.screen.addEditCommitment }} />
+      <Stack.Screen name="commitments/overview" options={{ title: t.screen.commitmentsOverview }} />
       <Stack.Screen name="commitments/[id]" options={{ title: t.screen.commitmentDetail }} />
       <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: t.screen.addEditExpense }} />
       <Stack.Screen name="lenders/index" options={{ title: t.screen.lenders }} />

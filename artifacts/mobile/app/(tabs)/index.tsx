@@ -9,7 +9,7 @@ import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatCurrency, formatShortDate, getCurrentMonthYear, parseDateLocal } from '@/utils/format';
-import { getUpcomingCommitments, getBudgetUsages, getGoalProgress } from '@/utils/calculations';
+import { getUpcomingCommitments, getBudgetUsages, getGoalProgress, getCommitmentsOverview } from '@/utils/calculations';
 import { getInsights } from '@/utils/insights';
 import { HealthStatusCard } from '@/components/HealthStatusCard';
 import { BudgetBar } from '@/components/BudgetBar';
@@ -65,6 +65,11 @@ export default function DashboardScreen() {
     [budgets, expenses, month, year],
   );
 
+  const commitmentsOverview = useMemo(
+    () => getCommitmentsOverview(commitments, commitmentPayments),
+    [commitments, commitmentPayments],
+  );
+
   const recentExpenses = useMemo(
     () => [...expenses]
       .sort((a, b) => {
@@ -108,6 +113,51 @@ export default function DashboardScreen() {
         spent={totals.totalExpenses}
         currency={currency}
       />
+
+      <TouchableOpacity
+        activeOpacity={0.82}
+        onPress={() => router.push('/commitments/overview' as any)}
+        style={[styles.totalCommitmentsCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+      >
+        <View style={[styles.debtHeader, { flexDirection: dir.row }]}>
+          <View style={[styles.debtIconWrap, { backgroundColor: colors.commitment + '18' }]}>
+            <Feather name="shield" size={22} color={colors.commitment} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.debtLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.dashboard.totalOwedTitle}</Text>
+            <Text style={[styles.debtAmount, { color: colors.foreground, textAlign: dir.textAlign }]}>{formatCurrency(commitmentsOverview.totalOwed, currency)}</Text>
+          </View>
+          <Feather name={dir.chevronDetail as any} size={18} color={colors.mutedForeground} />
+        </View>
+
+        <View style={[styles.debtProgressTrack, { backgroundColor: colors.muted }]}>
+          <View
+            style={[
+              styles.debtProgressFill,
+              {
+                width: `${commitmentsOverview.progressPercent}%`,
+                backgroundColor: colors.commitment,
+                ...(dir.isRTL ? { right: 0 } : { left: 0 }),
+              },
+            ]}
+          />
+        </View>
+
+        <View style={[styles.debtStatsRow, { flexDirection: dir.row }]}>
+          <View style={styles.debtStat}>
+            <Text style={[styles.debtStatValue, { color: colors.commitment, textAlign: dir.textAlign }]}>{formatCurrency(commitmentsOverview.monthlyTotal, currency)}</Text>
+            <Text style={[styles.debtStatLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.dashboard.monthlyOpenCommitments}</Text>
+          </View>
+          <View style={styles.debtStat}>
+            <Text style={[styles.debtStatValue, { color: colors.foreground, textAlign: dir.textAlign }]}>{commitmentsOverview.remainingInstallments}</Text>
+            <Text style={[styles.debtStatLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.dashboard.remainingInstallments}</Text>
+          </View>
+          <View style={styles.debtStat}>
+            <Text style={[styles.debtStatValue, { color: colors.foreground, textAlign: dir.textAlign }]}>{commitmentsOverview.activeCount}</Text>
+            <Text style={[styles.debtStatLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.dashboard.activeCommitmentsCount}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
 
       {/* Quick Actions */}
       <QuickActions />
@@ -221,6 +271,17 @@ const styles = StyleSheet.create({
   avatarWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   dateText: { fontSize: 12, fontFamily: 'Inter_400Regular', marginBottom: 2 },
   greetText: { fontSize: 20, fontFamily: 'Inter_700Bold' },
+  totalCommitmentsCard: { borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6, elevation: 2 },
+  debtHeader: { alignItems: 'center', gap: 10, marginBottom: 12 },
+  debtIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  debtLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginBottom: 2 },
+  debtAmount: { fontSize: 24, fontFamily: 'Inter_700Bold' },
+  debtProgressTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
+  debtProgressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 4 },
+  debtStatsRow: { gap: 10 },
+  debtStat: { flex: 1, minWidth: 0 },
+  debtStatValue: { fontSize: 13, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  debtStatLabel: { fontSize: 10, fontFamily: 'Inter_400Regular' },
   section: { marginTop: 12, marginBottom: 4 },
   sectionHeader: { alignItems: 'center', marginBottom: 8 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },

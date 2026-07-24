@@ -225,6 +225,98 @@ export function getCommitmentProgress(
   };
 }
 
+export interface CommitmentsOverviewItem {
+  id: string;
+  title: string;
+  amount: number;
+  category: string;
+  kind: 'finite_loan' | 'one_time' | 'recurring_bill';
+  paidAmount?: number;
+  totalAmount?: number;
+  remainingInstallments?: number;
+}
+
+export interface CommitmentsOverview {
+  totalOwed: number;
+  finiteRemaining: number;
+  oneTimeTotal: number;
+  monthlyTotal: number;
+  remainingInstallments: number;
+  progressPercent: number;
+  activeCount: number;
+  finiteItems: CommitmentsOverviewItem[];
+  oneTimeItems: CommitmentsOverviewItem[];
+  monthlyItems: CommitmentsOverviewItem[];
+}
+
+export function getCommitmentsOverview(
+  commitments: Commitment[],
+  payments: CommitmentPayment[],
+): CommitmentsOverview {
+  const active = commitments.filter((c) => c.isActive);
+  const finiteItems: CommitmentsOverviewItem[] = [];
+  const oneTimeItems: CommitmentsOverviewItem[] = [];
+  const monthlyItems: CommitmentsOverviewItem[] = [];
+
+  let finiteTotal = 0;
+  let finitePaid = 0;
+  let finiteRemaining = 0;
+  let oneTimeTotal = 0;
+  let monthlyTotal = 0;
+  let remainingInstallments = 0;
+
+  for (const commitment of active) {
+    const progress = getCommitmentProgress(commitment, payments);
+    if (progress.isFinite) {
+      finiteTotal += progress.totalAmount;
+      finitePaid += progress.paidAmount;
+      finiteRemaining += progress.remainingAmount;
+      remainingInstallments += progress.remainingInstallments;
+      finiteItems.push({
+        id: commitment.id,
+        title: commitment.title,
+        amount: progress.remainingAmount,
+        category: commitment.category,
+        kind: 'finite_loan',
+        paidAmount: progress.paidAmount,
+        totalAmount: progress.totalAmount,
+        remainingInstallments: progress.remainingInstallments,
+      });
+    } else if (commitment.kind === 'one_time') {
+      oneTimeTotal += commitment.amount;
+      oneTimeItems.push({
+        id: commitment.id,
+        title: commitment.title,
+        amount: commitment.amount,
+        category: commitment.category,
+        kind: 'one_time',
+      });
+    } else {
+      monthlyTotal += commitment.amount;
+      monthlyItems.push({
+        id: commitment.id,
+        title: commitment.title,
+        amount: commitment.amount,
+        category: commitment.category,
+        kind: 'recurring_bill',
+      });
+    }
+  }
+
+  return {
+    totalOwed: finiteRemaining + oneTimeTotal,
+    finiteRemaining,
+    oneTimeTotal,
+    monthlyTotal,
+    remainingInstallments,
+    progressPercent: finiteTotal > 0 ? Math.min(100, (finitePaid / finiteTotal) * 100) : 0,
+    activeCount: active.length,
+    finiteItems: finiteItems.sort((a, b) => b.amount - a.amount),
+    oneTimeItems: oneTimeItems.sort((a, b) => b.amount - a.amount),
+    monthlyItems: monthlyItems.sort((a, b) => b.amount - a.amount),
+  };
+}
+
 // ─── Subscriptions ───────────────────────────────────────────────────────────
 
 /** Normalize a single subscription's cost to a monthly equivalent. */

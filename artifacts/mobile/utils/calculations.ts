@@ -317,6 +317,148 @@ export function getCommitmentsOverview(
   };
 }
 
+export type PayoffCapacity = 'tight' | 'balanced' | 'strong';
+export type PayoffStrategyKind = 'snowball' | 'cashflow' | 'quickWin';
+
+export interface PayoffDebt {
+  id: string;
+  title: string;
+  category: string;
+  monthlyPayment: number;
+  remainingAmount: number;
+  remainingInstallments: number;
+  progressPercent: number;
+}
+
+export interface PayoffStrategy {
+  kind: PayoffStrategyKind;
+  order: PayoffDebt[];
+  monthsToDebtFree: number;
+  monthsSaved: number;
+  finalMonthlyFreed: number;
+}
+
+export interface PayoffPlan {
+  debts: PayoffDebt[];
+  capacity: PayoffCapacity;
+  suggestedExtraPayment: number;
+  safeBuffer: number;
+  freedPaymentFromCompleted: number;
+  baselineMonths: number;
+  nextFinishedDebt?: PayoffDebt;
+  nextTarget?: PayoffDebt;
+  strategies: PayoffStrategy[];
+}
+
+function uniqueDebts(debts: PayoffDebt[]): PayoffDebt[] {
+  const seen = new Set<string>();
+  return debts.filter((debt) => {
+    if (seen.has(debt.id)) return false;
+    seen.add(debt.id);
+    return true;
+  });
+}
+
+function simulatePayoff(
+  orderedDebts: PayoffDebt[],
+  startingExtraPayment: number,
+  completedMonthlyPayment: number,
+  baselineMonths: number,
+  kind: PayoffStrategyKind,
+): PayoffStrategy {
+  const remaining = orderedDebts.map((debt) => ({ ...debt }));
+  let months = 0;
+  let accelerator = startingExtraPayment + completedMonthlyPayment;
+  let finalMonthlyFreed = completedMonthlyPayment;
+
+  while (remaining.length > 0 && months < 600) {
+    months += 1;
+    for (const debt of remaining) {
+      debt.remainingAmount = Math.max(0, debt.remainingAmount - debt.monthlyPayment);
+    }
+    if (remaining[0]) {
+      remaining[0].remainingAmount = Math.max(0, remaining[0].remainingAmount - accelerator);
+    }
+    while (remaining[0] && remaining[0].remainingAmount <= 0) {
+      const done = remaining.shift()!;
+      accelerator += done.monthlyPayment;
+      finalMonthlyFreed += done.monthlyPayment;
+    }
+  }
+
+  return {
+    kind,
+    order: orderedDebts,
+    monthsToDebtFree: months,
+    monthsSaved: Math.max(0, baselineMonths - months),
+    finalMonthlyFreed,
+  };
+}
+
+export function getPayoffPlan(
+  commitments: Commitment[],
+  payments: CommitmentPayment[],
+  totals: MonthlyTotals,
+): PayoffPlan {
+  const activeFinite = commitments
+    .filter((c) => c.isActive)
+    .map((commitment) => ({ commitment, progress: getCommitmentProgress(commitment, payments) }))
+    .filter(({ progress }) => progress.isFinite);
+
+  const debts = activeFinite
+    .filter(({ progress }) => progress.remainingAmount > 0)
+    .map(({ commitment, progress }): PayoffDebt => ({
+      id: commitment.id,
+      title: commitment.title,
+      category: commitment.category,
+      monthlyPayment: commitment.amount,
+      remainingAmount: progress.remainingAmount,
+      remainingInstallments: progress.remainingInstallments,
+      progressPercent: progress.progressPercent,
+    }));
+
+  const freedPaymentFromCompleted = activeFinite
+    .filter(({ progress }) => progress.remainingAmount <= 0)
+    .reduce((sum, { commitment }) => sum + commitment.amount, 0);
+
+  const income = Math.max(0, totals.totalIncome);
+  const net = Math.max(0, totals.netRemaining);
+  const netRatio = income > 0 ? net / income : 0;
+  const capacity: PayoffCapacity =
+    totals.netRemaining <= 0 || netRatio < 0.08 ? 'tight' :
+      netRatio >= 0.25 ? 'strong' :
+        'balanced';
+  const safeBuffer = income > 0 ? income * 0.05 : 0;
+  const extraBase = Math.max(0, net - safeBuffer);
+  const suggestedExtraPayment =
+    capacity === 'strong' ? extraBase * 0.55 :
+      capacity === 'balanced' ? extraBase * 0.35 :
+        extraBase * 0.12;
+  const baselineMonths = debts.reduce((max, debt) => Math.max(max, debt.remainingInstallments), 0);
+
+  const snowball = [...debts].sort((a, b) => (a.remainingAmount - b.remainingAmount) || (b.monthlyPayment - a.monthlyPayment));
+  const cashflow = [...debts].sort((a, b) => (b.monthlyPayment - a.monthlyPayment) || (a.remainingAmount - b.remainingAmount));
+  const quickWin = [...debts].sort((a, b) => (a.remainingInstallments - b.remainingInstallments) || (a.remainingAmount - b.remainingAmount));
+
+  return {
+    debts,
+    capacity,
+    suggestedExtraPayment,
+    safeBuffer,
+    freedPaymentFromCompleted,
+    baselineMonths,
+    nextFinishedDebt: quickWin[0],
+    nextTarget: snowball[0],
+    strategies: debts.length > 0
+      ? [
+          simulatePayoff(uniqueDebts(snowball), suggestedExtraPayment, freedPaymentFromCompleted, baselineMonths, 'snowball'),
+          simulatePayoff(uniqueDebts(cashflow), suggestedExtraPayment, freedPaymentFromCompleted, baselineMonths, 'cashflow'),
+          simulatePayoff(uniqueDebts(quickWin), suggestedExtraPayment, freedPaymentFromCompleted, baselineMonths, 'quickWin'),
+        ]
+      : [],
+  };
+}
+
 // ─── Subscriptions ───────────────────────────────────────────────────────────
 
 /** Normalize a single subscription's cost to a monthly equivalent. */

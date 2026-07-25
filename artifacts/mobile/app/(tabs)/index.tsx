@@ -159,6 +159,21 @@ export default function DashboardScreen() {
         </View>
       </TouchableOpacity>
 
+      <TouchableOpacity
+        activeOpacity={0.82}
+        onPress={() => router.push('/payoff-plan' as any)}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35' }]}
+      >
+        <View style={[styles.payoffIcon, { backgroundColor: colors.primary }]}>
+          <Feather name="zap" size={20} color="#fff" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.payoffPlanTitle}</Text>
+          <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.payoffPlanSubtitle}</Text>
+        </View>
+        <Feather name={dir.chevronDetail as any} size={16} color={colors.primary} />
+      </TouchableOpacity>
+
       {/* Quick Actions */}
       <QuickActions />
 
@@ -282,6 +297,10 @@ const styles = StyleSheet.create({
   debtStat: { flex: 1, minWidth: 0 },
   debtStatValue: { fontSize: 13, fontFamily: 'Inter_700Bold', marginBottom: 2 },
   debtStatLabel: { fontSize: 10, fontFamily: 'Inter_400Regular' },
+  payoffCard: { alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 10, gap: 10 },
+  payoffIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  payoffTitle: { fontSize: 14, fontFamily: 'Inter_700Bold', marginBottom: 2 },
+  payoffSub: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
   section: { marginTop: 12, marginBottom: 4 },
   sectionHeader: { alignItems: 'center', marginBottom: 8 },
   sectionTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },

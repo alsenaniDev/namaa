@@ -92,6 +92,7 @@ function AppLayout() {
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="setup" options={{ headerShown: false }} />
       <Stack.Screen name="reports" options={{ title: t.screen.reports }} />
+      <Stack.Screen name="payoff-plan" options={{ title: t.screen.payoffPlan }} />
       <Stack.Screen name="calendar" options={{ title: t.screen.calendar }} />
       <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
       <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />

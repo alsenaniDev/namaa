@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Image } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Image, Alert, Share } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -42,6 +42,18 @@ export default function LenderDetailScreen() {
     if (!v) return;
     const url = v.startsWith('http') ? v : `https://${v}`;
     Linking.openURL(url);
+  };
+  const copyPaymentValue = async (value: string) => {
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        Alert.alert(t.common.copied, t.common.copiedMsg);
+        return;
+      }
+      await Share.share({ message: value });
+    } catch {
+      Alert.alert(t.common.errorTitle, t.common.copyFailed);
+    }
   };
 
   return (
@@ -142,8 +154,8 @@ export default function LenderDetailScreen() {
             <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.lenders.sectionPayment}</Text>
             <Card style={styles.card} padding={14}>
               {lender.bankName ? <KV label={t.lenders.fieldBankName} value={lender.bankName} colors={colors} dir={dir} /> : null}
-              {lender.iban ? <KV label={t.lenders.fieldIban} value={lender.iban} colors={colors} dir={dir} /> : null}
-              {lender.bankAccount ? <KV label={t.lenders.fieldBankAccount} value={lender.bankAccount} colors={colors} dir={dir} /> : null}
+              {lender.iban ? <KV label={t.lenders.fieldIban} value={lender.iban} colors={colors} dir={dir} copyLabel={t.common.copy} onCopy={() => copyPaymentValue(lender.iban!)} /> : null}
+              {lender.bankAccount ? <KV label={t.lenders.fieldBankAccount} value={lender.bankAccount} colors={colors} dir={dir} copyLabel={t.common.copy} onCopy={() => copyPaymentValue(lender.bankAccount!)} /> : null}
               {lender.beneficiaryName ? <KV label={t.lenders.fieldBeneficiary} value={lender.beneficiaryName} colors={colors} dir={dir} /> : null}
             </Card>
           </>
@@ -172,7 +184,16 @@ export default function LenderDetailScreen() {
                   </Text>
                   {prog.isFinite ? (
                     <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
-                      <View style={[styles.progressFill, { width: `${prog.progressPercent}%`, backgroundColor: lender.color }]} />
+                      <View
+                        style={[
+                          styles.progressFill,
+                          {
+                            width: `${prog.progressPercent}%`,
+                            backgroundColor: lender.color,
+                            ...(dir.isRTL ? { right: 0 } : { left: 0 }),
+                          },
+                        ]}
+                      />
                     </View>
                   ) : null}
                 </View>
@@ -215,11 +236,24 @@ function ContactRow({ icon, label, onPress, colors, dir }: { icon: string; label
   ) : content;
 }
 
-function KV({ label, value, colors, dir }: { label: string; value: string; colors: any; dir: any }) {
+function KV({ label, value, colors, dir, copyLabel, onCopy }: { label: string; value: string; colors: any; dir: any; copyLabel?: string; onCopy?: () => void }) {
   return (
     <View style={[styles.kv, { flexDirection: dir.row }]}>
       <Text style={[styles.kvLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{label}</Text>
-      <Text style={[styles.kvValue, { textAlign: dir.isRTL ? 'left' : 'right', color: colors.foreground }]} selectable>{value}</Text>
+      <View style={[styles.kvValueWrap, { flexDirection: dir.row }]}>
+        <Text style={[styles.kvValue, { textAlign: dir.isRTL ? 'left' : 'right', color: colors.foreground }]} selectable numberOfLines={2}>{value}</Text>
+        {onCopy ? (
+          <TouchableOpacity
+            onPress={onCopy}
+            activeOpacity={0.76}
+            accessibilityLabel={copyLabel}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[styles.copyBtn, { backgroundColor: colors.primary + '14', borderColor: colors.primary + '35' }]}
+          >
+            <Feather name="copy" size={14} color={colors.primary} />
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -249,13 +283,15 @@ const styles = StyleSheet.create({
   contactText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
   kv: { paddingVertical: 8, gap: 10 },
   kvLabel: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
-  kvValue: { flex: 1.5, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  kvValueWrap: { flex: 1.5, alignItems: 'center', gap: 8 },
+  kvValue: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  copyBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   linkedCard: { alignItems: 'center', padding: 12, borderWidth: 1, marginBottom: 8, gap: 10 },
   linkedTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
   linkedMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 6 },
   linkedAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
   linkedSub: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
   progressBar: { height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 4 },
-  progressFill: { height: '100%', borderRadius: 3 },
+  progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 3 },
   notesText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
 });

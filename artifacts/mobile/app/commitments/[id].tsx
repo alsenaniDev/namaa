@@ -338,7 +338,16 @@ export default function CommitmentDetailScreen() {
                 </Text>
               </View>
               <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
-                <View style={[styles.progressFill, { width: `${progress.progressPercent}%`, backgroundColor: accent }]} />
+                <View
+                  style={[
+                    styles.progressFill,
+                    {
+                      width: `${progress.progressPercent}%`,
+                      backgroundColor: accent,
+                      ...(dir.isRTL ? { right: 0 } : { left: 0 }),
+                    },
+                  ]}
+                />
               </View>
               <View style={[styles.progressBreakdown, { flexDirection: dir.row }]}>
                 <View>
@@ -671,7 +680,7 @@ const styles = StyleSheet.create({
   progressPercent: { fontSize: 28, fontFamily: 'Inter_700Bold' },
   progressInstallments: { fontSize: 12, fontFamily: 'Inter_500Medium' },
   progressBar: { height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 14 },
-  progressFill: { height: '100%', borderRadius: 5 },
+  progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 5 },
   progressBreakdown: { justifyContent: 'space-between', marginBottom: 8 },
   breakdownLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginBottom: 3 },
   breakdownValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },

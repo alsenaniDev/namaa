@@ -198,7 +198,16 @@ export default function CommitmentsScreen() {
                     <Text style={[styles.progressPct, { color: accentColor }]}>{Math.round(progress.progressPercent)}%</Text>
                   </View>
                   <View style={[styles.progressBar, { backgroundColor: colors.muted }]}>
-                    <View style={[styles.progressFill, { width: `${progress.progressPercent}%`, backgroundColor: accentColor }]} />
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${progress.progressPercent}%`,
+                          backgroundColor: accentColor,
+                          ...(dir.isRTL ? { right: 0 } : { left: 0 }),
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
               ) : null}
@@ -255,6 +264,6 @@ const styles = StyleSheet.create({
   progressText: { fontSize: 11, fontFamily: 'Inter_400Regular' },
   progressPct: { fontSize: 11, fontFamily: 'Inter_700Bold' },
   progressBar: { height: 5, borderRadius: 3, overflow: 'hidden' },
-  progressFill: { height: '100%', borderRadius: 3 },
+  progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 3 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

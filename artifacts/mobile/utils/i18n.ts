@@ -53,6 +53,10 @@ export const translations = {
       sortAmountAsc: 'الأقل للأكثر',
       sortAmountDesc: 'الأكثر للأقل',
       sortTitleAsc: 'أبجدي',
+      copy: 'نسخ',
+      copied: 'تم النسخ',
+      copiedMsg: 'تم نسخ الرقم بنجاح',
+      copyFailed: 'تعذّر نسخ الرقم',
     },
     dashboard: {
       greeting: 'مرحباً',
@@ -564,6 +568,10 @@ export const translations = {
       sortAmountAsc: 'low to high',
       sortAmountDesc: 'high to low',
       sortTitleAsc: 'Alphabetic',
+      copy: 'Copy',
+      copied: 'Copied',
+      copiedMsg: 'Number copied successfully',
+      copyFailed: 'Could not copy the number',
     },
     dashboard: {
       greeting: 'Hello',

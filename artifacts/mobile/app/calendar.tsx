@@ -8,7 +8,7 @@ import { useDir } from '@/hooks/useDir';
 import { useT } from '@/hooks/useT';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
-import { formatCurrency, parseDateLocal } from '@/utils/format';
+import { formatCurrency, getGregorianDateLocale, parseDateLocal } from '@/utils/format';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -29,7 +29,7 @@ export default function CalendarScreen() {
     today.getMonth() + 1 === viewMonth && today.getFullYear() === viewYear ? today.getDate() : null,
   );
 
-  const locale = language === 'ar' ? 'ar-SA' : 'en-US';
+  const locale = getGregorianDateLocale(language);
 
   const { cells, monthLabel } = useMemo(() => {
     // First day of month: 0=Sun..6=Sat
@@ -207,7 +207,7 @@ export default function CalendarScreen() {
                 },
               ]}
             >
-              <Text style={[styles.dayNum, { color: todayCell ? colors.primary : colors.foreground, fontFamily: todayCell ? 'Inter_700Bold' : 'Inter_500Medium' }]}>
+              <Text style={[styles.dayNum, { color: todayCell ? colors.primary : colors.foreground, fontFamily: todayCell ? 'Cairo_700Bold' : 'Cairo_500Medium' }]}>
                 {day}
               </Text>
               <View style={styles.dotsRow}>
@@ -304,10 +304,10 @@ const styles = StyleSheet.create({
   navRow: { alignItems: 'center', justifyContent: 'space-between', padding: 8, borderRadius: 12, borderWidth: 1, marginBottom: 12 },
   navBtn: { padding: 8 },
   navTitle: { flex: 1, alignItems: 'center' },
-  navTitleText: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  navTodayText: { fontSize: 11, fontFamily: 'Inter_500Medium', marginTop: 2 },
+  navTitleText: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  navTodayText: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginTop: 2 },
   weekRow: { marginBottom: 6, paddingHorizontal: 2 },
-  weekday: { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  weekday: { flex: 1, textAlign: 'center', fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
   grid: { flexWrap: 'wrap' },
   cell: {
     width: `${100 / 7}%` as any,
@@ -322,15 +322,15 @@ const styles = StyleSheet.create({
   dot: { width: 5, height: 5, borderRadius: 3 },
   legend: { gap: 14, marginTop: 12, marginBottom: 4, flexWrap: 'wrap' },
   legendItem: { alignItems: 'center', gap: 6 },
-  legendLabel: { fontSize: 11, fontFamily: 'Inter_500Medium' },
+  legendLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
   panel: { marginTop: 16 },
-  panelTitle: { fontSize: 16, fontFamily: 'Inter_700Bold', marginBottom: 6 },
-  sectionTitle: { fontSize: 12, fontFamily: 'Inter_600SemiBold', marginBottom: 6, textTransform: 'uppercase' },
+  panelTitle: { fontSize: 16, fontFamily: 'Cairo_700Bold', marginBottom: 6 },
+  sectionTitle: { fontSize: 12, fontFamily: 'Cairo_600SemiBold', marginBottom: 6, textTransform: 'uppercase' },
   item: { marginBottom: 6 },
   itemRow: { alignItems: 'center' },
   itemStrip: { width: 4, height: 32, borderRadius: 2 },
-  itemTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 2 },
-  itemSub: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  itemAmt: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  itemTitle: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 2 },
+  itemSub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
+  itemAmt: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
   emptyWrap: { marginTop: 8, paddingVertical: 16 },
 });

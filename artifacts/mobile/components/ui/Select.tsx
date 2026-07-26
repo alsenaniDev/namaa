@@ -79,13 +79,13 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Inter_500Medium' },
+  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Cairo_500Medium' },
   trigger: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 13, minHeight: 48, gap: 8 },
-  triggerText: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular' },
+  triggerText: { flex: 1, fontSize: 15, fontFamily: 'Cairo_400Regular' },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   sheet: { maxHeight: '70%' },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },
-  sheetTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingVertical: 12, fontFamily: 'Inter_600SemiBold' },
+  sheetTitle: { fontSize: 16, fontWeight: '600', textAlign: 'center', paddingVertical: 12, fontFamily: 'Cairo_600SemiBold' },
   option: { alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
-  optionText: { flex: 1, fontSize: 15, fontFamily: 'Inter_400Regular' },
+  optionText: { flex: 1, fontSize: 15, fontFamily: 'Cairo_400Regular' },
 });

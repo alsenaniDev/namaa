@@ -10,8 +10,14 @@ import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { INCOME_TYPES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
+
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
+  const day = String(i + 1);
+  return { label: day, value: day };
+});
 
 interface FormErrors {
   title?: string;
@@ -102,8 +108,22 @@ export default function AddIncomeScreen() {
       </View>
 
       {isRecurring
-        ? <Input label={t.forms.recurringDayLabel} value={receivedDay} onChangeText={(v) => { setReceivedDay(v); clearError('receivedDay'); }} placeholder="1" keyboardType="number-pad" error={errors.receivedDay} maxLength={2} />
-        : <Input label={t.forms.receivedDateLabel} value={receivedDate} onChangeText={(v) => { setReceivedDate(v); clearError('receivedDate'); }} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" error={errors.receivedDate} maxLength={10} />
+        ? (
+          <Select
+            label={t.forms.recurringDayLabel}
+            value={receivedDay}
+            options={DAY_OPTIONS}
+            onValueChange={(v) => { setReceivedDay(v); clearError('receivedDay'); }}
+          />
+        )
+        : (
+          <DatePickerField
+            label={t.forms.receivedDateLabel}
+            value={receivedDate}
+            onChange={(v) => { setReceivedDate(v); clearError('receivedDate'); }}
+            error={errors.receivedDate}
+          />
+        )
       }
 
       <Input label={t.forms.notesLabel} value={notes} onChangeText={(v) => { setNotes(v); clearError('notes'); }} placeholder="" multiline numberOfLines={3} maxLength={FIELD_LIMITS.notes} error={errors.notes} style={{ height: 80, textAlignVertical: 'top' }} />
@@ -116,6 +136,6 @@ export default function AddIncomeScreen() {
 const styles = StyleSheet.create({
   content: { padding: 20 },
   switchRow: { alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1.5, marginBottom: 14 },
-  switchLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 2 },
-  switchSub: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  switchLabel: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 2 },
+  switchSub: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
 });

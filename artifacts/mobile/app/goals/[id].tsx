@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { getGoalProgress } from '@/utils/calculations';
 import { formatCurrency, formatShortDate, toAsciiDigits } from '@/utils/format';
 import { validateAmount, validateDate } from '@/utils/validation';
@@ -164,13 +165,10 @@ export default function GoalDetailScreen() {
           keyboardType="decimal-pad"
           error={errAmt}
         />
-        <Input
+        <DatePickerField
           label={t.goals.contributionDate}
           value={date}
-          onChangeText={(v) => { setDate(v); setErrDate(undefined); }}
-          placeholder="YYYY-MM-DD"
-          keyboardType="numbers-and-punctuation"
-          autoCapitalize="none"
+          onChange={(v) => { setDate(v); setErrDate(undefined); }}
           error={errDate}
         />
         <Button title={saving ? t.common.saving : t.goals.contributionAdd} onPress={handleAddContribution} fullWidth loading={saving} />
@@ -209,18 +207,18 @@ const styles = StyleSheet.create({
   hero: { marginBottom: 20, borderWidth: 1.5 },
   heroRow: { alignItems: 'center', gap: 12, marginBottom: 16 },
   heroIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
-  heroTitle: { fontSize: 18, fontFamily: 'Inter_700Bold', marginBottom: 2 },
-  heroSub: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  heroTitle: { fontSize: 18, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
+  heroSub: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   editBtn: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   statsRow: { gap: 8, marginBottom: 12 },
-  statValue: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  statLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  statValue: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  statLabel: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 2 },
   track: { height: 10, borderRadius: 5, overflow: 'hidden', marginTop: 4 },
   fill: { height: 10, borderRadius: 5 },
-  suggest: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 10 },
-  sectionTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 8, marginTop: 4 },
-  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular' },
+  suggest: { fontSize: 12, fontFamily: 'Cairo_500Medium', marginTop: 10 },
+  sectionTitle: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 8, marginTop: 4 },
+  emptyText: { fontSize: 13, fontFamily: 'Cairo_400Regular' },
   contribRow: { alignItems: 'center', gap: 10 },
-  contribAmt: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-  contribDate: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  contribAmt: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  contribDate: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 2 },
 });

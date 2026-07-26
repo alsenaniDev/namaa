@@ -78,13 +78,13 @@ function LegendChip({ color, label, amount }: { color: string; label: string; am
 const styles = StyleSheet.create({
   card: { marginBottom: 10 },
   headerRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  title: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
-  income: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  title: { fontSize: 14, fontFamily: 'Cairo_600SemiBold' },
+  income: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
   track: { height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   legendRow: { gap: 10 },
   legend: { minWidth: 0 },
   legendHeader: { alignItems: 'center', gap: 6, marginBottom: 2 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  legendLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', flex: 1 },
-  legendAmount: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  legendLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', flex: 1 },
+  legendAmount: { fontSize: 13, fontFamily: 'Cairo_700Bold' },
 });

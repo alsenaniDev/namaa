@@ -11,6 +11,7 @@ import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { BILLING_CYCLES, GOAL_COLOR_PALETTE, BillingCycle } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateAmount, validateDate, validateNotes } from '@/utils/validation';
 import { toAsciiDigits } from '@/utils/format';
@@ -127,13 +128,10 @@ export default function AddSubscriptionScreen() {
         options={BILLING_CYCLES.map((c) => ({ label: t.subscriptions.cycleLabels[c] ?? c, value: c }))}
         onValueChange={(v) => setCycle(v as BillingCycle)}
       />
-      <Input
+      <DatePickerField
         label={t.subscriptions.fieldNextRenewal}
         value={nextRenewal}
-        onChangeText={(v) => { setNextRenewal(v); clearError('date'); }}
-        placeholder="YYYY-MM-DD"
-        keyboardType="numbers-and-punctuation"
-        autoCapitalize="none"
+        onChange={(v) => { setNextRenewal(v); clearError('date'); }}
         error={errors.date}
       />
 
@@ -202,11 +200,11 @@ export default function AddSubscriptionScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
-  label: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 8 },
+  label: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 8 },
   iconGrid: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   iconBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   colorRow: { flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2.5 },
   switchRow: { alignItems: 'center', gap: 12, padding: 14, borderWidth: 1.5, borderRadius: 10, marginBottom: 14 },
-  switchLabel: { flex: 1, fontSize: 14, fontFamily: 'Inter_500Medium' },
+  switchLabel: { flex: 1, fontSize: 14, fontFamily: 'Cairo_500Medium' },
 });

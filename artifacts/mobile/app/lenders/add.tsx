@@ -113,7 +113,7 @@ export default function AddLenderScreen() {
       }
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
@@ -273,13 +273,13 @@ export default function AddLenderScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
-  label: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 8 },
-  section: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 8, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
+  label: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 8 },
+  section: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', marginTop: 8, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5 },
   colorRow: { flexWrap: 'wrap', gap: 10, marginBottom: 16 },
   colorSwatch: { width: 32, height: 32, borderRadius: 16, borderWidth: 2.5 },
   imageRow: { alignItems: 'center', gap: 12, marginBottom: 18 },
   imagePreview: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   imagePreviewImg: { width: '100%', height: '100%' },
   imageBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8, borderWidth: 1 },
-  imageBtnText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  imageBtnText: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
 });

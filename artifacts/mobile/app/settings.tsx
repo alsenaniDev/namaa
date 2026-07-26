@@ -19,6 +19,11 @@ import type { CustomTypes } from '@/utils/storage';
 
 type TypeCategory = keyof CustomTypes;
 
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
+  const value = String(i + 1);
+  return { label: value, value };
+});
+
 function TypeManager({ title, category, builtins }: { title: string; category: TypeCategory; builtins: string[] }) {
   const colors = useColors();
   const dir = useDir();
@@ -111,7 +116,13 @@ export default function SettingsScreen() {
   const handleSave = async () => {
     if (!name.trim()) { Alert.alert(t.common.errorTitle, t.settings.saveErrorMsg); return; }
     setSaving(true);
-    await updateUserProfile({ name: name.trim(), preferredCurrency: currency, monthlySalary: parseFloat(salary) || 0, monthlySavingGoal: parseFloat(savingGoal) || 0, financialMonthStartDay: parseInt(monthStartDay) || 1 });
+    await updateUserProfile({
+      name: name.trim(),
+      preferredCurrency: currency,
+      monthlySalary: parseFloat(salary) || 0,
+      monthlySavingGoal: parseFloat(savingGoal) || 0,
+      financialMonthStartDay: Math.max(1, Math.min(31, parseInt(monthStartDay, 10) || 1)),
+    });
     setSaving(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(t.common.saved, t.common.savedMsg);
@@ -198,7 +209,7 @@ export default function SettingsScreen() {
         <Select label={t.settings.currencyLabel} value={currency} options={CURRENCIES} onValueChange={setCurrency} />
         <Input label={t.settings.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
         <Input label={t.settings.savingGoalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
-        <Input label={t.settings.monthStartLabel} value={monthStartDay} onChangeText={setMonthStartDay} placeholder="1" keyboardType="number-pad" />
+        <Select label={t.settings.monthStartLabel} value={monthStartDay} options={DAY_OPTIONS} onValueChange={setMonthStartDay} />
 
         <Button title={saving ? t.common.saving : t.common.saveChanges} onPress={handleSave} fullWidth loading={saving} />
 
@@ -296,29 +307,29 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  sectionLabel: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginBottom: 24 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
   typeManager: { marginBottom: 4 },
-  typeTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 10 },
+  typeTitle: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 10 },
   chipRow: { flexWrap: 'wrap', gap: 6, marginBottom: 10 },
   chip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  chipText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  chipText: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   customItem: { alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1, marginBottom: 6, gap: 8 },
-  customItemText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  customItemText: { flex: 1, fontSize: 13, fontFamily: 'Cairo_500Medium' },
   customDot: { width: 6, height: 6, borderRadius: 3 },
   addRow: { alignItems: 'center', borderWidth: 1.5, borderRadius: 10, overflow: 'hidden', height: 46 },
-  addInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Inter_400Regular', height: '100%' },
+  addInput: { flex: 1, paddingHorizontal: 12, fontSize: 14, fontFamily: 'Cairo_400Regular', height: '100%' },
   addBtn: { width: 46, height: '100%', alignItems: 'center', justifyContent: 'center' },
   dataCard: { alignItems: 'center', padding: 16, borderRadius: 14, borderWidth: 1.5, marginBottom: 10, gap: 14 },
   dataIconCircle: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   dataCardText: { flex: 1 },
-  dataCardTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', marginBottom: 3 },
-  dataCardSub: { fontSize: 12, fontFamily: 'Inter_400Regular', lineHeight: 18 },
+  dataCardTitle: { fontSize: 15, fontFamily: 'Cairo_600SemiBold', marginBottom: 3 },
+  dataCardSub: { fontSize: 12, fontFamily: 'Cairo_400Regular', lineHeight: 18 },
   creditBox: { alignItems: 'center', paddingVertical: 16, borderTopWidth: StyleSheet.hairlineWidth, marginTop: 14, gap: 10 },
-  creditName: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
-  creditSub: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  creditName: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  creditSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 2 },
   toggleRow: { alignItems: 'center', gap: 12, paddingTop: 14, marginTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
-  toggleLabel: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
-  toggleHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
+  toggleLabel: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
+  toggleHint: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
 });

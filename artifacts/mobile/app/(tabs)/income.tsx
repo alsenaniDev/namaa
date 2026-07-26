@@ -131,9 +131,9 @@ export default function IncomeScreen() {
 
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
-  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 4 },
-  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 2 },
-  summaryCount: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
+  summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
+  summaryCount: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   controlsCard: { marginHorizontal: 16, marginBottom: 8 },
   controlsRow: { gap: 10 },
   controlCell: { flex: 1 },

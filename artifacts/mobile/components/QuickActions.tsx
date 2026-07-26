@@ -42,5 +42,5 @@ const styles = StyleSheet.create({
   row: { gap: 8, marginBottom: 12 },
   chip: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, borderWidth: 1, gap: 6 },
   iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  label: { fontSize: 11, fontFamily: 'Inter_500Medium', textAlign: 'center' },
+  label: { fontSize: 11, fontFamily: 'Cairo_500Medium', textAlign: 'center' },
 });

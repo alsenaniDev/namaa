@@ -9,6 +9,7 @@ import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { EXPENSE_CATEGORIES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateNotes, validateTitle } from '@/utils/validation';
 
@@ -125,14 +126,11 @@ export default function AddExpenseScreen() {
         onValueChange={(v) => setCategory(v as typeof category)}
       />
 
-      <Input
+      <DatePickerField
         label={t.forms.receivedDateLabel}
         value={expenseDate}
-        onChangeText={(v) => { setExpenseDate(v); clearError('expenseDate'); }}
-        placeholder="YYYY-MM-DD"
-        keyboardType="numbers-and-punctuation"
+        onChange={(v) => { setExpenseDate(v); clearError('expenseDate'); }}
         error={errors.expenseDate}
-        maxLength={10}
       />
 
       <Input

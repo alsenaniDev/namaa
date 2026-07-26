@@ -11,6 +11,13 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   EGP: 'ج.م',
 };
 
+export const ARABIC_GREGORIAN_LOCALE = 'ar-SA-u-ca-gregory';
+export const ENGLISH_GREGORIAN_LOCALE = 'en-US-u-ca-gregory';
+
+export function getGregorianDateLocale(language: string = 'ar'): string {
+  return language === 'ar' ? ARABIC_GREGORIAN_LOCALE : ENGLISH_GREGORIAN_LOCALE;
+}
+
 export function formatCurrency(amount: number, currency: string = 'SAR'): string {
   const formatted = Math.abs(amount).toLocaleString('ar-SA', {
     minimumFractionDigits: 0,
@@ -44,7 +51,7 @@ export function parseDateLocal(dateStr: string | undefined | null): Date | null 
 export function formatDate(dateStr: string): string {
   const date = parseDateLocal(dateStr);
   if (!date) return dateStr;
-  return date.toLocaleDateString('ar-SA', {
+  return date.toLocaleDateString(ARABIC_GREGORIAN_LOCALE, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -54,7 +61,7 @@ export function formatDate(dateStr: string): string {
 export function formatShortDate(dateStr: string): string {
   const date = parseDateLocal(dateStr);
   if (!date) return dateStr;
-  return date.toLocaleDateString('ar-SA', {
+  return date.toLocaleDateString(ARABIC_GREGORIAN_LOCALE, {
     month: 'short',
     day: 'numeric',
   });
@@ -62,7 +69,7 @@ export function formatShortDate(dateStr: string): string {
 
 export function formatMonthYear(month: number, year: number): string {
   const date = new Date(year, month - 1, 1);
-  return date.toLocaleDateString('ar-SA', { month: 'long', year: 'numeric' });
+  return date.toLocaleDateString(ARABIC_GREGORIAN_LOCALE, { month: 'long', year: 'numeric' });
 }
 
 export function getCurrentMonthYear(): { month: number; year: number } {

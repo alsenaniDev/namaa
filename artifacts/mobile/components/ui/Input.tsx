@@ -74,9 +74,9 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, onChan
 
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
-  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Inter_500Medium' },
+  label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Cairo_500Medium' },
   inputWrap: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, minHeight: 48 },
-  input: { flex: 1, fontSize: 15, paddingVertical: 10, fontFamily: 'Inter_400Regular' },
+  input: { flex: 1, fontSize: 15, paddingVertical: 10, fontFamily: 'Cairo_400Regular' },
   icon: { padding: 4, marginLeft: 8 },
   error: { fontSize: 12, marginTop: 4 },
 });

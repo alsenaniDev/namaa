@@ -51,8 +51,8 @@ const styles = StyleSheet.create({
   card: { marginBottom: 8, borderWidth: 1 },
   row: { gap: 12, alignItems: 'flex-start' },
   iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  title: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 4 },
-  msg: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 19 },
+  title: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 4 },
+  msg: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 19 },
   ctaRow: { alignItems: 'center', gap: 4, marginTop: 8 },
-  ctaText: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  ctaText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
 });

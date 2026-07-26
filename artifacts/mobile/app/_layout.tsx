@@ -1,14 +1,14 @@
 import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
+  Cairo_400Regular,
+  Cairo_500Medium,
+  Cairo_600SemiBold,
+  Cairo_700Bold,
   useFonts,
-} from '@expo-google-fonts/inter';
+} from '@expo-google-fonts/cairo';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import React, { useEffect } from 'react';
-import { I18nManager, Platform, View, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { I18nManager, Platform, View, ActivityIndicator, Image, Text, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -34,6 +34,8 @@ if (Platform.OS === 'web' && typeof document !== 'undefined') {
 
 SplashScreen.preventAutoHideAsync();
 
+const BRAND_SPLASH_VISIBLE_MS = 2600;
+
 // Keeps document.dir in sync whenever language changes (web only).
 function WebDirectionSync() {
   const { language } = useLanguage();
@@ -50,6 +52,19 @@ function LoadingView() {
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
       <ActivityIndicator size="large" color={colors.primary} />
+    </View>
+  );
+}
+
+function BrandSplash() {
+  return (
+    <View style={styles.brandSplash}>
+      <Image
+        source={require('../assets/images/icon.jpeg')}
+        style={styles.brandLogo}
+        resizeMode="contain"
+      />
+      <Text style={styles.brandTagline}>لأن كل ريال يستحق أن ينمو</Text>
     </View>
   );
 }
@@ -77,7 +92,7 @@ function AppLayout() {
     <Stack
       screenOptions={{
         headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 18 },
+        headerTitleStyle: { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 18 },
         headerTitleAlign: 'center',
         headerShadowVisible: false,
         headerTintColor: colors.primary,
@@ -93,6 +108,7 @@ function AppLayout() {
       <Stack.Screen name="setup" options={{ headerShown: false }} />
       <Stack.Screen name="reports" options={{ title: t.screen.reports }} />
       <Stack.Screen name="payoff-plan" options={{ title: t.screen.payoffPlan }} />
+      <Stack.Screen name="what-if" options={{ title: t.screen.whatIf }} />
       <Stack.Screen name="calendar" options={{ title: t.screen.calendar }} />
       <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
       <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />
@@ -114,20 +130,26 @@ function AppLayout() {
 }
 
 export default function RootLayout() {
+  const [showBrandSplash, setShowBrandSplash] = useState(true);
   const [fontsLoaded, fontError] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    Cairo_400Regular,
+    Cairo_500Medium,
+    Cairo_600SemiBold,
+    Cairo_700Bold,
   });
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
       SplashScreen.hideAsync();
+      const timer = setTimeout(() => {
+        setShowBrandSplash(false);
+      }, BRAND_SPLASH_VISIBLE_MS);
+      return () => clearTimeout(timer);
     }
   }, [fontsLoaded, fontError]);
 
   if (!fontsLoaded && !fontError) return null;
+  if (showBrandSplash) return <BrandSplash />;
 
   return (
     <SafeAreaProvider>
@@ -146,3 +168,25 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  brandSplash: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 32,
+  },
+  brandLogo: {
+    width: 280,
+    height: 280,
+    marginBottom: 18,
+  },
+  brandTagline: {
+    color: '#065F46',
+    fontSize: 19,
+    fontFamily: 'Cairo_600SemiBold',
+    textAlign: 'center',
+    lineHeight: 30,
+  },
+});

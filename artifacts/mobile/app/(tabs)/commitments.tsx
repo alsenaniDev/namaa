@@ -13,6 +13,7 @@ import { getCommitmentProgress } from '@/utils/calculations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
+import { LenderAvatar } from '@/components/LenderAvatar';
 import type { Commitment } from '@/types';
 
 type CommitmentFilter = 'all' | 'paid' | 'unpaid' | 'late';
@@ -175,7 +176,7 @@ export default function CommitmentsScreen() {
                     </View>
                     {lender ? (
                       <View style={[styles.lenderChip, { flexDirection: dir.row, backgroundColor: lender.color + '12' }]}>
-                        <View style={[styles.lenderDot, { backgroundColor: lender.color }]} />
+                        <LenderAvatar lender={lender} size={18} fontSize={9} borderWidth={0} />
                         <Text style={[styles.lenderChipText, { color: lender.color }]} numberOfLines={1}>{lender.name}</Text>
                       </View>
                     ) : (
@@ -230,14 +231,14 @@ export default function CommitmentsScreen() {
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
   summaryHeader: { alignItems: 'flex-start', gap: 10 },
-  summaryLabel: { fontSize: 13, fontFamily: 'Inter_400Regular', marginBottom: 4 },
-  summaryAmount: { fontSize: 24, fontFamily: 'Inter_700Bold', marginBottom: 8 },
+  summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
+  summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 8 },
   lendersPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
-  lendersPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  lendersPillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
   statsRow: { alignItems: 'center', gap: 8 },
   statBadge: { alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
-  statText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  statTotal: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  statText: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
+  statTotal: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   controlsCard: { marginHorizontal: 16, marginBottom: 8 },
   controlsRow: { gap: 10 },
   controlCell: { flex: 1 },
@@ -249,20 +250,19 @@ const styles = StyleSheet.create({
   checkBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginHorizontal: 10, marginVertical: 12 },
   checkDot: { width: 8, height: 8, borderRadius: 4 },
   cardBody: { flex: 1, paddingVertical: 12 },
-  cardTitle: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 4 },
+  cardTitle: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
   cardMetaRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  statusPillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
+  statusPillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
   lenderChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  lenderDot: { width: 6, height: 6, borderRadius: 3 },
-  lenderChipText: { fontSize: 11, fontFamily: 'Inter_500Medium', maxWidth: 140 },
-  cardCat: { fontSize: 11, fontFamily: 'Inter_400Regular', flexShrink: 1 },
+  lenderChipText: { fontSize: 11, fontFamily: 'Cairo_500Medium', maxWidth: 140 },
+  cardCat: { fontSize: 11, fontFamily: 'Cairo_400Regular', flexShrink: 1 },
   cardRight: { alignItems: 'center', gap: 4, flexShrink: 0, paddingHorizontal: 12 },
-  cardAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  cardAmount: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
   progressWrap: { paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   progressHeader: { justifyContent: 'space-between', marginBottom: 6 },
-  progressText: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  progressPct: { fontSize: 11, fontFamily: 'Inter_700Bold' },
+  progressText: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
+  progressPct: { fontSize: 11, fontFamily: 'Cairo_700Bold' },
   progressBar: { height: 5, borderRadius: 3, overflow: 'hidden' },
   progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 3 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },

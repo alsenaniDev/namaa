@@ -11,9 +11,11 @@ import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { COMMITMENT_CATEGORIES, CommitmentKind } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
-import { toAsciiDigits, formatCurrency } from '@/utils/format';
+import { toAsciiDigits, formatCurrency, getCurrentMonthYear } from '@/utils/format';
+import { CommitmentImpactAssessment, getCommitmentImpactAssessment } from '@/utils/calculations';
 
 interface FormErrors {
   title?: string;
@@ -28,6 +30,10 @@ interface FormErrors {
 }
 
 const NO_LENDER = '__none__';
+const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
+  const day = String(i + 1);
+  return { label: day, value: day };
+});
 
 export default function AddCommitmentScreen() {
   const colors = useColors();
@@ -36,8 +42,10 @@ export default function AddCommitmentScreen() {
   const t = useT();
   const dir = useDir();
   const params = useLocalSearchParams<{ id?: string }>();
-  const { commitments, commitmentPayments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile, seedPastInstallments } = useApp();
+  const { commitments, commitmentPayments, lenders, addCommitment, updateCommitment, deleteCommitment, customTypes, userProfile, seedPastInstallments, getMonthlyTotals } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
+  const { month, year } = getCurrentMonthYear();
+  const totals = getMonthlyTotals(month, year);
 
   const existing = params.id ? commitments.find((c) => c.id === params.id) : undefined;
   const isEdit = !!existing;
@@ -88,6 +96,16 @@ export default function AddCommitmentScreen() {
   const pNum = parseInt(toAsciiDigits(paidSoFar), 10);
   const hasP = Number.isFinite(pNum) && pNum > 0;
   const remainingInstallments = hasC ? Math.max(0, cNum - (hasP ? pNum : 0)) : null;
+  const impactAssessment = useMemo(
+    () => getCommitmentImpactAssessment(
+      totals,
+      hasA && isActive ? aNum : 0,
+      existing?.isActive ? existing.amount : 0,
+      userProfile?.monthlySavingGoal ?? 0,
+      userProfile?.financialMonthStartDay ?? 1,
+    ),
+    [totals, hasA, isActive, aNum, existing?.isActive, existing?.amount, userProfile?.monthlySavingGoal, userProfile?.financialMonthStartDay],
+  );
 
   const fixMonthly = () => {
     if (!hasT || !hasC) return;
@@ -190,6 +208,26 @@ export default function AddCommitmentScreen() {
     router.back();
   };
 
+  const confirmImpactThenPersist = () => {
+    if (impactAssessment.riskLevel === 'safe') {
+      persist();
+      return;
+    }
+    Alert.alert(
+      t.commitments.impactConfirmTitle,
+      t.commitments.impactConfirmMsg(
+        t.commitments.impactRiskLabels[impactAssessment.riskLevel],
+        t.commitments.percent(impactAssessment.afterCommitmentPercent),
+        formatCurrency(impactAssessment.afterMonthlyRemaining, currency),
+        formatCurrency(impactAssessment.dailyBudgetDrop, currency),
+      ),
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        { text: t.commitments.impactSaveAnyway, style: impactAssessment.riskLevel === 'high' ? 'destructive' : 'default', onPress: () => { persist(); } },
+      ],
+    );
+  };
+
   const handleSave = async () => {
     if (!validate()) return;
     if (isFinite && mismatch) {
@@ -199,12 +237,12 @@ export default function AddCommitmentScreen() {
         [
           { text: t.common.cancel, style: 'cancel' },
           { text: t.commitments.installmentFixTotal, onPress: () => { fixTotal(); } },
-          { text: t.commitments.installmentSaveAnyway, style: 'destructive', onPress: () => { persist(); } },
+          { text: t.commitments.installmentSaveAnyway, style: 'destructive', onPress: () => { confirmImpactThenPersist(); } },
         ],
       );
       return;
     }
-    await persist();
+    confirmImpactThenPersist();
   };
 
   const handleDelete = () => {
@@ -237,7 +275,7 @@ export default function AddCommitmentScreen() {
         label={t.forms.commitmentTitle}
         value={title}
         onChangeText={(v) => { setTitle(v); clearError('title'); }}
-        placeholder={t.forms.commitmentTitle}
+        placeholder={t.forms.titleCommitmentPlaceholder}
         error={errors.title}
         maxLength={FIELD_LIMITS.title}
         autoFocus
@@ -390,14 +428,11 @@ export default function AddCommitmentScreen() {
         <Text style={[styles.addLenderText, { color: colors.primary }]}>{t.commitments.addNewLender}</Text>
       </TouchableOpacity>
 
-      <Input
+      <Select
         label={t.forms.dueDayLabel}
         value={dueDay}
-        onChangeText={(v) => { setDueDay(v); clearError('dueDay'); }}
-        placeholder="1"
-        keyboardType="number-pad"
-        error={errors.dueDay}
-        maxLength={2}
+        options={DAY_OPTIONS}
+        onValueChange={(v) => { setDueDay(v); clearError('dueDay'); }}
       />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
@@ -416,8 +451,12 @@ export default function AddCommitmentScreen() {
         <Switch value={isActive} onValueChange={setIsActive} trackColor={{ false: colors.border, true: colors.success }} thumbColor="#fff" />
       </View>
 
-      <Input label={t.forms.startDateLabel} value={startDate} onChangeText={(v) => { setStartDate(v); clearError('startDate'); }} placeholder="2024-01-01" keyboardType="numbers-and-punctuation" error={errors.startDate} maxLength={10} />
-      <Input label={t.forms.endDateLabel} value={endDate} onChangeText={(v) => { setEndDate(v); clearError('endDate'); }} placeholder="2026-12-31" keyboardType="numbers-and-punctuation" error={errors.endDate} maxLength={10} />
+      {hasA ? (
+        <CommitmentImpactCard assessment={impactAssessment} currency={currency} />
+      ) : null}
+
+      <DatePickerField label={t.forms.startDateLabel} value={startDate} onChange={(v) => { setStartDate(v); clearError('startDate'); }} error={errors.startDate} allowClear />
+      <DatePickerField label={t.forms.endDateLabel} value={endDate} onChange={(v) => { setEndDate(v); clearError('endDate'); }} error={errors.endDate} allowClear />
       <Input label={t.forms.notesLabel} value={notes} onChangeText={(v) => { setNotes(v); clearError('notes'); }} placeholder="" multiline numberOfLines={3} maxLength={FIELD_LIMITS.notes} error={errors.notes} style={{ height: 80, textAlignVertical: 'top' }} />
       <Button title={loading ? t.common.saving : isEdit ? t.commitments.updateBtn : t.commitments.addBtn} onPress={handleSave} fullWidth loading={loading} style={{ marginTop: 8 }} />
       {isEdit ? <Button title={t.commitments.deleteBtn} onPress={handleDelete} variant="destructive" fullWidth style={{ marginTop: 10 }} disabled={loading} /> : null}
@@ -425,23 +464,107 @@ export default function AddCommitmentScreen() {
   );
 }
 
+function CommitmentImpactCard({
+  assessment,
+  currency,
+}: {
+  assessment: CommitmentImpactAssessment;
+  currency: string;
+}) {
+  const colors = useColors();
+  const dir = useDir();
+  const t = useT();
+  const riskColor =
+    assessment.riskLevel === 'safe' ? colors.success :
+      assessment.riskLevel === 'review' ? colors.warning :
+        colors.danger;
+  const riskIcon =
+    assessment.riskLevel === 'safe' ? 'check-circle' :
+      assessment.riskLevel === 'review' ? 'alert-circle' :
+        'alert-triangle';
+
+  return (
+    <View style={[styles.impactCard, { borderColor: riskColor + '55', backgroundColor: riskColor + '0D' }]}>
+      <View style={[styles.impactHeader, { flexDirection: dir.row }]}>
+        <View style={[styles.impactIcon, { backgroundColor: riskColor + '18' }]}>
+          <Feather name={riskIcon as any} size={18} color={riskColor} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.impactTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.commitments.impactTitle}</Text>
+          <Text style={[styles.impactRisk, { textAlign: dir.textAlign, color: riskColor }]}>
+            {t.commitments.impactRiskLabels[assessment.riskLevel]}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.impactRows}>
+        <ImpactRow
+          label={t.commitments.impactCommitmentRatio}
+          value={`${t.commitments.percent(assessment.beforeCommitmentPercent)} → ${t.commitments.percent(assessment.afterCommitmentPercent)}`}
+          color={riskColor}
+        />
+        <ImpactRow
+          label={t.commitments.impactMonthlyRemaining}
+          value={formatCurrency(assessment.afterMonthlyRemaining, currency)}
+          color={assessment.afterMonthlyRemaining < 0 ? colors.danger : colors.foreground}
+        />
+        <ImpactRow
+          label={t.commitments.impactDailyDrop}
+          value={formatCurrency(assessment.dailyBudgetDrop, currency)}
+          color={assessment.dailyBudgetDrop > 0 ? colors.warning : colors.success}
+        />
+        <ImpactRow
+          label={t.commitments.impactSavingGoal}
+          value={assessment.savingGoalAtRisk ? t.commitments.impactSavingGoalAtRisk : t.commitments.impactSavingGoalOk}
+          color={assessment.savingGoalAtRisk ? colors.danger : colors.success}
+        />
+      </View>
+
+      <Text style={[styles.impactDisclaimer, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+        {t.commitments.impactDisclaimer}
+      </Text>
+    </View>
+  );
+}
+
+function ImpactRow({ label, value, color }: { label: string; value: string; color: string }) {
+  const colors = useColors();
+  const dir = useDir();
+  return (
+    <View style={[styles.impactRow, { flexDirection: dir.row, borderBottomColor: colors.border }]}>
+      <Text style={[styles.impactRowLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{label}</Text>
+      <Text style={[styles.impactRowValue, { color }]}>{value}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   content: { padding: 20 },
   switchRow: { alignItems: 'center', padding: 14, borderRadius: 10, borderWidth: 1.5, marginBottom: 14 },
-  switchLabel: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 2 },
-  switchSub: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  switchLabel: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 2 },
+  switchSub: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   lenderRow: { alignItems: 'flex-start' },
   addLenderLink: { alignItems: 'center', gap: 6, marginTop: -6, marginBottom: 14, paddingVertical: 4 },
-  addLenderText: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  addLenderText: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   helperBox: { padding: 12, borderRadius: 10, borderWidth: 1, marginBottom: 14, gap: 6 },
   helperHeader: { alignItems: 'center', gap: 6 },
-  helperTitle: { fontSize: 13, fontFamily: 'Inter_600SemiBold', flex: 1 },
-  helperHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16 },
-  helperStatus: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 2 },
+  helperTitle: { fontSize: 13, fontFamily: 'Cairo_600SemiBold', flex: 1 },
+  helperHint: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
+  helperStatus: { fontSize: 12, fontFamily: 'Cairo_500Medium', marginTop: 2 },
   helperBtnRow: { flexWrap: 'wrap', gap: 6, marginTop: 6 },
   helperBtn: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  helperBtnText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  fieldHint: { fontSize: 11, fontFamily: 'Inter_400Regular', lineHeight: 16, marginTop: -8, marginBottom: 12 },
+  helperBtnText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
+  fieldHint: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16, marginTop: -8, marginBottom: 12 },
   paidSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 14 },
-  paidSummaryText: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  paidSummaryText: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  impactCard: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 14 },
+  impactHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
+  impactIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  impactTitle: { fontSize: 14, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
+  impactRisk: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
+  impactRows: { marginTop: 2 },
+  impactRow: { alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  impactRowLabel: { flex: 1, fontSize: 12, fontFamily: 'Cairo_400Regular' },
+  impactRowValue: { fontSize: 12, fontFamily: 'Cairo_700Bold', flexShrink: 0 },
+  impactDisclaimer: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16, marginTop: 8 },
 });

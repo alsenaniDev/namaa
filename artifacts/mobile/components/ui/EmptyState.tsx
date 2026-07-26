@@ -31,6 +31,6 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
 const styles = StyleSheet.create({
   container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32 },
   iconWrap: { width: 80, height: 80, alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
-  title: { fontSize: 17, fontWeight: '600', textAlign: 'center', fontFamily: 'Inter_600SemiBold', marginBottom: 8 },
-  desc: { fontSize: 14, textAlign: 'center', lineHeight: 22, fontFamily: 'Inter_400Regular' },
+  title: { fontSize: 17, fontWeight: '600', textAlign: 'center', fontFamily: 'Cairo_600SemiBold', marginBottom: 8 },
+  desc: { fontSize: 14, textAlign: 'center', lineHeight: 22, fontFamily: 'Cairo_400Regular' },
 });

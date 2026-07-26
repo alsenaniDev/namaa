@@ -20,7 +20,7 @@ export default function ReportsScreen() {
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
-  const { getMonthlyTotals, expenses, commitments, userProfile, goals, goalContributions, budgets, subscriptions } = useApp();
+  const { getMonthlyTotals, expenses, commitments, commitmentPayments, userProfile, goals, goalContributions, budgets, subscriptions } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
   const today = new Date();
@@ -36,7 +36,7 @@ export default function ReportsScreen() {
 
   const totals = getMonthlyTotals(month, year);
   const expCats = getExpensesByCategory(expenses, month, year);
-  const comCats = getCommitmentsByCategory(commitments);
+  const comCats = getCommitmentsByCategory(commitments, commitmentPayments);
   const BAR_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316'];
   const sortedExpCats = Object.entries(expCats).sort((a, b) => b[1] - a[1]);
   const sortedComCats = Object.entries(comCats).sort((a, b) => b[1] - a[1]);
@@ -273,35 +273,35 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
-  monthLabel: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
+  monthLabel: { fontSize: 16, fontFamily: 'Cairo_600SemiBold' },
   grid: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   summaryCell: { width: '48%', padding: 14, borderWidth: 1 },
-  cellLabel: { fontSize: 12, fontFamily: 'Inter_400Regular', marginBottom: 4 },
-  cellAmount: { fontSize: 15, fontFamily: 'Inter_700Bold' },
+  cellLabel: { fontSize: 12, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
+  cellAmount: { fontSize: 15, fontFamily: 'Cairo_700Bold' },
   section: { marginBottom: 14 },
-  sectionTitle: { fontSize: 15, fontFamily: 'Inter_600SemiBold', marginBottom: 14 },
+  sectionTitle: { fontSize: 15, fontFamily: 'Cairo_600SemiBold', marginBottom: 14 },
   barChart: { flexDirection: 'row', justifyContent: 'space-around', alignItems: 'flex-end', height: 130, gap: 8 },
   barCol: { flex: 1, alignItems: 'center', height: '100%', justifyContent: 'flex-end' },
-  barAmt: { fontSize: 10, fontFamily: 'Inter_700Bold', marginBottom: 6, textAlign: 'center' },
+  barAmt: { fontSize: 10, fontFamily: 'Cairo_700Bold', marginBottom: 6, textAlign: 'center' },
   barTrack: { width: '80%', flex: 1, borderRadius: 6, justifyContent: 'flex-end', overflow: 'hidden', maxHeight: 80 },
   barFill: { width: '100%', borderRadius: 6 },
-  barLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginTop: 6, textAlign: 'center' },
+  barLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginTop: 6, textAlign: 'center' },
   catRow: { alignItems: 'center', marginBottom: 12 },
   catLabelRow: { justifyContent: 'space-between', marginBottom: 4 },
-  catName: { fontSize: 13, fontFamily: 'Inter_500Medium' },
-  catPct: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  catAmt: { fontSize: 13, fontFamily: 'Inter_700Bold', minWidth: 80 },
+  catName: { fontSize: 13, fontFamily: 'Cairo_500Medium' },
+  catPct: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
+  catAmt: { fontSize: 13, fontFamily: 'Cairo_700Bold', minWidth: 80 },
   catBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
   catFill: { height: 6, borderRadius: 3, top: 0, bottom: 0 },
-  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  emptyText: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 20 },
   metaRow: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  metaLabel: { fontSize: 12, fontFamily: 'Inter_500Medium' },
-  metaValue: { fontSize: 14, fontFamily: 'Inter_700Bold' },
+  metaLabel: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
+  metaValue: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
   pillRow: { flexWrap: 'wrap', gap: 6, marginTop: 4 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
-  pillText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  budgetMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 4 },
+  pillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
+  budgetMeta: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 4 },
   noData: { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  noDataTitle: { fontSize: 16, fontFamily: 'Inter_600SemiBold' },
-  noDataSub: { fontSize: 13, fontFamily: 'Inter_400Regular', textAlign: 'center' },
+  noDataTitle: { fontSize: 16, fontFamily: 'Cairo_600SemiBold' },
+  noDataSub: { fontSize: 13, fontFamily: 'Cairo_400Regular', textAlign: 'center' },
 });

@@ -71,12 +71,12 @@ export function BudgetRow({ usage, currency, onEdit, onDelete }: Props) {
 const styles = StyleSheet.create({
   card: { borderWidth: 1, padding: 14, marginBottom: 8 },
   headerRow: { alignItems: 'flex-end', gap: 8, marginBottom: 8 },
-  cat: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
-  sub: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  pct: { fontSize: 16, fontFamily: 'Inter_700Bold' },
+  cat: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
+  sub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
+  pct: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
   actionsRow: { alignItems: 'center', marginTop: 10, gap: 12 },
   actionBtn: { padding: 2 },
-  remaining: { flex: 1, fontSize: 11, fontFamily: 'Inter_500Medium' },
+  remaining: { flex: 1, fontSize: 11, fontFamily: 'Cairo_500Medium' },
 });

@@ -70,10 +70,10 @@ export default function TabLayout() {
     tabBarInactiveTintColor: colors.mutedForeground,
     headerShown: true,
     headerStyle: { backgroundColor: colors.background },
-    headerTitleStyle: { color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 18 },
+    headerTitleStyle: { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 18 },
     headerTitleAlign: 'center' as const,
     headerShadowVisible: false,
-    tabBarLabelStyle: { fontFamily: 'Inter_500Medium', fontSize: 10 },
+    tabBarLabelStyle: { fontFamily: 'Cairo_500Medium', fontSize: 10 },
     tabBarStyle: {
       position: 'absolute' as const,
       backgroundColor: isIOS ? 'transparent' : colors.background,

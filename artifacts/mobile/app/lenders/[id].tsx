@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Image, Alert, Share } from 'react-native';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform, Linking, Alert, Share } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { useT } from '@/hooks/useT';
 import { formatCurrency } from '@/utils/format';
 import { getLenderStats, getCommitmentProgress } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
+import { LenderAvatar } from '@/components/LenderAvatar';
 
 export default function LenderDetailScreen() {
   const colors = useColors();
@@ -34,7 +35,6 @@ export default function LenderDetailScreen() {
 
   const stats = getLenderStats(lender.id, commitments, commitmentPayments);
   const linked = commitments.filter((c) => c.lenderId === lender.id);
-  const initial = lender.name.trim().charAt(0) || '?';
 
   const openTel = (v?: string) => v && Linking.openURL(`tel:${v}`);
   const openMail = (v?: string) => v && Linking.openURL(`mailto:${v}`);
@@ -82,13 +82,7 @@ export default function LenderDetailScreen() {
         {/* Header card */}
         <Card style={styles.headerCard}>
           <View style={[styles.headerRow, { flexDirection: dir.row }]}>
-            <View style={[styles.avatar, { backgroundColor: lender.color + '22', borderColor: lender.color + '55' }]}>
-              {lender.imageUri ? (
-                <Image source={{ uri: lender.imageUri }} style={styles.avatarImg} />
-              ) : (
-                <Text style={[styles.avatarText, { color: lender.color }]}>{initial}</Text>
-              )}
-            </View>
+            <LenderAvatar lender={lender} size={56} fontSize={22} borderWidth={2} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.name, { textAlign: dir.textAlign, color: colors.foreground }]}>{lender.name}</Text>
               <View style={[styles.typeRow, { flexDirection: dir.row }]}>
@@ -263,35 +257,32 @@ const styles = StyleSheet.create({
   content: { padding: 16 },
   headerCard: { marginBottom: 12 },
   headerRow: { alignItems: 'center', gap: 14 },
-  avatar: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', borderWidth: 2, overflow: 'hidden' },
-  avatarText: { fontSize: 22, fontFamily: 'Inter_700Bold' },
-  avatarImg: { width: '100%', height: '100%' },
-  name: { fontSize: 18, fontFamily: 'Inter_700Bold', marginBottom: 6 },
+  name: { fontSize: 18, fontFamily: 'Cairo_700Bold', marginBottom: 6 },
   typeRow: { alignItems: 'center', gap: 8 },
   typePill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10 },
-  typeText: { fontSize: 11, fontFamily: 'Inter_500Medium' },
-  metaText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  typeText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  metaText: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   statsGrid: { gap: 10, marginBottom: 10 },
   statBox: { flex: 1, padding: 14, borderRadius: 12, borderWidth: 1 },
-  statLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginBottom: 6 },
-  statValue: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  statLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginBottom: 6 },
+  statValue: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  sectionLabel: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginBottom: 8 },
-  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
+  emptyText: { fontSize: 13, fontFamily: 'Cairo_400Regular', paddingVertical: 8 },
   contactRow: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
   contactIcon: { width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
-  contactText: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  contactText: { flex: 1, fontSize: 13, fontFamily: 'Cairo_500Medium' },
   kv: { paddingVertical: 8, gap: 10 },
-  kvLabel: { flex: 1, fontSize: 12, fontFamily: 'Inter_500Medium' },
+  kvLabel: { flex: 1, fontSize: 12, fontFamily: 'Cairo_500Medium' },
   kvValueWrap: { flex: 1.5, alignItems: 'center', gap: 8 },
-  kvValue: { flex: 1, fontSize: 13, fontFamily: 'Inter_500Medium' },
+  kvValue: { flex: 1, fontSize: 13, fontFamily: 'Cairo_500Medium' },
   copyBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   linkedCard: { alignItems: 'center', padding: 12, borderWidth: 1, marginBottom: 8, gap: 10 },
-  linkedTitle: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
-  linkedMeta: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 6 },
-  linkedAmount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-  linkedSub: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  linkedTitle: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
+  linkedMeta: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginBottom: 6 },
+  linkedAmount: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  linkedSub: { fontSize: 10, fontFamily: 'Cairo_400Regular', marginTop: 2 },
   progressBar: { height: 5, borderRadius: 3, overflow: 'hidden', marginTop: 4 },
   progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 3 },
-  notesText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  notesText: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 20 },
 });

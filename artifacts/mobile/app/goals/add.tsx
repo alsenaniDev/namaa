@@ -10,6 +10,7 @@ import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { DatePickerField } from '@/components/ui/DatePickerField';
 import { GOAL_COLOR_PALETTE, GOAL_ICONS } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateAmount, validateDate, validateNotes } from '@/utils/validation';
 import { toAsciiDigits } from '@/utils/format';
@@ -121,14 +122,12 @@ export default function AddGoalScreen() {
         keyboardType="decimal-pad"
         error={errors.current}
       />
-      <Input
+      <DatePickerField
         label={t.goals.fieldTargetDate}
         value={targetDate}
-        onChangeText={(v) => { setTargetDate(v); clearError('date'); }}
-        placeholder="YYYY-MM-DD"
-        keyboardType="numbers-and-punctuation"
-        autoCapitalize="none"
+        onChange={(v) => { setTargetDate(v); clearError('date'); }}
         error={errors.date}
+        allowClear
       />
 
       <Text style={[styles.label, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.goals.fieldIcon}</Text>
@@ -197,7 +196,7 @@ export default function AddGoalScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20 },
-  label: { fontSize: 14, fontFamily: 'Inter_500Medium', marginBottom: 8 },
+  label: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 8 },
   iconGrid: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   iconBtn: { width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center', borderWidth: 2 },
   colorRow: { flexWrap: 'wrap', gap: 10, marginBottom: 16 },

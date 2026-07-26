@@ -45,8 +45,8 @@ export function ProgressBar({ label, value, max, color, showPercent = true }: Pr
 const styles = StyleSheet.create({
   container: { marginBottom: 12 },
   row: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  label: { fontSize: 13, fontFamily: 'Inter_500Medium' },
-  pct: { fontSize: 13, fontFamily: 'Inter_700Bold' },
+  label: { fontSize: 13, fontFamily: 'Cairo_500Medium' },
+  pct: { fontSize: 13, fontFamily: 'Cairo_700Bold' },
   track: { height: 10, overflow: 'hidden' },
   fill: { height: 10 },
 });

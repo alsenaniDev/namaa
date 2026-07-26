@@ -59,12 +59,12 @@ export function SubscriptionItem({ subscription, currency, onPress }: Props) {
 const styles = StyleSheet.create({
   card: { alignItems: 'center', padding: 14, borderWidth: 1, gap: 12, marginBottom: 8 },
   iconCircle: { width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, flexShrink: 0 },
-  name: { fontSize: 14, fontFamily: 'Inter_600SemiBold', marginBottom: 4 },
+  name: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 4 },
   metaRow: { alignItems: 'center', gap: 8 },
   pill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  pillText: { fontSize: 11, fontFamily: 'Inter_500Medium' },
-  metaText: { fontSize: 11, fontFamily: 'Inter_400Regular' },
+  pillText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  metaText: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
   right: { flexShrink: 0 },
-  amount: { fontSize: 14, fontFamily: 'Inter_700Bold' },
-  amountSub: { fontSize: 10, fontFamily: 'Inter_400Regular', marginTop: 2 },
+  amount: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  amountSub: { fontSize: 10, fontFamily: 'Cairo_400Regular', marginTop: 2 },
 });

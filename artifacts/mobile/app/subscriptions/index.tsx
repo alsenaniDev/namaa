@@ -86,8 +86,8 @@ export default function SubscriptionsScreen() {
 const styles = StyleSheet.create({
   summaryCard: { margin: 16, marginBottom: 8 },
   summaryRow: { alignItems: 'center', gap: 16 },
-  summaryLabel: { fontSize: 11, fontFamily: 'Inter_400Regular', marginBottom: 4 },
-  summaryAmt: { fontSize: 18, fontFamily: 'Inter_700Bold' },
+  summaryLabel: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
+  summaryAmt: { fontSize: 18, fontFamily: 'Cairo_700Bold' },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },

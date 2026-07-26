@@ -92,7 +92,7 @@ export function calculateMonthlyTotals(
     return sum + i.amount;
   }, 0);
 
-  const activeCommitments = commitments.filter((c) => c.isActive);
+  const activeCommitments = commitments.filter((c) => isCommitmentInMonthlyBudget(c, commitmentPayments));
   const commitmentSum = activeCommitments.reduce((sum, c) => sum + c.amount, 0);
   // Subscriptions roll into the committed-outflow line — yearly/quarterly/weekly
   // are normalized to a monthly equivalent so the budget bar reflects reality.
@@ -141,9 +141,9 @@ export function getExpensesByCategory(expenses: Expense[], month: number, year: 
   return result;
 }
 
-export function getCommitmentsByCategory(commitments: Commitment[]): Record<string, number> {
+export function getCommitmentsByCategory(commitments: Commitment[], payments: CommitmentPayment[] = []): Record<string, number> {
   const result: Record<string, number> = {};
-  commitments.filter((c) => c.isActive).forEach((c) => {
+  commitments.filter((c) => isCommitmentInMonthlyBudget(c, payments)).forEach((c) => {
     result[c.category] = (result[c.category] ?? 0) + c.amount;
   });
   return result;
@@ -157,7 +157,7 @@ export function getUpcomingCommitments(commitments: Commitment[], payments: Comm
 
   return commitments
     .filter((c) => {
-      if (!c.isActive) return false;
+      if (!isCommitmentInMonthlyBudget(c, payments)) return false;
       const payment = payments.find(
         (p) => p.commitmentId === c.id && p.month === month && p.year === year,
       );
@@ -174,7 +174,7 @@ export function getLateCommitments(commitments: Commitment[], payments: Commitme
   const year = today.getFullYear();
 
   return commitments.filter((c) => {
-    if (!c.isActive) return false;
+    if (!isCommitmentInMonthlyBudget(c, payments)) return false;
     const payment = payments.find(
       (p) => p.commitmentId === c.id && p.month === month && p.year === year,
     );
@@ -225,6 +225,22 @@ export function getCommitmentProgress(
   };
 }
 
+export function isFiniteCommitmentPaidOff(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+): boolean {
+  const progress = getCommitmentProgress(commitment, payments);
+  return progress.isFinite && progress.remainingAmount <= 0;
+}
+
+export function isCommitmentInMonthlyBudget(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+): boolean {
+  if (!commitment.isActive) return false;
+  return !isFiniteCommitmentPaidOff(commitment, payments);
+}
+
 export interface CommitmentsOverviewItem {
   id: string;
   title: string;
@@ -253,7 +269,7 @@ export function getCommitmentsOverview(
   commitments: Commitment[],
   payments: CommitmentPayment[],
 ): CommitmentsOverview {
-  const active = commitments.filter((c) => c.isActive);
+  const active = commitments.filter((c) => isCommitmentInMonthlyBudget(c, payments));
   const finiteItems: CommitmentsOverviewItem[] = [];
   const oneTimeItems: CommitmentsOverviewItem[] = [];
   const monthlyItems: CommitmentsOverviewItem[] = [];
@@ -456,6 +472,249 @@ export function getPayoffPlan(
           simulatePayoff(uniqueDebts(quickWin), suggestedExtraPayment, freedPaymentFromCompleted, baselineMonths, 'quickWin'),
         ]
       : [],
+  };
+}
+
+export interface SalaryAllocationPlan {
+  monthlyIncome: number;
+  essentialCommitments: number;
+  suggestedSaving: number;
+  extraDebtPayment: number;
+  plannedExpenses: number;
+  spentSoFar: number;
+  remainingSpendable: number;
+  dailyAvailable: number;
+  daysUntilNextSalary: number;
+  nextSalaryDate: Date;
+  isOverSpendable: boolean;
+}
+
+export type WhatIfScenarioKind =
+  | 'extraDebtPayment'
+  | 'cancelSubscription'
+  | 'incomeIncrease'
+  | 'newInstallment'
+  | 'incomeDecrease'
+  | 'payoffCommitment';
+
+export interface WhatIfSimulationResult {
+  scenario: WhatIfScenarioKind;
+  amount: number;
+  beforeTotals: MonthlyTotals;
+  afterTotals: MonthlyTotals;
+  beforeAllocation: SalaryAllocationPlan;
+  afterAllocation: SalaryAllocationPlan;
+  beforeCommitmentPercent: number;
+  afterCommitmentPercent: number;
+  beforeDailyBudget: number;
+  afterDailyBudget: number;
+  dailyBudgetDelta: number;
+  commitmentPercentDelta: number;
+  extraDebtPaymentAfter: number;
+}
+
+export type CommitmentRiskLevel = 'safe' | 'review' | 'high';
+
+export interface CommitmentImpactAssessment {
+  monthlyAmount: number;
+  beforeCommitmentPercent: number;
+  afterCommitmentPercent: number;
+  afterMonthlyRemaining: number;
+  beforeDailyBudget: number;
+  afterDailyBudget: number;
+  dailyBudgetDrop: number;
+  savingGoalAtRisk: boolean;
+  riskLevel: CommitmentRiskLevel;
+}
+
+function getNextSalaryDate(financialMonthStartDay: number, from: Date): Date {
+  const preferredDay = Math.max(1, Math.min(31, Math.floor(financialMonthStartDay || 1)));
+  const dayForMonth = (year: number, monthIndex: number) => Math.min(preferredDay, new Date(year, monthIndex + 1, 0).getDate());
+  let year = from.getFullYear();
+  let monthIndex = from.getMonth();
+  let targetDay = dayForMonth(year, monthIndex);
+
+  if (from.getDate() >= targetDay) {
+    monthIndex += 1;
+    const nextMonth = new Date(year, monthIndex, 1);
+    year = nextMonth.getFullYear();
+    monthIndex = nextMonth.getMonth();
+    targetDay = dayForMonth(year, monthIndex);
+  }
+
+  return new Date(year, monthIndex, targetDay);
+}
+
+export function getSalaryAllocationPlan(
+  totals: MonthlyTotals,
+  monthlySavingGoal = 0,
+  financialMonthStartDay = 1,
+  from: Date = new Date(),
+): SalaryAllocationPlan {
+  const monthlyIncome = Math.max(0, totals.totalIncome);
+  const essentialCommitments = Math.max(0, totals.totalCommitments);
+  const afterCommitments = Math.max(0, monthlyIncome - essentialCommitments);
+  const commitmentRatio = monthlyIncome > 0 ? essentialCommitments / monthlyIncome : 0;
+
+  const savingTarget = monthlySavingGoal > 0 ? monthlySavingGoal : 0;
+  const suggestedSaving = Math.min(afterCommitments, Math.max(0, savingTarget));
+  const afterSaving = Math.max(0, afterCommitments - suggestedSaving);
+
+  const extraDebtRate =
+    commitmentRatio >= 0.7 ? 0.05 :
+      commitmentRatio >= 0.5 ? 0.1 :
+        commitmentRatio > 0 ? 0.15 :
+          0;
+  const extraDebtPayment = essentialCommitments > 0 ? afterSaving * extraDebtRate : 0;
+  const plannedExpenses = Math.max(0, afterSaving - extraDebtPayment);
+  const spentSoFar = Math.max(0, totals.totalExpenses);
+  const remainingSpendable = plannedExpenses - spentSoFar;
+
+  const nextSalaryDate = getNextSalaryDate(financialMonthStartDay, from);
+  const todayStart = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  const daysUntilNextSalary = Math.max(
+    1,
+    Math.ceil((nextSalaryDate.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24)),
+  );
+
+  return {
+    monthlyIncome,
+    essentialCommitments,
+    suggestedSaving,
+    extraDebtPayment,
+    plannedExpenses,
+    spentSoFar,
+    remainingSpendable,
+    dailyAvailable: Math.max(0, remainingSpendable) / daysUntilNextSalary,
+    daysUntilNextSalary,
+    nextSalaryDate,
+    isOverSpendable: remainingSpendable < 0,
+  };
+}
+
+function buildAdjustedTotals(totals: MonthlyTotals, totalIncome: number, totalCommitments: number): MonthlyTotals {
+  const income = Math.max(0, totalIncome);
+  const commitmentsTotal = Math.max(0, totalCommitments);
+  const totalExpenses = Math.max(0, totals.totalExpenses);
+  const netRemaining = income - commitmentsTotal - totalExpenses;
+  const commitmentPercent = income > 0 ? (commitmentsTotal / income) * 100 : 0;
+  const expensePercent = income > 0 ? (totalExpenses / income) * 100 : 0;
+  const remainingAfterCommitments = income - commitmentsTotal;
+  const { color: healthColor, status: healthStatus } = getHealthStatus(commitmentPercent);
+
+  return {
+    ...totals,
+    totalIncome: income,
+    totalCommitments: commitmentsTotal,
+    totalExpenses,
+    netRemaining,
+    commitmentPercent,
+    expensePercent,
+    remainingAfterCommitments,
+    suggestedSaving: Math.max(0, netRemaining * 0.2),
+    healthStatus,
+    healthColor,
+  };
+}
+
+export function getWhatIfSimulation(
+  totals: MonthlyTotals,
+  scenario: WhatIfScenarioKind,
+  amount: number,
+  monthlySavingGoal = 0,
+  financialMonthStartDay = 1,
+  from: Date = new Date(),
+): WhatIfSimulationResult {
+  const safeAmount = Math.max(0, amount);
+  const beforeAllocation = getSalaryAllocationPlan(totals, monthlySavingGoal, financialMonthStartDay, from);
+  let nextIncome = totals.totalIncome;
+  let nextCommitments = totals.totalCommitments;
+  let additionalExtraDebtPayment = 0;
+
+  if (scenario === 'extraDebtPayment') {
+    additionalExtraDebtPayment = safeAmount;
+  } else if (scenario === 'cancelSubscription' || scenario === 'payoffCommitment') {
+    nextCommitments = Math.max(0, nextCommitments - safeAmount);
+  } else if (scenario === 'incomeIncrease') {
+    nextIncome += safeAmount;
+  } else if (scenario === 'newInstallment') {
+    nextCommitments += safeAmount;
+  } else if (scenario === 'incomeDecrease') {
+    nextIncome = Math.max(0, nextIncome - safeAmount);
+  }
+
+  const afterTotals = buildAdjustedTotals(totals, nextIncome, nextCommitments);
+  const calculatedAfterAllocation = getSalaryAllocationPlan(afterTotals, monthlySavingGoal, financialMonthStartDay, from);
+  const afterRemainingSpendable = calculatedAfterAllocation.remainingSpendable - additionalExtraDebtPayment;
+  const afterDailyBudget = Math.max(0, afterRemainingSpendable) / calculatedAfterAllocation.daysUntilNextSalary;
+  const afterAllocation: SalaryAllocationPlan = {
+    ...calculatedAfterAllocation,
+    extraDebtPayment: calculatedAfterAllocation.extraDebtPayment + additionalExtraDebtPayment,
+    plannedExpenses: Math.max(0, calculatedAfterAllocation.plannedExpenses - additionalExtraDebtPayment),
+    remainingSpendable: afterRemainingSpendable,
+    dailyAvailable: afterDailyBudget,
+    isOverSpendable: afterRemainingSpendable < 0,
+  };
+
+  return {
+    scenario,
+    amount: safeAmount,
+    beforeTotals: totals,
+    afterTotals,
+    beforeAllocation,
+    afterAllocation,
+    beforeCommitmentPercent: totals.commitmentPercent,
+    afterCommitmentPercent: afterTotals.commitmentPercent,
+    beforeDailyBudget: beforeAllocation.dailyAvailable,
+    afterDailyBudget,
+    dailyBudgetDelta: afterDailyBudget - beforeAllocation.dailyAvailable,
+    commitmentPercentDelta: afterTotals.commitmentPercent - totals.commitmentPercent,
+    extraDebtPaymentAfter: afterAllocation.extraDebtPayment,
+  };
+}
+
+export function getCommitmentImpactAssessment(
+  totals: MonthlyTotals,
+  newMonthlyAmount: number,
+  currentMonthlyAmount = 0,
+  monthlySavingGoal = 0,
+  financialMonthStartDay = 1,
+  from: Date = new Date(),
+): CommitmentImpactAssessment {
+  const safeNewAmount = Math.max(0, newMonthlyAmount);
+  const safeCurrentAmount = Math.max(0, currentMonthlyAmount);
+  const beforeAllocation = getSalaryAllocationPlan(totals, monthlySavingGoal, financialMonthStartDay, from);
+  const afterCommitments = Math.max(0, totals.totalCommitments - safeCurrentAmount + safeNewAmount);
+  const afterTotals = buildAdjustedTotals(totals, totals.totalIncome, afterCommitments);
+  const afterAllocation = getSalaryAllocationPlan(afterTotals, monthlySavingGoal, financialMonthStartDay, from);
+  const dailyBudgetDrop = Math.max(0, beforeAllocation.dailyAvailable - afterAllocation.dailyAvailable);
+  const savingGoalAtRisk = monthlySavingGoal > 0 && afterTotals.netRemaining < monthlySavingGoal;
+
+  let riskLevel: CommitmentRiskLevel = 'safe';
+  if (
+    afterTotals.commitmentPercent >= 70 ||
+    afterTotals.netRemaining < 0 ||
+    (monthlySavingGoal > 0 && savingGoalAtRisk && afterTotals.commitmentPercent >= 55)
+  ) {
+    riskLevel = 'high';
+  } else if (
+    afterTotals.commitmentPercent >= 50 ||
+    savingGoalAtRisk ||
+    dailyBudgetDrop >= Math.max(25, beforeAllocation.dailyAvailable * 0.2)
+  ) {
+    riskLevel = 'review';
+  }
+
+  return {
+    monthlyAmount: safeNewAmount,
+    beforeCommitmentPercent: totals.commitmentPercent,
+    afterCommitmentPercent: afterTotals.commitmentPercent,
+    afterMonthlyRemaining: afterTotals.netRemaining,
+    beforeDailyBudget: beforeAllocation.dailyAvailable,
+    afterDailyBudget: afterAllocation.dailyAvailable,
+    dailyBudgetDrop,
+    savingGoalAtRisk,
+    riskLevel,
   };
 }
 

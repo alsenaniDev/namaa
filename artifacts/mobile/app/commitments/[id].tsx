@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform,
-  Modal, TextInput, Image, KeyboardAvoidingView,
+  Modal, TextInput, KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -15,6 +15,7 @@ import { formatCurrency, formatDate, getCurrentMonthYear, toAsciiDigits } from '
 import { getCommitmentProgress } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { LenderAvatar } from '@/components/LenderAvatar';
 import type { CommitmentPayment } from '@/types';
 
 type ScheduleRow = {
@@ -311,13 +312,7 @@ export default function CommitmentDetailScreen() {
             activeOpacity={0.78}
             style={[styles.lenderCard, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius }]}
           >
-            <View style={[styles.lenderAvatar, { backgroundColor: lender.color + '22' }]}>
-              {lender.imageUri ? (
-                <Image source={{ uri: lender.imageUri }} style={styles.lenderAvatarImg} />
-              ) : (
-                <Text style={[styles.lenderAvatarText, { color: lender.color }]}>{lender.name.charAt(0)}</Text>
-              )}
-            </View>
+            <LenderAvatar lender={lender} size={38} fontSize={16} borderWidth={0} />
             <View style={{ flex: 1 }}>
               <Text style={[styles.lenderName, { textAlign: dir.textAlign, color: colors.foreground }]} numberOfLines={1}>{lender.name}</Text>
               <Text style={[styles.lenderType, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.lenders.typeLabels[lender.type]}</Text>
@@ -565,7 +560,7 @@ export default function CommitmentDetailScreen() {
             ) : null}
             {bulkMode ? (
               <>
-                <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.foreground, fontFamily: 'Inter_600SemiBold' }]}>
+                <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.foreground, fontFamily: 'Cairo_600SemiBold' }]}>
                   {t.commitments.scheduleBulkTitle(selectedKeys.size)}
                 </Text>
                 <Text style={[styles.modalSubtitle, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
@@ -652,58 +647,55 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16 },
   headerCard: { marginBottom: 12 },
-  title: { fontSize: 20, fontFamily: 'Inter_700Bold', marginBottom: 10 },
+  title: { fontSize: 20, fontFamily: 'Cairo_700Bold', marginBottom: 10 },
   headerMeta: { alignItems: 'center', gap: 8, marginBottom: 14 },
   pill: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 10 },
-  pillText: { fontSize: 11, fontFamily: 'Inter_500Medium' },
-  metaText: { fontSize: 12, fontFamily: 'Inter_400Regular' },
+  pillText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  metaText: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   amountRow: { justifyContent: 'space-between', alignItems: 'flex-end' },
-  amountLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginBottom: 4 },
-  amountValue: { fontSize: 22, fontFamily: 'Inter_700Bold' },
-  dueValue: { fontSize: 22, fontFamily: 'Inter_700Bold' },
+  amountLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
+  amountValue: { fontSize: 22, fontFamily: 'Cairo_700Bold' },
+  dueValue: { fontSize: 22, fontFamily: 'Cairo_700Bold' },
   lenderCard: { alignItems: 'center', padding: 12, borderWidth: 1, gap: 12, marginBottom: 4 },
-  lenderAvatar: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
-  lenderAvatarText: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  lenderAvatarImg: { width: '100%', height: '100%' },
-  lenderName: { fontSize: 13, fontFamily: 'Inter_600SemiBold', marginBottom: 2 },
-  lenderType: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  sectionLabel: { fontSize: 11, fontFamily: 'Inter_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
+  lenderName: { fontSize: 13, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
+  lenderType: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
+  sectionLabel: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', marginTop: 16, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   sectionHeader: { alignItems: 'center', marginTop: 16, marginBottom: 8, gap: 8 },
-  sectionAction: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  sectionAction: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
   checkbox: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
   selectBar: { alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 4, paddingVertical: 6, gap: 16 },
-  selectBarLink: { fontSize: 12, fontFamily: 'Inter_600SemiBold' },
+  selectBarLink: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
   bulkBar: { position: 'absolute', left: 0, right: 0, padding: 12, borderTopWidth: StyleSheet.hairlineWidth, alignItems: 'center', gap: 10 },
-  bulkBarCount: { fontSize: 13, fontFamily: 'Inter_600SemiBold', flex: 1 },
+  bulkBarCount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold', flex: 1 },
   card: { marginBottom: 8 },
   progressHeader: { justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 },
-  progressPercent: { fontSize: 28, fontFamily: 'Inter_700Bold' },
-  progressInstallments: { fontSize: 12, fontFamily: 'Inter_500Medium' },
+  progressPercent: { fontSize: 28, fontFamily: 'Cairo_700Bold' },
+  progressInstallments: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   progressBar: { height: 10, borderRadius: 5, overflow: 'hidden', marginBottom: 14 },
   progressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 5 },
   progressBreakdown: { justifyContent: 'space-between', marginBottom: 8 },
-  breakdownLabel: { fontSize: 11, fontFamily: 'Inter_500Medium', marginBottom: 3 },
-  breakdownValue: { fontSize: 15, fontFamily: 'Inter_700Bold' },
-  totalLine: { fontSize: 11, fontFamily: 'Inter_400Regular' },
-  emptyText: { fontSize: 13, fontFamily: 'Inter_400Regular', paddingVertical: 8 },
+  breakdownLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginBottom: 3 },
+  breakdownValue: { fontSize: 15, fontFamily: 'Cairo_700Bold' },
+  totalLine: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
+  emptyText: { fontSize: 13, fontFamily: 'Cairo_400Regular', paddingVertical: 8 },
   scheduleRow: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
   statusDot: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
-  statusDotText: { fontSize: 11, fontFamily: 'Inter_600SemiBold' },
-  scheduleMonth: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
-  scheduleStatus: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
-  scheduleAmount: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
+  statusDotText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
+  scheduleMonth: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  scheduleStatus: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 2 },
+  scheduleAmount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   historyRow: { alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, borderBottomWidth: StyleSheet.hairlineWidth, gap: 12 },
   historyIcon: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  historyMonth: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
-  historyDate: { fontSize: 11, fontFamily: 'Inter_400Regular', marginTop: 2 },
-  historyAmount: { fontSize: 13, fontFamily: 'Inter_600SemiBold' },
-  notesText: { fontSize: 13, fontFamily: 'Inter_400Regular', lineHeight: 20 },
+  historyMonth: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  historyDate: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 2 },
+  historyAmount: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+  notesText: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 20 },
   modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', padding: 20 },
   modalBackdropTouch: { ...StyleSheet.absoluteFillObject },
   modalCard: { padding: 18, borderWidth: 1, gap: 10 },
-  modalTitle: { fontSize: 16, fontFamily: 'Inter_700Bold' },
-  modalSubtitle: { fontSize: 12, fontFamily: 'Inter_400Regular' },
-  modalLabel: { fontSize: 12, fontFamily: 'Inter_500Medium', marginTop: 6 },
-  modalInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Inter_500Medium' },
+  modalTitle: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  modalSubtitle: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
+  modalLabel: { fontSize: 12, fontFamily: 'Cairo_500Medium', marginTop: 6 },
+  modalInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Cairo_500Medium' },
   modalActions: { gap: 8, marginTop: 8, flexWrap: 'wrap', rowGap: 8 },
 });

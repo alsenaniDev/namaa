@@ -5,6 +5,7 @@ import {
 import {
   calculateMonthlyTotals, getCommitmentProgress, getExpensesByCategory,
   getLateCommitments, getBudgetUsages, getGoalProgress, daysUntil,
+  isCommitmentInMonthlyBudget,
 } from './calculations';
 import { formatCurrency, formatMonthYear } from './format';
 
@@ -50,6 +51,18 @@ function getPreviousMonth(month: number, year: number): { month: number; year: n
   return { month: month - 1, year };
 }
 
+function dueInLabel(days: number, day: number, isEn: boolean): string {
+  if (isEn) {
+    if (days === 0) return `today, day ${day}`;
+    if (days === 1) return `tomorrow, day ${day}`;
+    return `in ${days} days, day ${day}`;
+  }
+  if (days === 0) return `اليوم، يوم ${day}`;
+  if (days === 1) return `غداً، يوم ${day}`;
+  if (days === 2) return `بعد يومين، يوم ${day}`;
+  return `بعد ${days} أيام، يوم ${day}`;
+}
+
 export function getInsights(args: InsightArgs): Insight[] {
   const {
     totals, commitments, payments, expenses, month, year, currency, lang, savingGoal,
@@ -79,7 +92,7 @@ export function getInsights(args: InsightArgs): Insight[] {
   const today = new Date();
   const currentDay = today.getDate();
   const dueSoon = commitments.filter((c) => {
-    if (!c.isActive) return false;
+    if (!isCommitmentInMonthlyBudget(c, payments)) return false;
     const paid = payments.find(
       (p) => p.commitmentId === c.id && p.month === month && p.year === year && p.status === 'paid',
     );
@@ -88,6 +101,9 @@ export function getInsights(args: InsightArgs): Insight[] {
   });
   if (dueSoon.length > 0) {
     const dueAmt = dueSoon.reduce((s, c) => s + c.amount, 0);
+    const nearestDueDay = dueSoon.reduce((nearest, c) => Math.min(nearest, c.dueDay), Infinity);
+    const nearestDueIn = nearestDueDay - currentDay;
+    const nearestLabel = dueInLabel(nearestDueIn, nearestDueDay, isEn);
     out.push({
       id: 'upcoming_week',
       severity: 'warning',
@@ -95,8 +111,8 @@ export function getInsights(args: InsightArgs): Insight[] {
       priority: 80,
       title: isEn ? 'Due this week' : 'مستحقات هذا الأسبوع',
       message: isEn
-        ? `${dueSoon.length} commitment${dueSoon.length > 1 ? 's' : ''} totaling ${formatCurrency(dueAmt, currency)} due in the next 7 days.`
-        : `${dueSoon.length} ${dueSoon.length > 1 ? 'التزامات' : 'التزام'} بقيمة ${formatCurrency(dueAmt, currency)} تستحق خلال 7 أيام.`,
+        ? `${dueSoon.length} commitment${dueSoon.length > 1 ? 's' : ''} totaling ${formatCurrency(dueAmt, currency)} due in the next 7 days. Nearest: ${nearestLabel}.`
+        : `${dueSoon.length} ${dueSoon.length > 1 ? 'التزامات' : 'التزام'} بقيمة ${formatCurrency(dueAmt, currency)} تستحق خلال الأيام السبعة القادمة. أقربها ${nearestLabel}.`,
       cta: { label: isEn ? 'View calendar' : 'عرض التقويم', route: '/calendar' },
     });
   }

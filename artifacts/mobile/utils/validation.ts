@@ -47,7 +47,7 @@ export function validateDay(
   if (!normalized) return required ? t.forms.errorDayRange : undefined;
   if (!/^\d+$/.test(normalized)) return t.forms.errorDayRange;
   const n = parseInt(normalized, 10);
-  if (!Number.isInteger(n) || n < 1 || n > 28) return t.forms.errorDayRange;
+  if (!Number.isInteger(n) || n < 1 || n > 31) return t.forms.errorDayRange;
   return undefined;
 }
 
@@ -62,8 +62,10 @@ export function validateDate(
   const [y, m, d] = normalized.split('-').map((x) => parseInt(x, 10));
   if (m < 1 || m > 12) return t.forms.errorDateInvalid;
   if (d < 1 || d > 31) return t.forms.errorDateInvalid;
-  const dt = new Date(normalized);
-  if (isNaN(dt.getTime()) || dt.getFullYear() !== y) return t.forms.errorDateInvalid;
+  const dt = new Date(y, m - 1, d);
+  if (isNaN(dt.getTime()) || dt.getFullYear() !== y || dt.getMonth() + 1 !== m || dt.getDate() !== d) {
+    return t.forms.errorDateInvalid;
+  }
   return undefined;
 }
 

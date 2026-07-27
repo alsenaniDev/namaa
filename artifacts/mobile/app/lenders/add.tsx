@@ -143,7 +143,6 @@ export default function AddLenderScreen() {
         placeholder={t.lenders.fieldName}
         error={errors.name}
         maxLength={FIELD_LIMITS.title}
-        autoFocus
       />
       <Select
         label={t.lenders.fieldType}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Modal, TouchableOpacity, FlatList, Keyboard } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,7 +29,10 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
     <View style={styles.container}>
       {label ? <Text style={[styles.label, { textAlign: dir.textAlign, color: colors.foreground }]}>{label}</Text> : null}
       <TouchableOpacity
-        onPress={() => setOpen(true)}
+        onPress={() => {
+          Keyboard.dismiss();
+          setOpen(true);
+        }}
         style={[
           styles.trigger,
           { flexDirection: dir.row },

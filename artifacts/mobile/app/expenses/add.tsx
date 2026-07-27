@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { EXPENSE_CATEGORIES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateNotes, validateTitle } from '@/utils/validation';
 
@@ -106,15 +107,13 @@ export default function AddExpenseScreen() {
         placeholder={t.forms.titleExpensePlaceholder}
         error={errors.title}
         maxLength={FIELD_LIMITS.title}
-        autoFocus
       />
 
-      <Input
+      <CurrencyAmountInput
         label={t.forms.amountLabel}
         value={amount}
         onChangeText={(v) => { setAmount(v); clearError('amount'); }}
         placeholder="0.00"
-        keyboardType="decimal-pad"
         error={errors.amount}
         maxLength={16}
       />

@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Card } from '@/components/ui/Card';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { CURRENCIES, INCOME_TYPES, COMMITMENT_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import type { CustomTypes } from '@/utils/storage';
 
@@ -215,8 +216,8 @@ export default function SettingsScreen() {
       <Card style={styles.card}>
         <Input label={t.settings.nameLabel} value={name} onChangeText={setName} placeholder="" />
         <Select label={t.settings.currencyLabel} value={currency} options={CURRENCIES} onValueChange={setCurrency} />
-        <Input label={t.settings.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
-        <Input label={t.settings.savingGoalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
+        <CurrencyAmountInput label={t.settings.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" targetCurrency={currency} />
+        <CurrencyAmountInput label={t.settings.savingGoalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" targetCurrency={currency} />
         <Select label={t.settings.monthStartLabel} value={monthStartDay} options={DAY_OPTIONS} onValueChange={setMonthStartDay} />
 
         <Button title={saving ? t.common.saving : t.common.saveChanges} onPress={handleSave} fullWidth loading={saving} />

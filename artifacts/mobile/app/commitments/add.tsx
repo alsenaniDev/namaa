@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { COMMITMENT_CATEGORIES, CommitmentKind } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
 import { toAsciiDigits, formatCurrency, getCurrentMonthYear } from '@/utils/format';
@@ -267,8 +268,10 @@ export default function AddCommitmentScreen() {
           await deleteCommitment(params.id!);
           // Dismiss the edit modal and any stale detail screen until the
           // commitments tab is reached. If it is not in the stack, Expo Router
-          // replaces the current screen with the list.
+          // replaces the current screen with the list. The next-frame replace
+          // is a defensive fallback for nested stacks/tabs.
           router.dismissTo('/commitments');
+          requestAnimationFrame(() => router.replace('/commitments'));
         }
       },
     ]);
@@ -290,7 +293,6 @@ export default function AddCommitmentScreen() {
         placeholder={t.forms.titleCommitmentPlaceholder}
         error={errors.title}
         maxLength={FIELD_LIMITS.title}
-        autoFocus
       />
 
       <Select
@@ -300,12 +302,11 @@ export default function AddCommitmentScreen() {
         onValueChange={(v) => setKind(v as CommitmentKind)}
       />
 
-      <Input
+      <CurrencyAmountInput
         label={t.forms.commitmentAmountLabel}
         value={amount}
         onChangeText={(v) => { setAmount(v); clearError('amount'); }}
         placeholder="0.00"
-        keyboardType="decimal-pad"
         error={errors.amount}
         maxLength={16}
       />
@@ -352,12 +353,11 @@ export default function AddCommitmentScreen() {
 
       {isFinite ? (
         <>
-          <Input
+          <CurrencyAmountInput
             label={t.commitments.totalAmountLabel}
             value={totalAmount}
             onChangeText={(v) => { setTotalAmount(v); clearError('totalAmount'); }}
             placeholder="0.00"
-            keyboardType="decimal-pad"
             error={errors.totalAmount}
             maxLength={16}
           />

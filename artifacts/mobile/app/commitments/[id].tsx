@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform,
-  Modal, TextInput, KeyboardAvoidingView,
+  Modal, KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -22,6 +22,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LenderAvatar } from '@/components/LenderAvatar';
 import { CommitmentArchiveCelebrationModal } from '@/components/CommitmentArchiveCelebrationModal';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import type { CommitmentPayment } from '@/types';
 
 type ScheduleRow = {
@@ -634,27 +635,16 @@ export default function CommitmentDetailScreen() {
                 </Text>
               </>
             ) : null}
-            <Text style={[styles.modalLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>
-              {t.commitments.scheduleAmountLabel}
-            </Text>
-            <TextInput
+            <CurrencyAmountInput
+              label={t.commitments.scheduleAmountLabel}
               value={editAmount}
               onChangeText={setEditAmount}
-              keyboardType="decimal-pad"
               placeholder={monthlyShare.toString()}
-              placeholderTextColor={colors.mutedForeground}
               // The field is pre-filled with the existing installment amount.
               // Without selectTextOnFocus, tapping just lands the cursor at the
               // end and users end up appending digits (e.g. 500 → 5007) instead
               // of replacing — the "can't update paid installment" symptom.
               selectTextOnFocus
-              autoFocus
-              style={[styles.modalInput, {
-                color: colors.foreground,
-                backgroundColor: colors.background,
-                borderColor: colors.border,
-                textAlign: dir.textAlign,
-              }]}
               maxLength={16}
             />
             <View style={[styles.modalActions, { flexDirection: dir.row }]}>
@@ -771,7 +761,5 @@ const styles = StyleSheet.create({
   modalCard: { padding: 18, borderWidth: 1, gap: 10 },
   modalTitle: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
   modalSubtitle: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
-  modalLabel: { fontSize: 12, fontFamily: 'Cairo_500Medium', marginTop: 6 },
-  modalInput: { borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: 'Cairo_500Medium' },
   modalActions: { gap: 8, marginTop: 8, flexWrap: 'wrap', rowGap: 8 },
 });

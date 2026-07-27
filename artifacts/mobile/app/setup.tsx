@@ -11,6 +11,7 @@ import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { CURRENCIES } from '@/types';
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
@@ -65,11 +66,11 @@ export default function SetupScreen() {
 
         <View style={[styles.form, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.formSection, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.setup.basicInfo}</Text>
-          <Input label={t.setup.nameLabel} value={name} onChangeText={(v) => { setName(v); setNameError(''); }} placeholder={t.setup.namePlaceholder} error={nameError} autoFocus />
+          <Input label={t.setup.nameLabel} value={name} onChangeText={(v) => { setName(v); setNameError(''); }} placeholder={t.setup.namePlaceholder} error={nameError} />
           <Select label={t.setup.currencyLabel} value={currency} options={CURRENCIES} onValueChange={setCurrency} />
-          <Input label={t.setup.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" keyboardType="decimal-pad" />
+          <CurrencyAmountInput label={t.setup.salaryLabel} value={salary} onChangeText={setSalary} placeholder="0.00" targetCurrency={currency} />
           <Text style={[styles.formSection, { textAlign: dir.textAlign, color: colors.mutedForeground, marginTop: 8 }]}>{t.setup.advancedSection}</Text>
-          <Input label={t.setup.goalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" keyboardType="decimal-pad" />
+          <CurrencyAmountInput label={t.setup.goalLabel} value={savingGoal} onChangeText={setSavingGoal} placeholder="0.00" targetCurrency={currency} />
           <Select label={t.setup.monthStartLabel} value={monthStartDay} options={DAY_OPTIONS} onValueChange={setMonthStartDay} />
         </View>
 

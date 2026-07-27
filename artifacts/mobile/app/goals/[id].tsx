@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { getGoalProgress } from '@/utils/calculations';
 import { formatCurrency, formatShortDate, toAsciiDigits } from '@/utils/format';
 import { validateAmount, validateDate } from '@/utils/validation';
@@ -157,12 +158,11 @@ export default function GoalDetailScreen() {
 
       <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.goals.addContribution}</Text>
       <Card padding={14} style={{ marginBottom: 16 }}>
-        <Input
+        <CurrencyAmountInput
           label={t.goals.contributionAmount}
           value={amount}
           onChangeText={(v) => { setAmount(v); setErrAmt(undefined); }}
           placeholder="0.00"
-          keyboardType="decimal-pad"
           error={errAmt}
         />
         <DatePickerField

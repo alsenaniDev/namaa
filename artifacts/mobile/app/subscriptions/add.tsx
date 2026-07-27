@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { BILLING_CYCLES, GOAL_COLOR_PALETTE, BillingCycle } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateAmount, validateDate, validateNotes } from '@/utils/validation';
 import { toAsciiDigits } from '@/utils/format';
@@ -112,14 +113,12 @@ export default function AddSubscriptionScreen() {
         onChangeText={(v) => { setName(v); clearError('name'); }}
         error={errors.name}
         maxLength={FIELD_LIMITS.title}
-        autoFocus
       />
-      <Input
+      <CurrencyAmountInput
         label={t.subscriptions.fieldAmount}
         value={amount}
         onChangeText={(v) => { setAmount(v); clearError('amount'); }}
         placeholder="0.00"
-        keyboardType="decimal-pad"
         error={errors.amount}
       />
       <Select

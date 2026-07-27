@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { DatePickerField } from '@/components/ui/DatePickerField';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { INCOME_TYPES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
 
@@ -95,8 +96,8 @@ export default function AddIncomeScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleIncomePlaceholder} error={errors.title} maxLength={FIELD_LIMITS.title} autoFocus />
-      <Input label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" keyboardType="decimal-pad" error={errors.amount} maxLength={16} />
+      <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleIncomePlaceholder} error={errors.title} maxLength={FIELD_LIMITS.title} />
+      <CurrencyAmountInput label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" error={errors.amount} maxLength={16} />
       <Select label={t.forms.typeLabel} value={type} options={allTypes.map((t) => ({ label: t, value: t }))} onValueChange={(v) => setType(v as typeof type)} />
 
       <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>

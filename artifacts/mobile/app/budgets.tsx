@@ -8,10 +8,10 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { BudgetRow } from '@/components/BudgetRow';
 import { EXPENSE_CATEGORIES } from '@/types';
 import { getBudgetUsages } from '@/utils/calculations';
@@ -123,12 +123,11 @@ export default function BudgetsScreen() {
         )}
         {(editingCategory || available.length > 0) ? (
           <>
-            <Input
+            <CurrencyAmountInput
               label={t.budgets.monthlyLimit}
               value={limit}
               onChangeText={(v) => { setLimit(v); setErrLimit(undefined); }}
               placeholder="0.00"
-              keyboardType="decimal-pad"
               error={errLimit}
             />
             <View style={[styles.btnRow, { flexDirection: dir.row }]}>

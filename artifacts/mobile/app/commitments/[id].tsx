@@ -111,8 +111,7 @@ export default function CommitmentDetailScreen() {
   // list instead of trying to render against undefined data.
   useEffect(() => {
     if (!commitment) {
-      if (router.canGoBack()) router.back();
-      else router.replace('/(tabs)/commitments');
+      router.replace('/commitments');
     }
   }, [commitment, router]);
 

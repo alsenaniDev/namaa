@@ -265,11 +265,10 @@ export default function AddCommitmentScreen() {
         text: t.common.delete, style: 'destructive', onPress: async () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
           await deleteCommitment(params.id!);
-          // router.back() would land on the now-stale commitment detail screen
-          // (the one that opened this edit modal). Replace straight to the list
-          // so the deleted commitment's detail page never gets to re-render
-          // against an undefined record.
-          router.replace('/(tabs)/commitments');
+          // Dismiss the edit modal and any stale detail screen until the
+          // commitments tab is reached. If it is not in the stack, Expo Router
+          // replaces the current screen with the list.
+          router.dismissTo('/commitments');
         }
       },
     ]);

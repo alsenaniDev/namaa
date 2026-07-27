@@ -21,11 +21,14 @@
         "CFBundleDisplayName": "نماء",
         "CFBundleLocalizations": [
           "ar",
+          "en",
+          "ar",
           "en"
         ],
         "CFBundleDevelopmentRegion": "ar",
         "ExpoLocalization_supportsRTL": true,
-        "ExpoLocalization_forcesRTL": false
+        "ExpoLocalization_forcesRTL": false,
+        "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.alsenanidev.mobile"
     },

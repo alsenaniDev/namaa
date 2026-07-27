@@ -59,7 +59,7 @@ export default function SetupScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: topPad, paddingBottom: bottomPad }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* <View style={styles.logoWrap}>
-          <Image source={require('../assets/images/icon.jpeg')} style={styles.logo} resizeMode="contain" />
+          <Image source={require('../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
         </View> */}
         <Text style={[styles.title, { color: colors.foreground }]}>{t.setup.title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{t.setup.subtitle}</Text>

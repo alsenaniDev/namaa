@@ -12,7 +12,7 @@ import { calculateMonthlyTotals } from '../utils/calculations';
 import { evaluateAchievementUnlocks } from '../utils/achievements';
 import { getAllChallengeProgress } from '../utils/financialChallenges';
 import { normalizeLenderImageUris } from '../utils/lenderImages';
-// import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
+import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
 
 interface AppContextType {
   userProfile: UserProfile | null;
@@ -148,18 +148,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
     loadAll();
     // Configure foreground handler + Android channel once at startup.
-    // initNotifications();
+    initNotifications();
   }, []);
 
   // Reschedule local reminders whenever the inputs that drive them change.
   // Stateless sync — cancel all + reschedule from current data.
   useEffect(() => {
     if (isLoading) return;
-    // syncReminders({
-    //   enabled: !!userProfile?.notificationsEnabled,
-    //   commitments,
-    //   subscriptions,
-    // });
+    syncReminders({
+      enabled: !!userProfile?.notificationsEnabled,
+      commitments,
+      subscriptions,
+    });
   }, [isLoading, userProfile?.notificationsEnabled, commitments, subscriptions]);
 
   useEffect(() => {
@@ -561,7 +561,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   }, [customTypes]);
 
   const clearAllData = useCallback(async () => {
-    // await cancelAllScheduled();
+    await cancelAllScheduled();
     suppressAchievementsUntilRef.current = Date.now() + 2000;
     achievementPopupsReadyRef.current = false;
     setRecentAchievement(null);

@@ -59,6 +59,14 @@
       ],
       "expo-font",
       "expo-web-browser",
+      [
+        "expo-notifications",
+        {
+          "mode": "production",
+          "color": "#10B981",
+          "defaultChannel": "reminders"
+        }
+      ],
       "expo-updates"
     ],
     "experiments": {

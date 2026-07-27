@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Image, View, Text, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -57,9 +57,9 @@ export default function SetupScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={[styles.container, { paddingTop: topPad, paddingBottom: bottomPad }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-        <View style={[styles.iconWrap, { backgroundColor: colors.primary + '15', borderRadius: 40 }]}>
-          <Feather name="dollar-sign" size={40} color={colors.primary} />
-        </View>
+        {/* <View style={styles.logoWrap}>
+          <Image source={require('../assets/images/icon.jpeg')} style={styles.logo} resizeMode="contain" />
+        </View> */}
         <Text style={[styles.title, { color: colors.foreground }]}>{t.setup.title}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>{t.setup.subtitle}</Text>
 
@@ -87,7 +87,8 @@ export default function SetupScreen() {
 
 const styles = StyleSheet.create({
   container: { paddingHorizontal: 20 },
-  iconWrap: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 16, marginTop: 16 },
+  logoWrap: { width: 118, height: 82, alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 14, marginTop: 10 },
+  logo: { width: 118, height: 82 },
   title: { fontSize: 26, fontFamily: 'Cairo_700Bold', textAlign: 'center', marginBottom: 6 },
   subtitle: { fontSize: 14, fontFamily: 'Cairo_400Regular', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   form: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 16 },

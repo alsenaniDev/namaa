@@ -3,7 +3,6 @@ import { ScrollView, View, Text, StyleSheet, Alert, Platform, TouchableOpacity, 
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { File, Directory, Paths } from 'expo-file-system';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
@@ -15,6 +14,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { LENDER_TYPES, PAYMENT_METHODS, LENDER_COLOR_PALETTE, LenderType, PaymentMethodKind } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateNotes } from '@/utils/validation';
+import { imageUriToPersistentDataUri } from '@/utils/lenderImages';
 
 interface FormErrors {
   name?: string;
@@ -121,27 +121,7 @@ export default function AddLenderScreen() {
     if (result.canceled || !result.assets[0]?.uri) return;
     const pickedUri = result.assets[0].uri;
     Haptics.selectionAsync();
-    // On native, the picker returns a cache URI that the OS may evict. Copy
-    // the file into the app's document directory so it survives restarts and
-    // low-storage cleanups. On web, the URI is a blob: and we keep it as-is
-    // (web persistence isn't expected for this offline app).
-    if (Platform.OS === 'web') {
-      setImageUri(pickedUri);
-      return;
-    }
-    try {
-      const dir = new Directory(Paths.document, 'lenders');
-      if (!dir.exists) dir.create({ intermediates: true, idempotent: true });
-      const ext = (pickedUri.split('.').pop() || 'jpg').split('?')[0].slice(0, 5);
-      const filename = `lender_${Date.now()}.${ext}`;
-      const src = new File(pickedUri);
-      const dest = new File(dir, filename);
-      src.copy(dest);
-      setImageUri(dest.uri);
-    } catch (e) {
-      // Fall back to the raw picker URI if copy fails for any reason.
-      setImageUri(pickedUri);
-    }
+    setImageUri(await imageUriToPersistentDataUri(pickedUri));
   };
 
   const removeImage = () => {

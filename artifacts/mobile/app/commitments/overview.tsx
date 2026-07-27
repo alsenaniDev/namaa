@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   progressHint: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   track: { height: 10, borderRadius: 5, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 5 },
-  grid: { flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  grid: { flexWrap: 'wrap', gap: 14, marginBottom: 12 },
   metric: { width: '48%', borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 76 },
   metricValue: { fontSize: 15, fontFamily: 'Cairo_700Bold', marginBottom: 4 },
   metricLabel: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },

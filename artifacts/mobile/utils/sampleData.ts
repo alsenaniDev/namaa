@@ -4,6 +4,10 @@ import {
 } from '../types';
 import { generateId } from './format';
 
+function markSample<T extends object>(items: T[]): (T & { isSample: true })[] {
+  return items.map((item) => ({ ...item, isSample: true as const }));
+}
+
 export function generateSampleData(): {
   incomes: Income[];
   commitments: Commitment[];
@@ -308,5 +312,15 @@ export function generateSampleData(): {
     },
   ];
 
-  return { incomes, commitments, commitmentPayments, expenses, lenders, goals, goalContributions, budgets, subscriptions };
+  return {
+    incomes: markSample(incomes),
+    commitments: markSample(commitments),
+    commitmentPayments: markSample(commitmentPayments),
+    expenses: markSample(expenses),
+    lenders: markSample(lenders),
+    goals: markSample(goals),
+    goalContributions: markSample(goalContributions),
+    budgets: markSample(budgets),
+    subscriptions: markSample(subscriptions),
+  };
 }

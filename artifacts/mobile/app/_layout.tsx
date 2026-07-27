@@ -8,12 +8,13 @@ import {
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-import { I18nManager, Platform, View, ActivityIndicator, Image, Text, StyleSheet } from 'react-native';
+import { I18nManager, Platform, View, ActivityIndicator } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { AchievementPopup } from '@/components/AchievementPopup';
 import { HeaderBack } from '@/components/HeaderBack';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
@@ -56,21 +57,8 @@ function LoadingView() {
   );
 }
 
-function BrandSplash() {
-  return (
-    <View style={styles.brandSplash}>
-      <Image
-        source={require('../assets/images/icon.jpeg')}
-        style={styles.brandLogo}
-        resizeMode="contain"
-      />
-      <Text style={styles.brandTagline}>لأن كل ريال يستحق أن ينمو</Text>
-    </View>
-  );
-}
-
 function AppLayout() {
-  const { userProfile, isLoading } = useApp();
+  const { userProfile, isLoading, recentAchievement, dismissRecentAchievement } = useApp();
   const router = useRouter();
   const segments = useSegments();
   const colors = useColors();
@@ -89,48 +77,54 @@ function AppLayout() {
   if (isLoading) return <LoadingView />;
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: colors.background },
-        headerTitleStyle: { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 18 },
-        headerTitleAlign: 'center',
-        headerShadowVisible: false,
-        headerTintColor: colors.primary,
-        headerBackTitle: t.nav.back,
-        // App is manually RTL with native I18nManager pinned LTR, so the
-        // default back button lands on the visual LEFT — wrong side for
-        // Arabic. We hide it and render our own larger chevron on the
-        // visual right via headerRight (see HeaderBack).
-        headerBackVisible: true,
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="setup" options={{ headerShown: false }} />
-      <Stack.Screen name="reports" options={{ title: t.screen.reports }} />
-      <Stack.Screen name="payoff-plan" options={{ title: t.screen.payoffPlan }} />
-      <Stack.Screen name="what-if" options={{ title: t.screen.whatIf }} />
-      <Stack.Screen name="calendar" options={{ title: t.screen.calendar }} />
-      <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
-      <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />
-      <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: t.screen.addEditCommitment }} />
-      <Stack.Screen name="commitments/overview" options={{ title: t.screen.commitmentsOverview }} />
-      <Stack.Screen name="commitments/[id]" options={{ title: t.screen.commitmentDetail }} />
-      <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: t.screen.addEditExpense }} />
-      <Stack.Screen name="lenders/index" options={{ title: t.screen.lenders }} />
-      <Stack.Screen name="lenders/add" options={{ presentation: 'modal', title: t.screen.addEditLender }} />
-      <Stack.Screen name="lenders/[id]" options={{ title: t.screen.lenderDetail }} />
-      <Stack.Screen name="goals/index" options={{ title: t.screen.goals }} />
-      <Stack.Screen name="goals/add" options={{ presentation: 'modal', title: t.screen.addEditGoal }} />
-      <Stack.Screen name="goals/[id]" options={{ title: t.screen.goalDetail }} />
-      <Stack.Screen name="budgets" options={{ title: t.screen.budgets }} />
-      <Stack.Screen name="subscriptions/index" options={{ title: t.screen.subscriptions }} />
-      <Stack.Screen name="subscriptions/add" options={{ presentation: 'modal', title: t.screen.addEditSubscription }} />
-    </Stack>
+    <>
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.foreground, fontFamily: 'Cairo_600SemiBold', fontSize: 18 },
+          headerTitleAlign: 'center',
+          headerShadowVisible: false,
+          headerTintColor: colors.primary,
+          headerBackTitle: t.nav.back,
+          // App is manually RTL with native I18nManager pinned LTR, so the
+          // default back button lands on the visual LEFT — wrong side for
+          // Arabic. We hide it and render our own larger chevron on the
+          // visual right via headerRight (see HeaderBack).
+          headerBackVisible: true,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="setup" options={{ headerShown: false }} />
+        <Stack.Screen name="reports" options={{ title: t.screen.reports }} />
+        <Stack.Screen name="payoff-plan" options={{ title: t.screen.payoffPlan }} />
+        <Stack.Screen name="what-if" options={{ title: t.screen.whatIf }} />
+        <Stack.Screen name="financial-challenges" options={{ title: t.screen.financialChallenges }} />
+        <Stack.Screen name="achievements" options={{ title: t.screen.achievements }} />
+        <Stack.Screen name="calendar" options={{ title: t.screen.calendar }} />
+        <Stack.Screen name="settings" options={{ title: t.screen.settings }} />
+        <Stack.Screen name="income/add" options={{ presentation: 'modal', title: t.screen.addEditIncome }} />
+        <Stack.Screen name="commitments/add" options={{ presentation: 'modal', title: t.screen.addEditCommitment }} />
+        <Stack.Screen name="commitments/overview" options={{ title: t.screen.commitmentsOverview }} />
+        <Stack.Screen name="commitments/archive" options={{ title: t.screen.commitmentsArchive }} />
+        <Stack.Screen name="commitments/[id]" options={{ title: t.screen.commitmentDetail }} />
+        <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: t.screen.addEditExpense }} />
+        <Stack.Screen name="lenders/index" options={{ title: t.screen.lenders }} />
+        <Stack.Screen name="lenders/add" options={{ presentation: 'modal', title: t.screen.addEditLender }} />
+        <Stack.Screen name="lenders/[id]" options={{ title: t.screen.lenderDetail }} />
+        <Stack.Screen name="goals/index" options={{ title: t.screen.goals }} />
+        <Stack.Screen name="goals/add" options={{ presentation: 'modal', title: t.screen.addEditGoal }} />
+        <Stack.Screen name="goals/[id]" options={{ title: t.screen.goalDetail }} />
+        <Stack.Screen name="budgets" options={{ title: t.screen.budgets }} />
+        <Stack.Screen name="subscriptions/index" options={{ title: t.screen.subscriptions }} />
+        <Stack.Screen name="subscriptions/add" options={{ presentation: 'modal', title: t.screen.addEditSubscription }} />
+      </Stack>
+      <AchievementPopup achievement={recentAchievement} onDismiss={dismissRecentAchievement} />
+    </>
   );
 }
 
 export default function RootLayout() {
-  const [showBrandSplash, setShowBrandSplash] = useState(true);
+  const [appReady, setAppReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     Cairo_400Regular,
     Cairo_500Medium,
@@ -140,16 +134,19 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
       const timer = setTimeout(() => {
-        setShowBrandSplash(false);
+        setAppReady(true);
       }, BRAND_SPLASH_VISIBLE_MS);
       return () => clearTimeout(timer);
     }
   }, [fontsLoaded, fontError]);
 
+  useEffect(() => {
+    if (appReady) SplashScreen.hideAsync();
+  }, [appReady]);
+
   if (!fontsLoaded && !fontError) return null;
-  if (showBrandSplash) return <BrandSplash />;
+  if (!appReady) return null;
 
   return (
     <SafeAreaProvider>
@@ -168,25 +165,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  brandSplash: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 32,
-  },
-  brandLogo: {
-    width: 280,
-    height: 280,
-    marginBottom: 18,
-  },
-  brandTagline: {
-    color: '#065F46',
-    fontSize: 19,
-    fontFamily: 'Cairo_600SemiBold',
-    textAlign: 'center',
-    lineHeight: 30,
-  },
-});

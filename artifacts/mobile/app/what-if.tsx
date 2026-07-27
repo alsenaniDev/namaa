@@ -6,11 +6,13 @@ import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
-import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
+import { formatCurrency, getCurrentMonthYear, toAsciiDigits } from '@/utils/format';
 import {
   getSubscriptionMonthlyEquivalent,
+  getCommitmentMonthlyShare,
   isCommitmentInMonthlyBudget,
   getWhatIfSimulation,
+  getCustomWhatIfSimulation,
   WhatIfScenarioKind,
   WhatIfSimulationResult,
 } from '@/utils/calculations';
@@ -24,6 +26,7 @@ const SCENARIOS: { kind: WhatIfScenarioKind; icon: string; defaultAmount: string
   { kind: 'newInstallment', icon: 'shopping-cart', defaultAmount: '850' },
   { kind: 'incomeDecrease', icon: 'trending-down', defaultAmount: '1000' },
   { kind: 'payoffCommitment', icon: 'check-circle', defaultAmount: '850' },
+  { kind: 'customPlan', icon: 'layers', defaultAmount: '0' },
 ];
 
 export default function WhatIfScreen() {
@@ -38,6 +41,11 @@ export default function WhatIfScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
   const [scenario, setScenario] = useState<WhatIfScenarioKind>('newInstallment');
   const [amount, setAmount] = useState('850');
+  const [customIncomeIncrease, setCustomIncomeIncrease] = useState('');
+  const [customIncomeDecrease, setCustomIncomeDecrease] = useState('');
+  const [customNewInstallment, setCustomNewInstallment] = useState('');
+  const [customNewInstallmentShareCount, setCustomNewInstallmentShareCount] = useState('1');
+  const [customExtraDebtPayment, setCustomExtraDebtPayment] = useState('');
   const [selectedCommitmentIds, setSelectedCommitmentIds] = useState<string[]>([]);
   const [selectedSubscriptionIds, setSelectedSubscriptionIds] = useState<string[]>([]);
   const activeCommitments = useMemo(
@@ -53,7 +61,7 @@ export default function WhatIfScreen() {
   const selectedCommitmentAmount = useMemo(
     () => activeCommitments
       .filter((commitment) => selectedCommitmentIds.includes(commitment.id))
-      .reduce((sum, commitment) => sum + commitment.amount, 0),
+      .reduce((sum, commitment) => sum + getCommitmentMonthlyShare(commitment), 0),
     [activeCommitments, selectedCommitmentIds],
   );
   const selectedSubscriptionAmount = useMemo(
@@ -66,16 +74,49 @@ export default function WhatIfScreen() {
     scenario === 'payoffCommitment' ? selectedCommitmentAmount :
       scenario === 'cancelSubscription' ? selectedSubscriptionAmount :
         Number(amount) || 0;
+  const customNewInstallmentAmount = parseMoney(customNewInstallment);
+  const customShareCount = Math.max(1, parseInt(toAsciiDigits(customNewInstallmentShareCount), 10) || 1);
+  const selectedMonthlyImpactAmount = scenario === 'customPlan'
+    ? selectedCommitmentAmount + selectedSubscriptionAmount + (customNewInstallmentAmount / customShareCount) + parseMoney(customExtraDebtPayment)
+    : numericAmount;
 
   const result = useMemo(
-    () => getWhatIfSimulation(
+    () => scenario === 'customPlan'
+      ? getCustomWhatIfSimulation(
+        totals,
+        {
+          incomeIncrease: parseMoney(customIncomeIncrease),
+          incomeDecrease: parseMoney(customIncomeDecrease),
+          newInstallment: customNewInstallmentAmount,
+          newInstallmentShareCount: customShareCount,
+          paidOffCommitments: selectedCommitmentAmount,
+          canceledSubscriptions: selectedSubscriptionAmount,
+          extraDebtPayment: parseMoney(customExtraDebtPayment),
+        },
+        userProfile?.monthlySavingGoal ?? 0,
+        userProfile?.financialMonthStartDay ?? 1,
+      )
+      : getWhatIfSimulation(
+        totals,
+        scenario,
+        numericAmount,
+        userProfile?.monthlySavingGoal ?? 0,
+        userProfile?.financialMonthStartDay ?? 1,
+      ),
+    [
       totals,
       scenario,
       numericAmount,
-      userProfile?.monthlySavingGoal ?? 0,
-      userProfile?.financialMonthStartDay ?? 1,
-    ),
-    [totals, scenario, numericAmount, userProfile?.monthlySavingGoal, userProfile?.financialMonthStartDay],
+      userProfile?.monthlySavingGoal,
+      userProfile?.financialMonthStartDay,
+      customIncomeIncrease,
+      customIncomeDecrease,
+      customNewInstallmentAmount,
+      customShareCount,
+      selectedCommitmentAmount,
+      selectedSubscriptionAmount,
+      customExtraDebtPayment,
+    ],
   );
 
   const selected = scenarioText(scenario, t);
@@ -84,9 +125,11 @@ export default function WhatIfScreen() {
       ? t.whatIf.selectedCommitmentsImpact(selectedCommitmentIds.length)
       : scenario === 'cancelSubscription' && selectedSubscriptionIds.length > 0
         ? t.whatIf.selectedSubscriptionsImpact(selectedSubscriptionIds.length)
-        : selected.impactLabel;
-  const usesCommitmentSelection = scenario === 'payoffCommitment';
-  const usesSubscriptionSelection = scenario === 'cancelSubscription';
+        : scenario === 'customPlan'
+          ? t.whatIf.customImpactLabel
+          : selected.impactLabel;
+  const usesCommitmentSelection = scenario === 'payoffCommitment' || scenario === 'customPlan';
+  const usesSubscriptionSelection = scenario === 'cancelSubscription' || scenario === 'customPlan';
 
   return (
     <ScrollView
@@ -118,7 +161,7 @@ export default function WhatIfScreen() {
               activeOpacity={0.78}
               onPress={() => {
                 setScenario(item.kind);
-                if (item.kind !== 'payoffCommitment' && item.kind !== 'cancelSubscription') {
+                if (item.kind !== 'payoffCommitment' && item.kind !== 'cancelSubscription' && item.kind !== 'customPlan') {
                   setAmount(item.defaultAmount);
                 }
               }}
@@ -142,13 +185,59 @@ export default function WhatIfScreen() {
 
       <Card style={styles.inputCard}>
         <Text style={[styles.sectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{selected.question}</Text>
-        {usesCommitmentSelection ? (
+        {scenario === 'customPlan' ? (
+          <View style={styles.customFields}>
+            <View style={[styles.dualInputs, { flexDirection: dir.row }]}>
+              <View style={styles.dualInput}>
+                <Input label={t.whatIf.customIncomeIncreaseLabel} value={customIncomeIncrease} onChangeText={setCustomIncomeIncrease} keyboardType="decimal-pad" placeholder="0" />
+              </View>
+              <View style={styles.dualInput}>
+                <Input label={t.whatIf.customIncomeDecreaseLabel} value={customIncomeDecrease} onChangeText={setCustomIncomeDecrease} keyboardType="decimal-pad" placeholder="0" />
+              </View>
+            </View>
+            <Input label={t.whatIf.customNewLoanLabel} value={customNewInstallment} onChangeText={setCustomNewInstallment} keyboardType="decimal-pad" placeholder="0" />
+            <Input label={t.whatIf.customSplitCountLabel} value={customNewInstallmentShareCount} onChangeText={setCustomNewInstallmentShareCount} keyboardType="number-pad" placeholder="1" />
+            {customNewInstallmentAmount > 0 ? (
+              <View style={[styles.selectedTotal, { flexDirection: dir.row, backgroundColor: colors.commitment + '10', borderColor: colors.commitment + '30' }]}>
+                <Text style={[styles.selectedTotalLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.whatIf.customNewLoanShare}</Text>
+                <Text style={[styles.selectedTotalAmount, { color: colors.commitment }]}>{formatCurrency(customNewInstallmentAmount / customShareCount, currency)}</Text>
+              </View>
+            ) : null}
+            <Text style={[styles.subSectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.whatIf.customPayoffTitle}</Text>
+            <SelectableList
+              items={activeCommitments.map((commitment) => ({
+                id: commitment.id,
+                title: commitment.title,
+                subtitle: commitment.category,
+                amount: getCommitmentMonthlyShare(commitment),
+              }))}
+              selectedIds={selectedCommitmentIds}
+              onToggle={(id) => setSelectedCommitmentIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id])}
+              emptyText={t.whatIf.noCommitments}
+              currency={currency}
+            />
+            <Text style={[styles.subSectionTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.whatIf.customSubscriptionsTitle}</Text>
+            <SelectableList
+              items={activeSubscriptions.map((subscription) => ({
+                id: subscription.id,
+                title: subscription.name,
+                subtitle: t.whatIf.monthlyEquivalent,
+                amount: getSubscriptionMonthlyEquivalent(subscription),
+              }))}
+              selectedIds={selectedSubscriptionIds}
+              onToggle={(id) => setSelectedSubscriptionIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id])}
+              emptyText={t.whatIf.noSubscriptions}
+              currency={currency}
+            />
+            <Input label={t.whatIf.customExtraPayoffLabel} value={customExtraDebtPayment} onChangeText={setCustomExtraDebtPayment} keyboardType="decimal-pad" placeholder="0" />
+          </View>
+        ) : usesCommitmentSelection ? (
           <SelectableList
             items={activeCommitments.map((commitment) => ({
               id: commitment.id,
               title: commitment.title,
               subtitle: commitment.category,
-              amount: commitment.amount,
+              amount: getCommitmentMonthlyShare(commitment),
             }))}
             selectedIds={selectedCommitmentIds}
             onToggle={(id) => setSelectedCommitmentIds((ids) => ids.includes(id) ? ids.filter((item) => item !== id) : [...ids, id])}
@@ -181,7 +270,7 @@ export default function WhatIfScreen() {
         {(usesCommitmentSelection || usesSubscriptionSelection) ? (
           <View style={[styles.selectedTotal, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
             <Text style={[styles.selectedTotalLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.whatIf.selectedMonthlyImpact}</Text>
-            <Text style={[styles.selectedTotalAmount, { color: colors.primary }]}>{formatCurrency(numericAmount, currency)}</Text>
+            <Text style={[styles.selectedTotalAmount, { color: colors.primary }]}>{formatCurrency(selectedMonthlyImpactAmount, currency)}</Text>
           </View>
         ) : null}
       </Card>
@@ -194,7 +283,15 @@ export default function WhatIfScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.resultTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.whatIf.resultTitle}</Text>
             <Text style={[styles.resultSummary, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
-              {resultSummary(result, selectedImpactLabel, currency, t)}
+              {scenario === 'customPlan'
+                ? t.whatIf.customSummary(
+                  t.whatIf.percent(result.beforeCommitmentPercent),
+                  t.whatIf.percent(result.afterCommitmentPercent),
+                  formatCurrency(result.beforeDailyBudget, currency),
+                  formatCurrency(result.afterDailyBudget, currency),
+                  formatCurrency(result.afterAllocation.remainingSpendable, currency),
+                )
+                : resultSummary(result, selectedImpactLabel, currency, t)}
             </Text>
           </View>
         </View>
@@ -286,6 +383,12 @@ function scenarioText(kind: WhatIfScenarioKind, t: ReturnType<typeof useT>) {
   return t.whatIf.scenarios[kind];
 }
 
+function parseMoney(value: string): number {
+  const normalized = toAsciiDigits(value).replace(/[^\d.]/g, '');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function resultSummary(
   result: WhatIfSimulationResult,
   impactLabel: string,
@@ -350,6 +453,10 @@ const styles = StyleSheet.create({
   scenarioIcon: { width: 30, height: 30, borderRadius: 9, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   scenarioLabel: { flex: 1, fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
   inputCard: { marginBottom: 12 },
+  customFields: { gap: 2 },
+  dualInputs: { gap: 10 },
+  dualInput: { flex: 1, minWidth: 0 },
+  subSectionTitle: { fontSize: 13, fontFamily: 'Cairo_700Bold', marginTop: 8, marginBottom: 8 },
   inputHint: { fontSize: 12, fontFamily: 'Cairo_400Regular', lineHeight: 18 },
   selectionList: { gap: 8, marginBottom: 10 },
   selectionRow: { alignItems: 'center', gap: 9, borderWidth: 1, borderRadius: 12, padding: 10 },

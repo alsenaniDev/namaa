@@ -8,7 +8,7 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { formatCurrency } from '@/utils/format';
-import { getLenderStats, getCommitmentProgress } from '@/utils/calculations';
+import { getCommitmentMonthlyShare, getLenderStats, getCommitmentProgress } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { LenderAvatar } from '@/components/LenderAvatar';
 
@@ -192,7 +192,7 @@ export default function LenderDetailScreen() {
                   ) : null}
                 </View>
                 <View style={{ alignItems: dir.isRTL ? 'flex-start' : 'flex-end' }}>
-                  <Text style={[styles.linkedAmount, { color: colors.commitment }]}>{formatCurrency(c.amount, currency)}</Text>
+                  <Text style={[styles.linkedAmount, { color: colors.commitment }]}>{formatCurrency(getCommitmentMonthlyShare(c), currency)}</Text>
                   {prog.isFinite ? (
                     <Text style={[styles.linkedSub, { color: colors.mutedForeground }]}>
                       {t.commitments.installmentsPaid(prog.paidInstallmentCount, prog.installmentCount)}

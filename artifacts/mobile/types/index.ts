@@ -26,6 +26,7 @@ export interface Income {
   receivedDay: number;
   receivedDate?: string;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -85,6 +86,7 @@ export interface Lender {
   bankName?: string;
   beneficiaryName?: string;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,6 +126,10 @@ export interface Commitment {
   category: CommitmentCategory;
   /** Monthly installment amount — used by all existing aggregations. */
   amount: number;
+  /** Number of people sharing this commitment, including the user. */
+  sharedWithCount?: number;
+  /** The user's monthly share when the commitment is split. Falls back to amount/sharedWithCount. */
+  personalShareAmount?: number;
 
   // ─── Optional richer fields (added in v2). Older records may not have them. ──
   kind?: CommitmentKind;
@@ -139,6 +145,7 @@ export interface Commitment {
   isRecurring: boolean;
   isActive: boolean;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -154,6 +161,7 @@ export interface CommitmentPayment {
   paidDate?: string;
   status: PaymentStatus;
   notes?: string;
+  isSample?: boolean;
 }
 
 export type ExpenseCategory =
@@ -178,6 +186,7 @@ export interface Expense {
   category: ExpenseCategory;
   expenseDate: string;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -220,6 +229,7 @@ export interface SavingsGoal {
   icon: string;
   isCompleted: boolean;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -230,6 +240,7 @@ export interface GoalContribution {
   amount: number;
   date: string; // YYYY-MM-DD
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
 }
 
@@ -239,6 +250,7 @@ export interface CategoryBudget {
   id: string;
   category: ExpenseCategory | string;
   monthlyLimit: number;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -260,8 +272,47 @@ export interface Subscription {
   color: string;
   isActive: boolean;
   notes?: string;
+  isSample?: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+// ─── Challenges & Achievements ──────────────────────────────────────────────
+
+export type FinancialChallengeId =
+  | 'noRestaurants7'
+  | 'save1000Month'
+  | 'budget30'
+  | 'reduceLuxuries20'
+  | 'extraDebt500';
+
+export type FinancialChallengeStatus = 'not_started' | 'active' | 'completed';
+
+export interface FinancialChallenge {
+  id: FinancialChallengeId;
+  startedAt?: string;
+  completedAt?: string;
+  completionCount?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type AchievementId =
+  | 'firstIncome'
+  | 'firstExpense'
+  | 'firstCommitment'
+  | 'beginnerSaver'
+  | 'proSaver'
+  | 'firstCommitmentPaid'
+  | 'debtWarrior'
+  | 'consistentBudget30'
+  | 'budgetExpert90'
+  | 'firstChallenge'
+  | 'challengeHero';
+
+export interface UserAchievement {
+  id: AchievementId;
+  unlockedAt: string;
 }
 
 export const CURRENCIES = [

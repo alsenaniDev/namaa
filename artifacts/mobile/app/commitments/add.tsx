@@ -27,6 +27,7 @@ interface FormErrors {
   totalAmount?: string;
   installmentCount?: string;
   paidSoFar?: string;
+  sharedWithCount?: string;
 }
 
 const NO_LENDER = '__none__';
@@ -56,6 +57,8 @@ export default function AddCommitmentScreen() {
   const [kind, setKind] = useState<CommitmentKind>(existing?.kind ?? 'recurring_bill');
   const [lenderId, setLenderId] = useState<string>(existing?.lenderId ?? NO_LENDER);
   const [amount, setAmount] = useState(existing?.amount?.toString() ?? '');
+  const [isShared, setIsShared] = useState((existing?.sharedWithCount ?? 1) > 1);
+  const [sharedWithCount, setSharedWithCount] = useState(existing?.sharedWithCount?.toString() ?? '2');
   const [totalAmount, setTotalAmount] = useState(existing?.totalAmount?.toString() ?? '');
   const [installmentCount, setInstallmentCount] = useState(existing?.installmentCount?.toString() ?? '');
   // For new finite loans: the number of past installments to seed as paid.
@@ -87,6 +90,8 @@ export default function AddCommitmentScreen() {
   const tNum = parseFloat(toAsciiDigits(totalAmount));
   const cNum = parseInt(toAsciiDigits(installmentCount), 10);
   const hasA = Number.isFinite(aNum) && aNum > 0;
+  const sharedCountNum = Math.max(1, parseInt(toAsciiDigits(sharedWithCount), 10) || 1);
+  const personalShareAmount = isShared && hasA ? aNum / sharedCountNum : (hasA ? aNum : 0);
   const hasT = Number.isFinite(tNum) && tNum > 0;
   const hasC = Number.isFinite(cNum) && cNum > 0;
   const computedTotal = hasA && hasC ? aNum * cNum : null;
@@ -99,12 +104,12 @@ export default function AddCommitmentScreen() {
   const impactAssessment = useMemo(
     () => getCommitmentImpactAssessment(
       totals,
-      hasA && isActive ? aNum : 0,
-      existing?.isActive ? existing.amount : 0,
+      hasA && isActive ? personalShareAmount : 0,
+      existing?.isActive ? (existing.personalShareAmount ?? (existing.sharedWithCount && existing.sharedWithCount > 1 ? existing.amount / existing.sharedWithCount : existing.amount)) : 0,
       userProfile?.monthlySavingGoal ?? 0,
       userProfile?.financialMonthStartDay ?? 1,
     ),
-    [totals, hasA, isActive, aNum, existing?.isActive, existing?.amount, userProfile?.monthlySavingGoal, userProfile?.financialMonthStartDay],
+    [totals, hasA, isActive, personalShareAmount, existing, userProfile?.monthlySavingGoal, userProfile?.financialMonthStartDay],
   );
 
   const fixMonthly = () => {
@@ -149,6 +154,12 @@ export default function AddCommitmentScreen() {
       endDate: validateDate(endDate, t, false),
       notes: validateNotes(notes, t),
     };
+    if (isShared) {
+      const sc = toAsciiDigits(sharedWithCount).trim();
+      if (!sc || !/^\d+$/.test(sc) || parseInt(sc, 10) < 2) {
+        errs.sharedWithCount = t.commitments.sharedWithCountError;
+      }
+    }
     if (isFinite) {
       errs.totalAmount = validateAmount(totalAmount, t);
       const ic = toAsciiDigits(installmentCount).trim();
@@ -179,6 +190,8 @@ export default function AddCommitmentScreen() {
       kind,
       lenderId: lenderId === NO_LENDER ? undefined : lenderId,
       amount: parseFloat(toAsciiDigits(amount)),
+      sharedWithCount: isShared ? sharedCountNum : undefined,
+      personalShareAmount: isShared ? personalShareAmount : undefined,
       totalAmount: isFinite ? parseFloat(toAsciiDigits(totalAmount)) : undefined,
       installmentCount: isFinite ? parseInt(toAsciiDigits(installmentCount), 10) : undefined,
       dueDay: parseInt(toAsciiDigits(dueDay), 10) || 1,
@@ -193,15 +206,15 @@ export default function AddCommitmentScreen() {
       // In edit mode the paid-count field is the *target* total. Seed only
       // the delta (seedPastInstallments is idempotent — it skips months
       // that already have a payment record).
-      if (isFinite && hasP && data.amount > 0 && data.installmentCount && pNum < data.installmentCount && pNum > existingPaidCount) {
-        await seedPastInstallments(params.id, pNum - existingPaidCount, data.amount, data.dueDay);
+      if (isFinite && hasP && personalShareAmount > 0 && data.installmentCount && pNum < data.installmentCount && pNum > existingPaidCount) {
+        await seedPastInstallments(params.id, pNum - existingPaidCount, personalShareAmount, data.dueDay);
       }
     } else {
       const newId = await addCommitment(data);
       // Seed paid history for new finite loans that the user has already
       // partially paid before tracking them in the app.
-      if (isFinite && hasP && data.amount > 0 && data.installmentCount && pNum < data.installmentCount) {
-        await seedPastInstallments(newId, pNum, data.amount, data.dueDay);
+      if (isFinite && hasP && personalShareAmount > 0 && data.installmentCount && pNum < data.installmentCount) {
+        await seedPastInstallments(newId, pNum, personalShareAmount, data.dueDay);
       }
     }
     setLoading(false);
@@ -297,6 +310,46 @@ export default function AddCommitmentScreen() {
         error={errors.amount}
         maxLength={16}
       />
+
+      <View style={[styles.switchRow, { flexDirection: dir.row, borderColor: colors.border }]}>
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          <Text style={[styles.switchLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.commitments.sharedLabel}</Text>
+          <Text style={[styles.switchSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
+            {isShared ? t.commitments.sharedYes : t.commitments.sharedNo}
+          </Text>
+        </View>
+        <Switch
+          value={isShared}
+          onValueChange={(value) => {
+            setIsShared(value);
+            clearError('sharedWithCount');
+          }}
+          trackColor={{ false: colors.border, true: colors.primary }}
+          thumbColor="#fff"
+        />
+      </View>
+
+      {isShared ? (
+        <>
+          <Input
+            label={t.commitments.sharedWithCountLabel}
+            value={sharedWithCount}
+            onChangeText={(v) => { setSharedWithCount(v); clearError('sharedWithCount'); }}
+            placeholder="2"
+            keyboardType="number-pad"
+            error={errors.sharedWithCount}
+            maxLength={3}
+          />
+          {hasA ? (
+            <View style={[styles.shareSummary, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35' }]}>
+              <Feather name="users" size={15} color={colors.primary} />
+              <Text style={[styles.shareSummaryText, { textAlign: dir.textAlign, color: colors.primary }]}>
+                {t.commitments.personalShareSummary(formatCurrency(personalShareAmount, currency))}
+              </Text>
+            </View>
+          ) : null}
+        </>
+      ) : null}
 
       {isFinite ? (
         <>
@@ -557,6 +610,8 @@ const styles = StyleSheet.create({
   fieldHint: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16, marginTop: -8, marginBottom: 12 },
   paidSummary: { flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 8, borderWidth: 1, marginBottom: 14 },
   paidSummaryText: { fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  shareSummary: { alignItems: 'center', gap: 8, padding: 10, borderRadius: 10, borderWidth: 1, marginTop: -6, marginBottom: 14 },
+  shareSummaryText: { flex: 1, fontSize: 12, fontFamily: 'Cairo_700Bold' },
   impactCard: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 14 },
   impactHeader: { alignItems: 'center', gap: 10, marginBottom: 8 },
   impactIcon: { width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },

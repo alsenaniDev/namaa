@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -9,11 +9,18 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
-import { getCommitmentProgress } from '@/utils/calculations';
+import {
+  getCommitmentProgress,
+  getCommitmentMonthlyShare,
+  isCommitmentArchived,
+  isCommitmentInMonthlyBudget,
+  willArchiveCommitmentAfterPaid,
+} from '@/utils/calculations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import { Select } from '@/components/ui/Select';
 import { LenderAvatar } from '@/components/LenderAvatar';
+import { CommitmentArchiveCelebrationModal } from '@/components/CommitmentArchiveCelebrationModal';
+import { FilterSortSheet } from '@/components/FilterSortSheet';
 import type { Commitment } from '@/types';
 
 type CommitmentFilter = 'all' | 'paid' | 'unpaid' | 'late';
@@ -32,21 +39,43 @@ export default function CommitmentsScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
   const [statusFilter, setStatusFilter] = useState<CommitmentFilter>('all');
   const [sortBy, setSortBy] = useState<CommitmentSort>('dueDayAsc');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const archiveActionRef = useRef<(() => void) | null>(null);
+  const [archiveCongratsName, setArchiveCongratsName] = useState<string | null>(null);
 
   const getPayment = (commitmentId: string) =>
     commitmentPayments.find((p) => p.commitmentId === commitmentId && p.month === month && p.year === year);
 
   const getLender = (lenderId?: string) => (lenderId ? lenders.find((l) => l.id === lenderId) : undefined);
 
+  const openArchiveCongrats = (name: string, onConfirm: () => void) => {
+    archiveActionRef.current = onConfirm;
+    setArchiveCongratsName(name);
+  };
+
+  const closeArchiveCongrats = () => {
+    archiveActionRef.current = null;
+    setArchiveCongratsName(null);
+  };
+
+  const confirmArchiveCongrats = () => {
+    const action = archiveActionRef.current;
+    closeArchiveCongrats();
+    action?.();
+  };
+
   const handleTogglePaid = (item: Commitment) => {
     const payment = getPayment(item.id);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (payment?.status === 'paid') markCommitmentUnpaid(item.id, month, year);
-    else markCommitmentPaid(item.id, month, year, item.amount);
+    else if (willArchiveCommitmentAfterPaid(item, commitmentPayments, month, year, getCommitmentMonthlyShare(item))) {
+      openArchiveCongrats(item.title, () => markCommitmentPaid(item.id, month, year, getCommitmentMonthlyShare(item)));
+    } else markCommitmentPaid(item.id, month, year, getCommitmentMonthlyShare(item));
   };
 
   const today = new Date().getDate();
-  const activeCommitments = commitments.filter((c) => c.isActive);
+  const activeCommitments = commitments.filter((c) => isCommitmentInMonthlyBudget(c, commitmentPayments));
+  const archivedCount = commitments.filter((c) => isCommitmentArchived(c, commitmentPayments)).length;
   const paidCount = activeCommitments.filter((c) => getPayment(c.id)?.status === 'paid').length;
   const lateCount = activeCommitments.filter((c) => !getPayment(c.id) && c.dueDay < today).length;
   const statusOptions = [
@@ -61,6 +90,9 @@ export default function CommitmentsScreen() {
     { value: 'amountDesc', label: t.common.sortAmountDesc },
     { value: 'titleAsc', label: t.common.sortTitleAsc },
   ];
+  const hasCustomControls = statusFilter !== 'all' || sortBy !== 'dueDayAsc';
+  const currentFilterLabel = statusOptions.find((option) => option.value === statusFilter)?.label ?? t.commitments.filterAll;
+  const currentSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? t.commitments.sortDueDayAsc;
   const visibleCommitments = useMemo(
     () => {
       const filtered = activeCommitments.filter((item) => {
@@ -113,28 +145,61 @@ export default function CommitmentsScreen() {
           </View>
           <Text style={[styles.statTotal, { color: colors.mutedForeground }]}>{visibleCommitments.length} {t.commitments.countSuffix}</Text>
         </View>
+        <TouchableOpacity
+          onPress={() => router.push('/commitments/archive' as any)}
+          activeOpacity={0.78}
+          style={[styles.archiveLink, { flexDirection: dir.row, backgroundColor: colors.muted, borderColor: colors.border }]}
+        >
+          <Feather name="archive" size={15} color={colors.primary} />
+          <Text style={[styles.archiveLinkText, { color: colors.foreground, textAlign: dir.textAlign }]}>
+            {t.commitments.archiveLink(archivedCount)}
+          </Text>
+          <Feather name={dir.chevronDetail as any} size={14} color={colors.mutedForeground} />
+        </TouchableOpacity>
       </Card>
 
-      <Card style={styles.controlsCard} padding={12}>
-        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-          <View style={styles.controlCell}>
-            <Select
-              label={t.common.filter}
-              value={statusFilter}
-              options={statusOptions}
-              onValueChange={(value) => setStatusFilter(value as CommitmentFilter)}
-            />
-          </View>
-          <View style={styles.controlCell}>
-            <Select
-              label={t.common.sort}
-              value={sortBy}
-              options={sortOptions}
-              onValueChange={(value) => setSortBy(value as CommitmentSort)}
-            />
-          </View>
+      <View style={[styles.compactControls, { flexDirection: dir.row }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setFilterSheetOpen(true);
+          }}
+          style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Feather name="sliders" size={18} color={colors.primary} />
+          {hasCustomControls ? <View style={[styles.filterDot, { backgroundColor: colors.warning }]} /> : null}
+        </TouchableOpacity>
+        <View style={styles.compactControlsText}>
+          <Text style={[styles.compactControlsTitle, { color: colors.foreground, textAlign: dir.textAlign }]}>
+            {t.common.filterAndSort}
+          </Text>
+          <Text style={[styles.compactControlsSub, { color: colors.mutedForeground, textAlign: dir.textAlign }]} numberOfLines={1}>
+            {currentFilterLabel} · {currentSortLabel}
+          </Text>
         </View>
-      </Card>
+      </View>
+
+      <FilterSortSheet
+        visible={filterSheetOpen}
+        title={t.common.filterAndSort}
+        filterLabel={t.common.filter}
+        sortLabel={t.common.sort}
+        filterValue={statusFilter}
+        sortValue={sortBy}
+        defaultFilterValue="all"
+        defaultSortValue="dueDayAsc"
+        filterOptions={statusOptions}
+        sortOptions={sortOptions}
+        applyLabel={t.common.apply}
+        resetLabel={t.common.reset}
+        onApply={(nextFilter, nextSort) => {
+          setStatusFilter(nextFilter as CommitmentFilter);
+          setSortBy(nextSort as CommitmentSort);
+        }}
+        onClose={() => setFilterSheetOpen(false)}
+      />
 
       <FlatList
         data={visibleCommitments}
@@ -185,7 +250,7 @@ export default function CommitmentsScreen() {
                   </View>
                 </View>
                 <View style={[styles.cardRight, { flexDirection: dir.row }]}>
-                  <Text style={[styles.cardAmount, { textAlign: dir.textAlign, color: colors.commitment }]} numberOfLines={1}>{formatCurrency(item.amount, currency)}</Text>
+                  <Text style={[styles.cardAmount, { textAlign: dir.textAlign, color: colors.commitment }]} numberOfLines={1}>{formatCurrency(getCommitmentMonthlyShare(item), currency)}</Text>
                   <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
                 </View>
               </View>
@@ -224,6 +289,16 @@ export default function CommitmentsScreen() {
       >
         <Feather name="plus" size={26} color="#fff" />
       </TouchableOpacity>
+      <CommitmentArchiveCelebrationModal
+        visible={!!archiveCongratsName}
+        kicker={t.commitments.archiveCongratsKicker}
+        title={t.commitments.archiveCongratsTitle}
+        message={archiveCongratsName ? t.commitments.archiveCongratsMsg(archiveCongratsName) : ''}
+        confirmLabel={t.commitments.archiveCongratsAction}
+        cancelLabel={t.common.cancel}
+        onConfirm={confirmArchiveCongrats}
+        onCancel={closeArchiveCongrats}
+      />
     </View>
   );
 }
@@ -239,9 +314,14 @@ const styles = StyleSheet.create({
   statBadge: { alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
-  controlsCard: { marginHorizontal: 16, marginBottom: 8 },
-  controlsRow: { gap: 10 },
-  controlCell: { flex: 1 },
+  archiveLink: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, marginTop: 12 },
+  archiveLinkText: { flex: 1, fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
+  compactControls: { alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 8 },
+  filterButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  filterDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4 },
+  compactControlsText: { flex: 1 },
+  compactControlsTitle: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
+  compactControlsSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 1 },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   cardWrapper: { borderWidth: 1, marginBottom: 8, overflow: 'hidden' },

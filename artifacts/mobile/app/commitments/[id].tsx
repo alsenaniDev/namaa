@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity, Platform,
   Modal, TextInput, KeyboardAvoidingView,
@@ -12,10 +12,16 @@ import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
 import { useT } from '@/hooks/useT';
 import { formatCurrency, formatDate, getCurrentMonthYear, toAsciiDigits } from '@/utils/format';
-import { getCommitmentProgress } from '@/utils/calculations';
+import {
+  getCommitmentProgress,
+  getCommitmentMonthlyShare,
+  willArchiveCommitmentAfterPaid,
+  willArchiveCommitmentAfterPaidPeriods,
+} from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { LenderAvatar } from '@/components/LenderAvatar';
+import { CommitmentArchiveCelebrationModal } from '@/components/CommitmentArchiveCelebrationModal';
 import type { CommitmentPayment } from '@/types';
 
 type ScheduleRow = {
@@ -46,6 +52,8 @@ export default function CommitmentDetailScreen() {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
   const [bulkMode, setBulkMode] = useState(false);
+  const archiveActionRef = useRef<(() => Promise<void> | void) | null>(null);
+  const [archiveCongratsName, setArchiveCongratsName] = useState<string | null>(null);
   const periodKey = (m: number, y: number) => `${y}-${m}`;
 
   // Payments for this commitment, sorted oldest → newest by (year, month).
@@ -118,12 +126,54 @@ export default function CommitmentDetailScreen() {
 
   const lender = commitment.lenderId ? lenders.find((l) => l.id === commitment.lenderId) : undefined;
   const accent = lender?.color ?? colors.commitment;
+  const monthlyShare = getCommitmentMonthlyShare(commitment);
   const progress = getCommitmentProgress(commitment, commitmentPayments);
 
   const thisMonthPayment = commitmentPayments.find(
     (p) => p.commitmentId === commitment.id && p.month === curMonth && p.year === curYear,
   );
   const isPaidThisMonth = thisMonthPayment?.status === 'paid';
+
+  const openArchiveCongrats = (name: string, onConfirm: () => Promise<void> | void) => {
+    archiveActionRef.current = onConfirm;
+    setArchiveCongratsName(name);
+  };
+
+  const closeArchiveCongrats = () => {
+    archiveActionRef.current = null;
+    setArchiveCongratsName(null);
+  };
+
+  const confirmArchiveCongrats = () => {
+    const action = archiveActionRef.current;
+    closeArchiveCongrats();
+    action?.();
+  };
+
+  const confirmArchiveThenPay = (
+    month: number,
+    year: number,
+    amount: number,
+    onPay: () => Promise<void> | void,
+  ) => {
+    if (!willArchiveCommitmentAfterPaid(commitment, commitmentPayments, month, year, amount)) {
+      onPay();
+      return;
+    }
+    openArchiveCongrats(commitment.title, onPay);
+  };
+
+  const confirmArchiveThenPayPeriods = (
+    periods: { month: number; year: number }[],
+    amount: number,
+    onPay: () => Promise<void> | void,
+  ) => {
+    if (!willArchiveCommitmentAfterPaidPeriods(commitment, commitmentPayments, periods, amount)) {
+      onPay();
+      return;
+    }
+    openArchiveCongrats(commitment.title, onPay);
+  };
 
   // History for non-finite (recurring bills): show all recorded payments newest first.
   const history = useMemo(
@@ -134,14 +184,19 @@ export default function CommitmentDetailScreen() {
   const togglePaidThisMonth = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (isPaidThisMonth) markCommitmentUnpaid(commitment.id, curMonth, curYear);
-    else markCommitmentPaid(commitment.id, curMonth, curYear, commitment.amount);
+    else confirmArchiveThenPay(
+      curMonth,
+      curYear,
+      monthlyShare,
+      () => markCommitmentPaid(commitment.id, curMonth, curYear, monthlyShare),
+    );
   };
 
   const openEditor = (row: ScheduleRow) => {
     Haptics.selectionAsync();
     setBulkMode(false);
     setEditing(row);
-    setEditAmount((row.payment?.amount ?? commitment.amount).toString());
+    setEditAmount((row.payment?.amount ?? monthlyShare).toString());
   };
 
   const closeEditor = () => {
@@ -165,7 +220,7 @@ export default function CommitmentDetailScreen() {
     // amount when the field is empty or non-numeric. Negative values clamp to 0.
     const amt = Number.isFinite(raw)
       ? Math.max(0, raw)
-      : (editAmount.trim() === '' ? commitment.amount : 0);
+      : (editAmount.trim() === '' ? monthlyShare : 0);
     if (bulkMode) {
       const periods = Array.from(selectedKeys).map((k) => {
         const [y, m] = k.split('-').map((n) => parseInt(n, 10));
@@ -176,14 +231,26 @@ export default function CommitmentDetailScreen() {
           ? Haptics.NotificationFeedbackType.Success
           : Haptics.NotificationFeedbackType.Warning,
       );
-      await bulkUpdateCommitmentPayments(
-        commitment.id, periods, action, action === 'unpaid' ? undefined : amt,
-      );
-      setSelectMode(false);
-      setSelectedKeys(new Set());
+      const applyBulk = async () => {
+        await bulkUpdateCommitmentPayments(
+          commitment.id, periods, action, action === 'unpaid' ? undefined : amt,
+        );
+        setSelectMode(false);
+        setSelectedKeys(new Set());
+      };
+      if (action === 'paid') {
+        confirmArchiveThenPayPeriods(periods, amt, applyBulk);
+      } else {
+        await applyBulk();
+      }
     } else if (action === 'paid') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await markCommitmentPaid(commitment.id, editing.month, editing.year, amt);
+      confirmArchiveThenPay(
+        editing.month,
+        editing.year,
+        amt,
+        () => markCommitmentPaid(commitment.id, editing.month, editing.year, amt),
+      );
     } else if (action === 'unpaid') {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
       await markCommitmentUnpaid(commitment.id, editing.month, editing.year);
@@ -250,7 +317,7 @@ export default function CommitmentDetailScreen() {
     Haptics.selectionAsync();
     setBulkMode(true);
     setEditing({ index: 0, month: 0, year: 0 }); // sentinel; modal renders differently in bulk
-    setEditAmount(commitment.amount.toString());
+    setEditAmount(monthlyShare.toString());
   };
 
   const kindLabel =
@@ -295,7 +362,7 @@ export default function CommitmentDetailScreen() {
             <View>
               <Text style={[styles.amountLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.forms.commitmentAmountLabel}</Text>
               <Text style={[styles.amountValue, { color: colors.commitment, textAlign: dir.textAlign }]}>
-                {formatCurrency(commitment.amount, currency)}
+                {formatCurrency(monthlyShare, currency)}
               </Text>
             </View>
             <View>
@@ -445,7 +512,7 @@ export default function CommitmentDetailScreen() {
                       </Text>
                     </View>
                     <Text style={[styles.scheduleAmount, { color: isPaid || isOverride ? colors.foreground : colors.mutedForeground }]}>
-                      {formatCurrency(row.payment?.amount ?? commitment.amount, currency)}
+                      {formatCurrency(row.payment?.amount ?? monthlyShare, currency)}
                     </Text>
                     {!selectMode ? <Feather name="edit-2" size={14} color={colors.mutedForeground} style={{ opacity: 0.6 }} /> : null}
                   </TouchableOpacity>
@@ -575,7 +642,7 @@ export default function CommitmentDetailScreen() {
               value={editAmount}
               onChangeText={setEditAmount}
               keyboardType="decimal-pad"
-              placeholder={commitment.amount.toString()}
+              placeholder={monthlyShare.toString()}
               placeholderTextColor={colors.mutedForeground}
               // The field is pre-filled with the existing installment amount.
               // Without selectTextOnFocus, tapping just lands the cursor at the
@@ -639,6 +706,16 @@ export default function CommitmentDetailScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+      <CommitmentArchiveCelebrationModal
+        visible={!!archiveCongratsName}
+        kicker={t.commitments.archiveCongratsKicker}
+        title={t.commitments.archiveCongratsTitle}
+        message={archiveCongratsName ? t.commitments.archiveCongratsMsg(archiveCongratsName) : ''}
+        confirmLabel={t.commitments.archiveCongratsAction}
+        cancelLabel={t.common.cancel}
+        onConfirm={confirmArchiveCongrats}
+        onCancel={closeArchiveCongrats}
+      />
     </>
   );
 }

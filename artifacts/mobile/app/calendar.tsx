@@ -9,6 +9,7 @@ import { useT } from '@/hooks/useT';
 import { useApp } from '@/context/AppContext';
 import { useLanguage } from '@/context/LanguageContext';
 import { formatCurrency, getGregorianDateLocale, parseDateLocal } from '@/utils/format';
+import { getCommitmentMonthlyShare, isCommitmentArchived } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 
@@ -56,7 +57,7 @@ export default function CalendarScreen() {
     const viewEnd = new Date(viewYear, viewMonth, 0); // last day of view month
 
     for (const c of commitments) {
-      if (!c.isActive) continue;
+      if (isCommitmentArchived(c, commitmentPayments)) continue;
 
       // Date bounds
       const startD = parseDateLocal(c.startDate);
@@ -258,7 +259,7 @@ export default function CalendarScreen() {
                         <Text style={[styles.itemTitle, { color: colors.foreground, textAlign: dir.textAlign }]} numberOfLines={1}>{c.title}</Text>
                         <Text style={[styles.itemSub, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{c.category}</Text>
                       </View>
-                      <Text style={[styles.itemAmt, { color: isPaid ? colors.success : colors.commitment }]}>{formatCurrency(c.amount, currency)}</Text>
+                      <Text style={[styles.itemAmt, { color: isPaid ? colors.success : colors.commitment }]}>{formatCurrency(getCommitmentMonthlyShare(c), currency)}</Text>
                     </TouchableOpacity>
                   </Card>
                 );

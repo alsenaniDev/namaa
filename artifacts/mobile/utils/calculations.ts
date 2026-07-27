@@ -93,7 +93,7 @@ export function calculateMonthlyTotals(
   }, 0);
 
   const activeCommitments = commitments.filter((c) => isCommitmentInMonthlyBudget(c, commitmentPayments));
-  const commitmentSum = activeCommitments.reduce((sum, c) => sum + c.amount, 0);
+  const commitmentSum = activeCommitments.reduce((sum, c) => sum + getCommitmentMonthlyShare(c), 0);
   // Subscriptions roll into the committed-outflow line — yearly/quarterly/weekly
   // are normalized to a monthly equivalent so the budget bar reflects reality.
   const subscriptionMonthly = getMonthlySubscriptionTotal(subscriptions);
@@ -144,7 +144,7 @@ export function getExpensesByCategory(expenses: Expense[], month: number, year: 
 export function getCommitmentsByCategory(commitments: Commitment[], payments: CommitmentPayment[] = []): Record<string, number> {
   const result: Record<string, number> = {};
   commitments.filter((c) => isCommitmentInMonthlyBudget(c, payments)).forEach((c) => {
-    result[c.category] = (result[c.category] ?? 0) + c.amount;
+    result[c.category] = (result[c.category] ?? 0) + getCommitmentMonthlyShare(c);
   });
   return result;
 }
@@ -196,6 +196,21 @@ export interface CommitmentProgress {
   progressPercent: number; // 0..100
 }
 
+export function getCommitmentMonthlyShare(commitment: Commitment): number {
+  const personal = commitment.personalShareAmount;
+  if (Number.isFinite(personal) && personal !== undefined && personal > 0) return personal;
+  const count = Math.max(1, Math.floor(commitment.sharedWithCount ?? 1));
+  if (count > 1) return Math.max(0, commitment.amount) / count;
+  return Math.max(0, commitment.amount);
+}
+
+function getCommitmentTotalShare(commitment: Commitment): number {
+  const total = commitment.totalAmount ?? 0;
+  const count = Math.max(1, Math.floor(commitment.sharedWithCount ?? 1));
+  if (count > 1) return Math.max(0, total) / count;
+  return Math.max(0, total);
+}
+
 export function getCommitmentProgress(
   commitment: Commitment,
   payments: CommitmentPayment[],
@@ -205,7 +220,7 @@ export function getCommitmentProgress(
   const paidAmount = myPaid.reduce((s, p) => s + p.amount, 0);
 
   const isFinite = !!(commitment.totalAmount && commitment.installmentCount);
-  const totalAmount = commitment.totalAmount ?? 0;
+  const totalAmount = getCommitmentTotalShare(commitment);
   const installmentCount = commitment.installmentCount ?? 0;
   const remainingAmount = isFinite ? Math.max(0, totalAmount - paidAmount) : 0;
   const remainingInstallments = isFinite ? Math.max(0, installmentCount - paidInstallmentCount) : 0;
@@ -233,12 +248,79 @@ export function isFiniteCommitmentPaidOff(
   return progress.isFinite && progress.remainingAmount <= 0;
 }
 
+export function isOneTimeCommitmentPaid(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+): boolean {
+  if (commitment.kind !== 'one_time') return false;
+  return payments.some((p) => p.commitmentId === commitment.id && p.status === 'paid');
+}
+
 export function isCommitmentInMonthlyBudget(
   commitment: Commitment,
   payments: CommitmentPayment[],
 ): boolean {
   if (!commitment.isActive) return false;
+  if (isOneTimeCommitmentPaid(commitment, payments)) return false;
   return !isFiniteCommitmentPaidOff(commitment, payments);
+}
+
+export function isCommitmentArchived(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+): boolean {
+  return !commitment.isActive ||
+    isOneTimeCommitmentPaid(commitment, payments) ||
+    isFiniteCommitmentPaidOff(commitment, payments);
+}
+
+export function willArchiveCommitmentAfterPaid(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+  month: number,
+  year: number,
+  amount: number,
+): boolean {
+  return willArchiveCommitmentAfterPaidPeriods(commitment, payments, [{ month, year }], amount);
+}
+
+export function willArchiveCommitmentAfterPaidPeriods(
+  commitment: Commitment,
+  payments: CommitmentPayment[],
+  periods: { month: number; year: number }[],
+  amount: number,
+): boolean {
+  if (!commitment.isActive) return false;
+  const alreadyArchived = isCommitmentArchived(commitment, payments);
+  if (alreadyArchived) return false;
+  const periodKeys = new Set(periods.map((p) => `${p.year}-${p.month}`));
+
+  const seen = new Set<string>();
+  const nextPayments = payments.map((p) => {
+    const key = `${p.year}-${p.month}`;
+    if (p.commitmentId === commitment.id && periodKeys.has(key)) {
+      seen.add(key);
+      return { ...p, status: 'paid' as const, amount };
+    }
+    return p;
+  });
+
+  for (const period of periods) {
+    const key = `${period.year}-${period.month}`;
+    if (!seen.has(key)) {
+      nextPayments.push({
+        id: `__preview_${key}`,
+        commitmentId: commitment.id,
+        month: period.month,
+        year: period.year,
+        amount,
+        status: 'paid',
+      });
+    }
+  }
+
+  return isOneTimeCommitmentPaid(commitment, nextPayments) ||
+    isFiniteCommitmentPaidOff(commitment, nextPayments);
 }
 
 export interface CommitmentsOverviewItem {
@@ -299,20 +381,20 @@ export function getCommitmentsOverview(
         remainingInstallments: progress.remainingInstallments,
       });
     } else if (commitment.kind === 'one_time') {
-      oneTimeTotal += commitment.amount;
+      oneTimeTotal += getCommitmentMonthlyShare(commitment);
       oneTimeItems.push({
         id: commitment.id,
         title: commitment.title,
-        amount: commitment.amount,
+        amount: getCommitmentMonthlyShare(commitment),
         category: commitment.category,
         kind: 'one_time',
       });
     } else {
-      monthlyTotal += commitment.amount;
+      monthlyTotal += getCommitmentMonthlyShare(commitment);
       monthlyItems.push({
         id: commitment.id,
         title: commitment.title,
-        amount: commitment.amount,
+        amount: getCommitmentMonthlyShare(commitment),
         category: commitment.category,
         kind: 'recurring_bill',
       });
@@ -427,7 +509,7 @@ export function getPayoffPlan(
       id: commitment.id,
       title: commitment.title,
       category: commitment.category,
-      monthlyPayment: commitment.amount,
+      monthlyPayment: getCommitmentMonthlyShare(commitment),
       remainingAmount: progress.remainingAmount,
       remainingInstallments: progress.remainingInstallments,
       progressPercent: progress.progressPercent,
@@ -435,7 +517,7 @@ export function getPayoffPlan(
 
   const freedPaymentFromCompleted = activeFinite
     .filter(({ progress }) => progress.remainingAmount <= 0)
-    .reduce((sum, { commitment }) => sum + commitment.amount, 0);
+    .reduce((sum, { commitment }) => sum + getCommitmentMonthlyShare(commitment), 0);
 
   const income = Math.max(0, totals.totalIncome);
   const net = Math.max(0, totals.netRemaining);
@@ -495,7 +577,8 @@ export type WhatIfScenarioKind =
   | 'incomeIncrease'
   | 'newInstallment'
   | 'incomeDecrease'
-  | 'payoffCommitment';
+  | 'payoffCommitment'
+  | 'customPlan';
 
 export interface WhatIfSimulationResult {
   scenario: WhatIfScenarioKind;
@@ -511,6 +594,16 @@ export interface WhatIfSimulationResult {
   dailyBudgetDelta: number;
   commitmentPercentDelta: number;
   extraDebtPaymentAfter: number;
+}
+
+export interface WhatIfCustomAdjustments {
+  incomeIncrease?: number;
+  incomeDecrease?: number;
+  newInstallment?: number;
+  newInstallmentShareCount?: number;
+  canceledSubscriptions?: number;
+  paidOffCommitments?: number;
+  extraDebtPayment?: number;
 }
 
 export type CommitmentRiskLevel = 'safe' | 'review' | 'high';
@@ -659,6 +752,59 @@ export function getWhatIfSimulation(
   return {
     scenario,
     amount: safeAmount,
+    beforeTotals: totals,
+    afterTotals,
+    beforeAllocation,
+    afterAllocation,
+    beforeCommitmentPercent: totals.commitmentPercent,
+    afterCommitmentPercent: afterTotals.commitmentPercent,
+    beforeDailyBudget: beforeAllocation.dailyAvailable,
+    afterDailyBudget,
+    dailyBudgetDelta: afterDailyBudget - beforeAllocation.dailyAvailable,
+    commitmentPercentDelta: afterTotals.commitmentPercent - totals.commitmentPercent,
+    extraDebtPaymentAfter: afterAllocation.extraDebtPayment,
+  };
+}
+
+export function getCustomWhatIfSimulation(
+  totals: MonthlyTotals,
+  adjustments: WhatIfCustomAdjustments,
+  monthlySavingGoal = 0,
+  financialMonthStartDay = 1,
+  from: Date = new Date(),
+): WhatIfSimulationResult {
+  const beforeAllocation = getSalaryAllocationPlan(totals, monthlySavingGoal, financialMonthStartDay, from);
+  const newInstallment = Math.max(0, adjustments.newInstallment ?? 0);
+  const shareCount = Math.max(1, Math.floor(adjustments.newInstallmentShareCount ?? 1));
+  const newInstallmentShare = newInstallment / shareCount;
+  const nextIncome = Math.max(
+    0,
+    totals.totalIncome + Math.max(0, adjustments.incomeIncrease ?? 0) - Math.max(0, adjustments.incomeDecrease ?? 0),
+  );
+  const nextCommitments = Math.max(
+    0,
+    totals.totalCommitments
+      + newInstallmentShare
+      - Math.max(0, adjustments.canceledSubscriptions ?? 0)
+      - Math.max(0, adjustments.paidOffCommitments ?? 0),
+  );
+  const additionalExtraDebtPayment = Math.max(0, adjustments.extraDebtPayment ?? 0);
+  const afterTotals = buildAdjustedTotals(totals, nextIncome, nextCommitments);
+  const calculatedAfterAllocation = getSalaryAllocationPlan(afterTotals, monthlySavingGoal, financialMonthStartDay, from);
+  const afterRemainingSpendable = calculatedAfterAllocation.remainingSpendable - additionalExtraDebtPayment;
+  const afterDailyBudget = Math.max(0, afterRemainingSpendable) / calculatedAfterAllocation.daysUntilNextSalary;
+  const afterAllocation: SalaryAllocationPlan = {
+    ...calculatedAfterAllocation,
+    extraDebtPayment: calculatedAfterAllocation.extraDebtPayment + additionalExtraDebtPayment,
+    plannedExpenses: Math.max(0, calculatedAfterAllocation.plannedExpenses - additionalExtraDebtPayment),
+    remainingSpendable: afterRemainingSpendable,
+    dailyAvailable: afterDailyBudget,
+    isOverSpendable: afterRemainingSpendable < 0,
+  };
+
+  return {
+    scenario: 'customPlan',
+    amount: Math.abs(nextIncome - totals.totalIncome) + Math.abs(nextCommitments - totals.totalCommitments) + additionalExtraDebtPayment,
     beforeTotals: totals,
     afterTotals,
     beforeAllocation,
@@ -868,7 +1014,7 @@ export function getLenderStats(
 ): LenderStats {
   const linked = commitments.filter((c) => c.lenderId === lenderId);
   const active = linked.filter((c) => c.isActive);
-  const monthlyTotal = active.reduce((s, c) => s + c.amount, 0);
+  const monthlyTotal = active.reduce((s, c) => s + getCommitmentMonthlyShare(c), 0);
 
   // Only finite loans contribute to contracted/paid/remaining totals — mixing
   // open-ended recurring bills would inflate "paid" and break the math.
@@ -876,7 +1022,7 @@ export function getLenderStats(
   let totalPaid = 0;
   for (const c of linked) {
     if (!c.totalAmount || !c.installmentCount) continue;
-    totalContracted += c.totalAmount;
+    totalContracted += getCommitmentTotalShare(c);
     const paid = payments
       .filter((p) => p.commitmentId === c.id && p.status === 'paid')
       .reduce((s, p) => s + p.amount, 0);

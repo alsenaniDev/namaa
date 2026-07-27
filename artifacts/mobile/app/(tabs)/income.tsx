@@ -12,7 +12,7 @@ import { formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
-import { Select } from '@/components/ui/Select';
+import { FilterSortSheet } from '@/components/FilterSortSheet';
 import { INCOME_TYPES } from '@/types';
 
 type IncomeSort = 'default' | 'amountAsc' | 'amountDesc' | 'titleAsc';
@@ -30,6 +30,7 @@ export default function IncomeScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
   const [typeFilter, setTypeFilter] = useState('all');
   const [sortBy, setSortBy] = useState<IncomeSort>('default');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const typeColors: Record<string, string> = {
     'راتب': colors.income, 'عمل إضافي': colors.commitment, 'مكافأة': colors.warning,
@@ -51,6 +52,9 @@ export default function IncomeScreen() {
     { value: 'amountDesc', label: t.common.sortAmountDesc },
     { value: 'titleAsc', label: t.common.sortTitleAsc },
   ];
+  const hasCustomControls = typeFilter !== 'all' || sortBy !== 'default';
+  const currentFilterLabel = typeOptions.find((option) => option.value === typeFilter)?.label ?? t.income.filterAll;
+  const currentSortLabel = sortOptions.find((option) => option.value === sortBy)?.label ?? t.income.sortDefault;
 
   const visibleIncomes = useMemo(
     () => {
@@ -72,26 +76,48 @@ export default function IncomeScreen() {
         <Text style={[styles.summaryCount, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{visibleIncomes.length} {t.income.sourceSuffix}</Text>
       </Card>
 
-      <Card style={styles.controlsCard} padding={12}>
-        <View style={[styles.controlsRow, { flexDirection: dir.row }]}>
-          <View style={styles.controlCell}>
-            <Select
-              label={t.common.filter}
-              value={typeFilter}
-              options={typeOptions}
-              onValueChange={setTypeFilter}
-            />
-          </View>
-          <View style={styles.controlCell}>
-            <Select
-              label={t.common.sort}
-              value={sortBy}
-              options={sortOptions}
-              onValueChange={(value) => setSortBy(value as IncomeSort)}
-            />
-          </View>
+      <View style={[styles.compactControls, { flexDirection: dir.row }]}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            Haptics.selectionAsync();
+            setFilterSheetOpen(true);
+          }}
+          style={[styles.filterButton, { backgroundColor: colors.card, borderColor: colors.border }]}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+        >
+          <Feather name="sliders" size={18} color={colors.primary} />
+          {hasCustomControls ? <View style={[styles.filterDot, { backgroundColor: colors.warning }]} /> : null}
+        </TouchableOpacity>
+        <View style={styles.compactControlsText}>
+          <Text style={[styles.compactControlsTitle, { color: colors.foreground, textAlign: dir.textAlign }]}>
+            {t.common.filterAndSort}
+          </Text>
+          <Text style={[styles.compactControlsSub, { color: colors.mutedForeground, textAlign: dir.textAlign }]} numberOfLines={1}>
+            {currentFilterLabel} · {currentSortLabel}
+          </Text>
         </View>
-      </Card>
+      </View>
+
+      <FilterSortSheet
+        visible={filterSheetOpen}
+        title={t.common.filterAndSort}
+        filterLabel={t.common.filter}
+        sortLabel={t.common.sort}
+        filterValue={typeFilter}
+        sortValue={sortBy}
+        defaultFilterValue="all"
+        defaultSortValue="default"
+        filterOptions={typeOptions}
+        sortOptions={sortOptions}
+        applyLabel={t.common.apply}
+        resetLabel={t.common.reset}
+        onApply={(nextFilter, nextSort) => {
+          setTypeFilter(nextFilter);
+          setSortBy(nextSort as IncomeSort);
+        }}
+        onClose={() => setFilterSheetOpen(false)}
+      />
 
       <FlatList
         data={visibleIncomes}
@@ -134,9 +160,12 @@ const styles = StyleSheet.create({
   summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   summaryCount: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
-  controlsCard: { marginHorizontal: 16, marginBottom: 8 },
-  controlsRow: { gap: 10 },
-  controlCell: { flex: 1 },
+  compactControls: { alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 8 },
+  filterButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  filterDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4 },
+  compactControlsText: { flex: 1 },
+  compactControlsTitle: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
+  compactControlsSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 1 },
   list: { paddingHorizontal: 16, paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },

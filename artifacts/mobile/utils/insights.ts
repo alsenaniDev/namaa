@@ -5,7 +5,7 @@ import {
 import {
   calculateMonthlyTotals, getCommitmentProgress, getExpensesByCategory,
   getLateCommitments, getBudgetUsages, getGoalProgress, daysUntil,
-  isCommitmentInMonthlyBudget,
+  isCommitmentInMonthlyBudget, getCommitmentMonthlyShare,
 } from './calculations';
 import { formatCurrency, formatMonthYear } from './format';
 
@@ -74,7 +74,7 @@ export function getInsights(args: InsightArgs): Insight[] {
   // 1) Late commitments — highest priority
   const late = getLateCommitments(commitments, payments);
   if (late.length > 0) {
-    const lateAmt = late.reduce((s, c) => s + c.amount, 0);
+    const lateAmt = late.reduce((s, c) => s + getCommitmentMonthlyShare(c), 0);
     out.push({
       id: 'late',
       severity: 'danger',
@@ -100,7 +100,7 @@ export function getInsights(args: InsightArgs): Insight[] {
     return c.dueDay >= currentDay && c.dueDay <= currentDay + 7;
   });
   if (dueSoon.length > 0) {
-    const dueAmt = dueSoon.reduce((s, c) => s + c.amount, 0);
+    const dueAmt = dueSoon.reduce((s, c) => s + getCommitmentMonthlyShare(c), 0);
     const nearestDueDay = dueSoon.reduce((nearest, c) => Math.min(nearest, c.dueDay), Infinity);
     const nearestDueIn = nearestDueDay - currentDay;
     const nearestLabel = dueInLabel(nearestDueIn, nearestDueDay, isEn);

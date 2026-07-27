@@ -1,13 +1,17 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState, useCallback } from 'react';
 import {
   UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender,
   SavingsGoal, GoalContribution, CategoryBudget, Subscription,
+  FinancialChallenge, FinancialChallengeId, UserAchievement,
 } from '../types';
 import { storage, CustomTypes, runStorageMigrations } from '../utils/storage';
 import { generateId } from '../utils/format';
 import { generateSampleData } from '../utils/sampleData';
 import { MonthlyTotals } from '../types';
 import { calculateMonthlyTotals } from '../utils/calculations';
+import { evaluateAchievementUnlocks } from '../utils/achievements';
+import { getAllChallengeProgress } from '../utils/financialChallenges';
+import { normalizeLenderImageUris } from '../utils/lenderImages';
 // import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
 
 interface AppContextType {
@@ -21,6 +25,9 @@ interface AppContextType {
   goalContributions: GoalContribution[];
   budgets: CategoryBudget[];
   subscriptions: Subscription[];
+  challenges: FinancialChallenge[];
+  achievements: UserAchievement[];
+  recentAchievement: UserAchievement | null;
   customTypes: CustomTypes;
   isLoading: boolean;
   saveUserProfile: (profile: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
@@ -67,6 +74,8 @@ interface AppContextType {
   addSubscription: (sub: Omit<Subscription, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateSubscription: (id: string, sub: Partial<Subscription>) => Promise<void>;
   deleteSubscription: (id: string) => Promise<void>;
+  startChallenge: (id: FinancialChallengeId) => Promise<void>;
+  dismissRecentAchievement: () => void;
   addCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   removeCustomType: (category: keyof CustomTypes, value: string) => Promise<void>;
   clearAllData: () => Promise<void>;
@@ -91,14 +100,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [goalContributions, setGoalContributions] = useState<GoalContribution[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [challenges, setChallenges] = useState<FinancialChallenge[]>([]);
+  const [achievements, setAchievements] = useState<UserAchievement[]>([]);
+  const [recentAchievement, setRecentAchievement] = useState<UserAchievement | null>(null);
   const [customTypes, setCustomTypes] = useState<CustomTypes>(DEFAULT_CUSTOM_TYPES);
   const [isLoading, setIsLoading] = useState(true);
+  const suppressAchievementsUntilRef = useRef(0);
+  const achievementPopupsReadyRef = useRef(false);
 
   useEffect(() => {
     async function loadAll() {
       try {
         await runStorageMigrations();
-        const [profile, inc, com, payments, exp, ct, lend, gls, gcs, bgs, subs] = await Promise.all([
+        const [profile, inc, com, payments, exp, ct, lend, gls, gcs, bgs, subs, chs, achs] = await Promise.all([
           storage.getUserProfile(),
           storage.getIncomes(),
           storage.getCommitments(),
@@ -110,6 +124,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           storage.getGoalContributions(),
           storage.getBudgets(),
           storage.getSubscriptions(),
+          storage.getChallenges(),
+          storage.getAchievements(),
         ]);
         setUserProfile(profile);
         setIncomes(inc);
@@ -117,11 +133,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setCommitmentPayments(payments);
         setExpenses(exp);
         setCustomTypes(ct);
-        setLenders(lend);
+        const normalizedLenders = await normalizeLenderImageUris(lend);
+        if (normalizedLenders.changed) await storage.saveLenders(normalizedLenders.lenders);
+        setLenders(normalizedLenders.lenders);
         setGoals(gls);
         setGoalContributions(gcs);
         setBudgets(bgs);
         setSubscriptions(subs);
+        setChallenges(chs);
+        setAchievements(achs);
       } finally {
         setIsLoading(false);
       }
@@ -141,6 +161,61 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     //   subscriptions,
     // });
   }, [isLoading, userProfile?.notificationsEnabled, commitments, subscriptions]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    const activeCompleted = getAllChallengeProgress({
+      challenges,
+      incomes,
+      commitments,
+      payments: commitmentPayments,
+      expenses,
+      goalContributions,
+    }).filter((progress) => progress.status === 'active' && progress.progressPercent >= 100);
+
+    if (activeCompleted.length === 0) return;
+
+    const completedIds = new Set(activeCompleted.map((progress) => progress.id));
+    const now = new Date().toISOString();
+    const updated = challenges.map((challenge) => {
+      if (!completedIds.has(challenge.id) || challenge.completedAt) return challenge;
+      return {
+        ...challenge,
+        completedAt: now,
+        completionCount: (challenge.completionCount ?? 0) + 1,
+        updatedAt: now,
+      };
+    });
+    storage.saveChallenges(updated);
+    setChallenges(updated);
+  }, [isLoading, challenges, incomes, commitments, commitmentPayments, expenses, goalContributions]);
+
+  useEffect(() => {
+    if (isLoading) return;
+    if (!userProfile) {
+      achievementPopupsReadyRef.current = false;
+      if (recentAchievement) setRecentAchievement(null);
+      return;
+    }
+    const silent = !achievementPopupsReadyRef.current || Date.now() < suppressAchievementsUntilRef.current;
+    const newlyUnlocked = evaluateAchievementUnlocks({
+      existing: achievements,
+      incomes,
+      expenses,
+      commitments,
+      payments: commitmentPayments,
+      goals,
+      goalContributions,
+      challenges,
+    });
+    achievementPopupsReadyRef.current = true;
+    if (newlyUnlocked.length === 0) return;
+    const updated = [...achievements, ...newlyUnlocked];
+    storage.saveAchievements(updated);
+    setAchievements(updated);
+    if (silent) setRecentAchievement(null);
+    else setRecentAchievement(newlyUnlocked[0]);
+  }, [isLoading, userProfile, achievements, incomes, expenses, commitments, commitmentPayments, goals, goalContributions, challenges, recentAchievement]);
 
   const saveUserProfile = useCallback(async (data: Omit<UserProfile, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
@@ -450,6 +525,27 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSubscriptions(updated);
   }, [subscriptions]);
 
+  const startChallenge = useCallback(async (id: FinancialChallengeId) => {
+    const now = new Date().toISOString();
+    const existing = challenges.find((challenge) => challenge.id === id);
+    let updated: FinancialChallenge[];
+    if (existing) {
+      updated = challenges.map((challenge) =>
+        challenge.id === id
+          ? { ...challenge, startedAt: now, completedAt: undefined, updatedAt: now }
+          : challenge,
+      );
+    } else {
+      updated = [...challenges, { id, startedAt: now, createdAt: now, updatedAt: now }];
+    }
+    await storage.saveChallenges(updated);
+    setChallenges(updated);
+  }, [challenges]);
+
+  const dismissRecentAchievement = useCallback(() => {
+    setRecentAchievement(null);
+  }, []);
+
   const addCustomType = useCallback(async (category: keyof CustomTypes, value: string) => {
     const trimmed = value.trim();
     if (!trimmed || customTypes[category].includes(trimmed)) return;
@@ -466,6 +562,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const clearAllData = useCallback(async () => {
     // await cancelAllScheduled();
+    suppressAchievementsUntilRef.current = Date.now() + 2000;
+    achievementPopupsReadyRef.current = false;
+    setRecentAchievement(null);
     await storage.clearAll();
     setUserProfile(null);
     setIncomes([]);
@@ -477,10 +576,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setGoalContributions([]);
     setBudgets([]);
     setSubscriptions([]);
+    setChallenges([]);
+    setAchievements([]);
+    setRecentAchievement(null);
     setCustomTypes(DEFAULT_CUSTOM_TYPES);
   }, []);
 
   const loadSampleData = useCallback(async () => {
+    suppressAchievementsUntilRef.current = Date.now() + 2000;
+    setRecentAchievement(null);
     const sample = generateSampleData();
     const newLenders = [...lenders, ...sample.lenders];
     const newIncomes = [...incomes, ...sample.incomes];
@@ -530,8 +634,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const exportData = useCallback(() => storage.exportAll(), []);
 
   const importData = useCallback(async (json: string) => {
+    suppressAchievementsUntilRef.current = Date.now() + 2000;
+    setRecentAchievement(null);
     await storage.importAll(json);
-    const [p, i, c, pay, e, ct, l, gls, gcs, bgs, subs] = await Promise.all([
+    const [p, i, c, pay, e, ct, l, gls, gcs, bgs, subs, chs, achs] = await Promise.all([
       storage.getUserProfile(),
       storage.getIncomes(),
       storage.getCommitments(),
@@ -543,6 +649,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       storage.getGoalContributions(),
       storage.getBudgets(),
       storage.getSubscriptions(),
+      storage.getChallenges(),
+      storage.getAchievements(),
     ]);
     setUserProfile(p);
     setIncomes(i);
@@ -550,17 +658,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setCommitmentPayments(pay);
     setExpenses(e);
     setCustomTypes(ct);
-    setLenders(l);
+    const normalizedLenders = await normalizeLenderImageUris(l);
+    if (normalizedLenders.changed) await storage.saveLenders(normalizedLenders.lenders);
+    setLenders(normalizedLenders.lenders);
     setGoals(gls);
     setGoalContributions(gcs);
     setBudgets(bgs);
     setSubscriptions(subs);
+    setChallenges(chs);
+    setAchievements(achs);
+    setRecentAchievement(null);
   }, []);
 
   return (
     <AppContext.Provider value={{
       userProfile, incomes, commitments, commitmentPayments, expenses, lenders,
-      goals, goalContributions, budgets, subscriptions,
+      goals, goalContributions, budgets, subscriptions, challenges, achievements, recentAchievement,
       customTypes, isLoading,
       saveUserProfile, updateUserProfile,
       addIncome, updateIncome, deleteIncome,
@@ -570,6 +683,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addGoal, updateGoal, deleteGoal, addGoalContribution, deleteGoalContribution,
       upsertBudget, deleteBudget,
       addSubscription, updateSubscription, deleteSubscription,
+      startChallenge, dismissRecentAchievement,
       addCustomType, removeCustomType,
       clearAllData, loadSampleData, getMonthlyTotals, exportData, importData,
     }}>

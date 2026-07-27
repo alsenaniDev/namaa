@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   UserProfile, Income, Commitment, CommitmentPayment, Expense, Lender,
   SavingsGoal, GoalContribution, CategoryBudget, Subscription,
+  FinancialChallenge, UserAchievement,
 } from '../types';
 
 export interface CustomTypes {
@@ -22,13 +23,16 @@ const KEYS = {
   GOAL_CONTRIBUTIONS: '@mali/goal_contributions',
   BUDGETS: '@mali/budgets',
   SUBSCRIPTIONS: '@mali/subscriptions',
+  CHALLENGES: '@mali/challenges',
+  ACHIEVEMENTS: '@mali/achievements',
   STORAGE_VERSION: '@mali/storage_version',
 };
 
 // Bump when introducing a schema migration that may invalidate older data.
 // v3 (Phase 3): adds goals/contributions/budgets/subscriptions. Additive only —
 // no destructive migration needed.
-const CURRENT_STORAGE_VERSION = '3';
+// v4: adds financial challenges + achievements. Additive only.
+const CURRENT_STORAGE_VERSION = '4';
 
 async function getItem<T>(key: string, fallback: T): Promise<T> {
   try {
@@ -50,6 +54,7 @@ const ALL_DOMAIN_KEYS = [
   KEYS.USER_PROFILE, KEYS.INCOMES, KEYS.COMMITMENTS, KEYS.COMMITMENT_PAYMENTS,
   KEYS.EXPENSES, KEYS.CUSTOM_TYPES, KEYS.LENDERS,
   KEYS.GOALS, KEYS.GOAL_CONTRIBUTIONS, KEYS.BUDGETS, KEYS.SUBSCRIPTIONS,
+  KEYS.CHALLENGES, KEYS.ACHIEVEMENTS,
 ];
 
 /**
@@ -66,7 +71,7 @@ export async function runStorageMigrations(): Promise<void> {
       // Pre-v2: wipe legacy commitment/lender data.
       await AsyncStorage.multiRemove(ALL_DOMAIN_KEYS);
     }
-    // v2 → v3: no-op, new keys default to empty arrays.
+    // v2 → v3 → v4: no-op, new keys default to empty arrays.
     await AsyncStorage.setItem(KEYS.STORAGE_VERSION, CURRENT_STORAGE_VERSION);
   } catch {
     // If migration itself fails, fall through — the app can still load.
@@ -107,6 +112,12 @@ export const storage = {
   getSubscriptions: () => getItem<Subscription[]>(KEYS.SUBSCRIPTIONS, []),
   saveSubscriptions: (items: Subscription[]) => setItem(KEYS.SUBSCRIPTIONS, items),
 
+  getChallenges: () => getItem<FinancialChallenge[]>(KEYS.CHALLENGES, []),
+  saveChallenges: (items: FinancialChallenge[]) => setItem(KEYS.CHALLENGES, items),
+
+  getAchievements: () => getItem<UserAchievement[]>(KEYS.ACHIEVEMENTS, []),
+  saveAchievements: (items: UserAchievement[]) => setItem(KEYS.ACHIEVEMENTS, items),
+
   clearAll: async () => {
     // Keep STORAGE_VERSION so re-clear doesn't re-trigger a wipe.
     await AsyncStorage.multiRemove(ALL_DOMAIN_KEYS);
@@ -115,7 +126,7 @@ export const storage = {
   exportAll: async (): Promise<string> => {
     const [
       profile, incomes, commitments, payments, expenses, customTypes, lenders,
-      goals, goalContributions, budgets, subscriptions,
+      goals, goalContributions, budgets, subscriptions, challenges, achievements,
     ] = await Promise.all([
       getItem<UserProfile | null>(KEYS.USER_PROFILE, null),
       getItem<Income[]>(KEYS.INCOMES, []),
@@ -128,11 +139,13 @@ export const storage = {
       getItem<GoalContribution[]>(KEYS.GOAL_CONTRIBUTIONS, []),
       getItem<CategoryBudget[]>(KEYS.BUDGETS, []),
       getItem<Subscription[]>(KEYS.SUBSCRIPTIONS, []),
+      getItem<FinancialChallenge[]>(KEYS.CHALLENGES, []),
+      getItem<UserAchievement[]>(KEYS.ACHIEVEMENTS, []),
     ]);
     return JSON.stringify({
       version: CURRENT_STORAGE_VERSION,
       profile, incomes, commitments, payments, expenses, customTypes, lenders,
-      goals, goalContributions, budgets, subscriptions,
+      goals, goalContributions, budgets, subscriptions, challenges, achievements,
       exportedAt: new Date().toISOString(),
     });
   },
@@ -152,6 +165,8 @@ export const storage = {
       setItem(KEYS.GOAL_CONTRIBUTIONS, Array.isArray(data.goalContributions) ? data.goalContributions : []),
       setItem(KEYS.BUDGETS, Array.isArray(data.budgets) ? data.budgets : []),
       setItem(KEYS.SUBSCRIPTIONS, Array.isArray(data.subscriptions) ? data.subscriptions : []),
+      setItem(KEYS.CHALLENGES, Array.isArray(data.challenges) ? data.challenges : []),
+      setItem(KEYS.ACHIEVEMENTS, Array.isArray(data.achievements) ? data.achievements : []),
     ]);
     await AsyncStorage.setItem(KEYS.STORAGE_VERSION, CURRENT_STORAGE_VERSION);
   },

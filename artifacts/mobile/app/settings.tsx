@@ -197,7 +197,15 @@ export default function SettingsScreen() {
   const handleClearData = () => {
     Alert.alert(t.settings.clearConfirmTitle, t.settings.clearConfirmMsg, [
       { text: t.common.cancel, style: 'cancel' },
-      { text: t.settings.clearConfirmBtn, style: 'destructive', onPress: async () => { await clearAllData(); Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning); } },
+      {
+        text: t.settings.clearConfirmBtn,
+        style: 'destructive',
+        onPress: async () => {
+          await clearAllData();
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+          router.replace('/setup');
+        },
+      },
     ]);
   };
 
@@ -240,6 +248,8 @@ export default function SettingsScreen() {
       {[
         { route: '/goals', icon: 'target', title: t.settings.goalsTitle, sub: t.settings.goalsDesc },
         { route: '/budgets', icon: 'pie-chart', title: t.settings.budgetsTitle, sub: t.settings.budgetsDesc },
+        { route: '/financial-challenges', icon: 'flag', title: t.settings.challengesTitle, sub: t.settings.challengesDesc },
+        { route: '/achievements', icon: 'award', title: t.settings.achievementsTitle, sub: t.settings.achievementsDesc },
         { route: '/subscriptions', icon: 'repeat', title: t.settings.subscriptionsTitle, sub: t.settings.subscriptionsDesc },
       ].map((nav) => (
         <TouchableOpacity

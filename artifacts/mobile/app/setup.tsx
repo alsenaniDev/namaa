@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { CURRENCIES } from '@/types';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
   const value = String(i + 1);
@@ -57,7 +58,7 @@ export default function SetupScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={[styles.container, { paddingTop: topPad, paddingBottom: bottomPad }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+      <ScrollView {...iosScrollViewObserverProps} contentContainerStyle={[styles.container, { paddingTop: topPad, paddingBottom: bottomPad }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         {/* <View style={styles.logoWrap}>
           <Image source={require('../assets/images/icon.png')} style={styles.logo} resizeMode="contain" />
         </View> */}

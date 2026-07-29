@@ -14,6 +14,8 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import { FilterSortSheet } from '@/components/FilterSortSheet';
 import { INCOME_TYPES } from '@/types';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 type IncomeSort = 'default' | 'amountAsc' | 'amountDesc' | 'titleAsc';
 
@@ -23,6 +25,7 @@ export default function IncomeScreen() {
   const router = useRouter();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   const { incomes, getMonthlyTotals, userProfile, customTypes } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
@@ -70,13 +73,15 @@ export default function IncomeScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Card style={styles.summaryCard} padding={16}>
+      <Card style={[styles.summaryCard, { margin: responsive.screenPadding, marginBottom: 8 }]} padding={responsive.cardPadding}>
         <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.income.totalLabel}</Text>
-        <Text style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.income }]}>{formatCurrency(totals.totalIncome, currency)}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.income }]}>
+          {formatCurrency(totals.totalIncome, currency)}
+        </Text>
         <Text style={[styles.summaryCount, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{visibleIncomes.length} {t.income.sourceSuffix}</Text>
       </Card>
 
-      <View style={[styles.compactControls, { flexDirection: dir.row }]}>
+      <View style={[styles.compactControls, { flexDirection: dir.row, marginHorizontal: responsive.screenPadding }]}>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => {
@@ -120,10 +125,11 @@ export default function IncomeScreen() {
       />
 
       <FlatList
+        {...iosScrollViewObserverProps}
         data={visibleIncomes}
         keyExtractor={(item) => item.id}
         scrollEnabled={!!visibleIncomes.length}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !visibleIncomes.length && styles.emptyList]}
+        contentContainerStyle={[styles.list, { paddingHorizontal: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 }, !visibleIncomes.length && styles.emptyList]}
         ListEmptyComponent={
           <EmptyState icon="trending-up" title={t.income.emptyTitle} description={t.income.emptyDesc} actionLabel={t.income.addLabel} onAction={() => router.push('/income/add')} />
         }
@@ -156,17 +162,17 @@ export default function IncomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  summaryCard: { margin: 16, marginBottom: 8 },
+  summaryCard: { marginBottom: 8 },
   summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   summaryCount: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
-  compactControls: { alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 8 },
+  compactControls: { alignItems: 'center', gap: 10, marginBottom: 8 },
   filterButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   filterDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4 },
-  compactControlsText: { flex: 1 },
+  compactControlsText: { flex: 1, minWidth: 0 },
   compactControlsTitle: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
   compactControlsSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 1 },
-  list: { paddingHorizontal: 16, paddingTop: 4 },
+  list: { paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

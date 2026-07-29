@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { toAsciiDigits } from '@/utils/format';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface InputProps extends TextInputProps {
   label?: string;
@@ -25,6 +26,7 @@ const NUMERIC_KEYBOARDS = new Set([
 export function Input({ label, error, rightIcon, onRightIconPress, style, onChangeText, keyboardType, ...props }: InputProps) {
   const colors = useColors();
   const dir = useDir();
+  const responsive = useResponsive();
   const [focused, setFocused] = useState(false);
 
   const shouldConvertDigits = !!keyboardType && NUMERIC_KEYBOARDS.has(keyboardType);
@@ -48,6 +50,8 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, onChan
             borderColor: error ? colors.danger : focused ? colors.primary : colors.border,
             backgroundColor: colors.card,
             borderRadius: colors.radius - 2,
+            paddingHorizontal: responsive.isTiny ? 10 : 12,
+            minHeight: responsive.isTiny ? 44 : 48,
           },
         ]}
       >
@@ -75,8 +79,8 @@ export function Input({ label, error, rightIcon, onRightIconPress, style, onChan
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Cairo_500Medium' },
-  inputWrap: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, minHeight: 48 },
-  input: { flex: 1, fontSize: 15, paddingVertical: 10, fontFamily: 'Cairo_400Regular' },
+  inputWrap: { alignItems: 'center', borderWidth: 1.5 },
+  input: { flex: 1, minWidth: 0, fontSize: 15, paddingVertical: 10, fontFamily: 'Cairo_400Regular' },
   icon: { padding: 4, marginLeft: 8 },
   error: { fontSize: 12, marginTop: 4 },
 });

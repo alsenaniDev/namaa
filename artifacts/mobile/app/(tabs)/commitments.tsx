@@ -21,6 +21,8 @@ import { Card } from '@/components/ui/Card';
 import { LenderAvatar } from '@/components/LenderAvatar';
 import { CommitmentArchiveCelebrationModal } from '@/components/CommitmentArchiveCelebrationModal';
 import { FilterSortSheet } from '@/components/FilterSortSheet';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 import type { Commitment } from '@/types';
 
 type CommitmentFilter = 'all' | 'paid' | 'unpaid' | 'late';
@@ -32,6 +34,7 @@ export default function CommitmentsScreen() {
   const router = useRouter();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   const { commitments, commitmentPayments, lenders, markCommitmentPaid, markCommitmentUnpaid, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const totals = getMonthlyTotals(month, year);
@@ -116,11 +119,13 @@ export default function CommitmentsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Card style={styles.summaryCard} padding={14}>
+      <Card style={[styles.summaryCard, { margin: responsive.screenPadding, marginBottom: 8 }]} padding={responsive.compactCardPadding}>
         <View style={[styles.summaryHeader, { flexDirection: dir.row }]}>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitments.totalLabel}</Text>
-            <Text style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.commitment }]}>{formatCurrency(totals.totalCommitments, currency)}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.commitment }]}>
+              {formatCurrency(totals.totalCommitments, currency)}
+            </Text>
           </View>
           <TouchableOpacity
             onPress={() => router.push('/lenders')}
@@ -129,7 +134,7 @@ export default function CommitmentsScreen() {
             hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
           >
             <Feather name="briefcase" size={14} color={colors.primary} />
-            <Text style={[styles.lendersPillText, { color: colors.primary }]}>{t.commitments.manageLenders}</Text>
+            <Text numberOfLines={1} style={[styles.lendersPillText, { color: colors.primary }]}>{t.commitments.manageLenders}</Text>
           </TouchableOpacity>
         </View>
         <View style={[styles.statsRow, { flexDirection: dir.row }]}>
@@ -158,7 +163,7 @@ export default function CommitmentsScreen() {
         </TouchableOpacity>
       </Card>
 
-      <View style={[styles.compactControls, { flexDirection: dir.row }]}>
+      <View style={[styles.compactControls, { flexDirection: dir.row, marginHorizontal: responsive.screenPadding }]}>
         <TouchableOpacity
           activeOpacity={0.8}
           onPress={() => {
@@ -202,10 +207,15 @@ export default function CommitmentsScreen() {
       />
 
       <FlatList
+        {...iosScrollViewObserverProps}
         data={visibleCommitments}
         keyExtractor={(item) => item.id}
         scrollEnabled
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !visibleCommitments.length && styles.emptyList]}
+        contentContainerStyle={[
+          styles.list,
+          { paddingHorizontal: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 },
+          !visibleCommitments.length && styles.emptyList,
+        ]}
         ListEmptyComponent={
           <EmptyState icon="credit-card" title={t.commitments.emptyTitle} description={t.commitments.emptyDesc} actionLabel={t.commitments.addLabel} onAction={() => router.push('/commitments/add')} />
         }
@@ -249,8 +259,15 @@ export default function CommitmentsScreen() {
                     )}
                   </View>
                 </View>
-                <View style={[styles.cardRight, { flexDirection: dir.row }]}>
-                  <Text style={[styles.cardAmount, { textAlign: dir.textAlign, color: colors.commitment }]} numberOfLines={1}>{formatCurrency(getCommitmentMonthlyShare(item), currency)}</Text>
+                <View style={[styles.cardRight, { flexDirection: dir.row, maxWidth: responsive.isTiny ? '38%' : '44%', paddingHorizontal: responsive.isTiny ? 8 : 12 }]}>
+                  <Text
+                    style={[styles.cardAmount, { textAlign: dir.textAlign, color: colors.commitment }]}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.82}
+                  >
+                    {formatCurrency(getCommitmentMonthlyShare(item), currency)}
+                  </Text>
                   <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
                 </View>
               </View>
@@ -304,41 +321,41 @@ export default function CommitmentsScreen() {
 }
 
 const styles = StyleSheet.create({
-  summaryCard: { margin: 16, marginBottom: 8 },
-  summaryHeader: { alignItems: 'flex-start', gap: 10 },
+  summaryCard: { marginBottom: 8 },
+  summaryHeader: { alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' },
   summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 8 },
-  lendersPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+  lendersPill: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 16, borderWidth: 1, maxWidth: '100%' },
   lendersPillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
-  statsRow: { alignItems: 'center', gap: 8 },
+  statsRow: { alignItems: 'center', gap: 8, flexWrap: 'wrap' },
   statBadge: { alignItems: 'center', gap: 4, paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
   statText: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   statTotal: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   archiveLink: { alignItems: 'center', gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, marginTop: 12 },
   archiveLinkText: { flex: 1, fontSize: 12, fontFamily: 'Cairo_600SemiBold' },
-  compactControls: { alignItems: 'center', gap: 10, marginHorizontal: 16, marginBottom: 8 },
+  compactControls: { alignItems: 'center', gap: 10, marginBottom: 8 },
   filterButton: { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   filterDot: { position: 'absolute', top: 8, right: 9, width: 8, height: 8, borderRadius: 4 },
-  compactControlsText: { flex: 1 },
+  compactControlsText: { flex: 1, minWidth: 0 },
   compactControlsTitle: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
   compactControlsSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 1 },
-  list: { paddingHorizontal: 16, paddingTop: 4 },
+  list: { paddingTop: 4 },
   emptyList: { flex: 1 },
   cardWrapper: { borderWidth: 1, marginBottom: 8, overflow: 'hidden' },
   cardTop: { alignItems: 'center' },
   strip: { width: 4, alignSelf: 'stretch' },
   checkBtn: { width: 30, height: 30, borderRadius: 15, borderWidth: 2, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginHorizontal: 10, marginVertical: 12 },
   checkDot: { width: 8, height: 8, borderRadius: 4 },
-  cardBody: { flex: 1, paddingVertical: 12 },
+  cardBody: { flex: 1, minWidth: 0, paddingVertical: 12 },
   cardTitle: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
   cardMetaRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   statusPill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   statusPillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
-  lenderChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
-  lenderChipText: { fontSize: 11, fontFamily: 'Cairo_500Medium', maxWidth: 140 },
+  lenderChip: { alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10, flexShrink: 1, maxWidth: '100%' },
+  lenderChipText: { fontSize: 11, fontFamily: 'Cairo_500Medium', maxWidth: 120 },
   cardCat: { fontSize: 11, fontFamily: 'Cairo_400Regular', flexShrink: 1 },
-  cardRight: { alignItems: 'center', gap: 4, flexShrink: 0, paddingHorizontal: 12 },
-  cardAmount: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  cardRight: { alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 },
+  cardAmount: { fontSize: 14, fontFamily: 'Cairo_700Bold', flexShrink: 1 },
   progressWrap: { paddingHorizontal: 14, paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth },
   progressHeader: { justifyContent: 'space-between', marginBottom: 6 },
   progressText: { fontSize: 11, fontFamily: 'Cairo_400Regular' },

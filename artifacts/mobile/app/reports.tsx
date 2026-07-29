@@ -14,12 +14,15 @@ import {
 } from '@/utils/calculations';
 import { ProgressBar } from '@/components/ProgressBar';
 import { Card } from '@/components/ui/Card';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function ReportsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   const { getMonthlyTotals, expenses, commitments, commitmentPayments, userProfile, goals, goalContributions, budgets, subscriptions } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
 
@@ -61,8 +64,12 @@ export default function ReportsScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
+      contentContainerStyle={[
+        styles.content,
+        { paddingHorizontal: responsive.screenPadding, paddingTop: responsive.isTiny ? 12 : 16, paddingBottom: bottomPad + 24 },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {/* Month Selector */}
@@ -77,16 +84,16 @@ export default function ReportsScreen() {
       </View>
 
       {/* Summary Grid */}
-      <View style={[styles.grid, { flexDirection: dir.row }]}>
+      <View style={[styles.grid, { flexDirection: dir.row, gap: responsive.isTiny ? 8 : 10 }]}>
         {[
           { label: t.reports.income, amount: totals.totalIncome, color: colors.income },
           { label: t.reports.commitments, amount: totals.totalCommitments, color: colors.commitment },
           { label: t.reports.expenses, amount: totals.totalExpenses, color: colors.expense },
           { label: t.reports.net, amount: totals.netRemaining, color: totals.netRemaining >= 0 ? colors.success : colors.danger },
         ].map((item) => (
-          <View key={item.label} style={[styles.summaryCell, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}>
+          <View key={item.label} style={[styles.summaryCell, { width: responsive.isTiny ? '100%' : '48%', padding: responsive.isTiny ? 12 : 14, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}>
             <Text style={[styles.cellLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{item.label}</Text>
-            <Text style={[styles.cellAmount, { textAlign: dir.textAlign, color: item.color }]}>{formatCurrency(item.amount, currency)}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={[styles.cellAmount, { textAlign: dir.textAlign, color: item.color }]}>{formatCurrency(item.amount, currency)}</Text>
           </View>
         ))}
       </View>
@@ -131,7 +138,7 @@ export default function ReportsScreen() {
             return (
               <View key={cat} style={[styles.catRow, { flexDirection: dir.row }]}>
                 <Text style={[styles.catAmt, { textAlign: dir.textAlign, color: barColor }]}>{formatCurrency(amt, currency)}</Text>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
                   <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
                     <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                     <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
@@ -156,7 +163,7 @@ export default function ReportsScreen() {
             return (
               <View key={cat} style={[styles.catRow, { flexDirection: dir.row }]}>
                 <Text style={[styles.catAmt, { textAlign: dir.textAlign, color: barColor }]}>{formatCurrency(amt, currency)}</Text>
-                <View style={{ flex: 1, marginLeft: 12 }}>
+                <View style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
                   <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
                     <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                     <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
@@ -271,11 +278,11 @@ export default function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16, paddingTop: 16 },
+  content: {},
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 16 },
   monthLabel: { fontSize: 16, fontFamily: 'Cairo_600SemiBold' },
-  grid: { flexWrap: 'wrap', gap: 8, marginBottom: 16 },
-  summaryCell: { width: '48%', padding: 14, borderWidth: 1 },
+  grid: { flexWrap: 'wrap', marginBottom: 16 },
+  summaryCell: { borderWidth: 1 },
   cellLabel: { fontSize: 12, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
   cellAmount: { fontSize: 15, fontFamily: 'Cairo_700Bold' },
   section: { marginBottom: 14 },
@@ -288,15 +295,15 @@ const styles = StyleSheet.create({
   barLabel: { fontSize: 11, fontFamily: 'Cairo_500Medium', marginTop: 6, textAlign: 'center' },
   catRow: { alignItems: 'center', marginBottom: 12 },
   catLabelRow: { justifyContent: 'space-between', marginBottom: 4 },
-  catName: { fontSize: 13, fontFamily: 'Cairo_500Medium' },
+  catName: { flex: 1, minWidth: 0, fontSize: 13, fontFamily: 'Cairo_500Medium' },
   catPct: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
   catAmt: { fontSize: 13, fontFamily: 'Cairo_700Bold', minWidth: 80 },
   catBar: { height: 6, borderRadius: 3, overflow: 'hidden', position: 'relative' },
   catFill: { height: 6, borderRadius: 3, top: 0, bottom: 0 },
   emptyText: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 20 },
-  metaRow: { justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
-  metaLabel: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
-  metaValue: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  metaRow: { justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
+  metaLabel: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Cairo_500Medium' },
+  metaValue: { fontSize: 14, fontFamily: 'Cairo_700Bold', flexShrink: 1, maxWidth: '48%' },
   pillRow: { flexWrap: 'wrap', gap: 6, marginTop: 4 },
   pill: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, borderWidth: 1 },
   pillText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },

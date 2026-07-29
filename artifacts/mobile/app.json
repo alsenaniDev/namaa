@@ -70,7 +70,8 @@
           "defaultChannel": "reminders"
         }
       ],
-      "expo-updates"
+      "expo-updates",
+      "./plugins/withBuildReactNativeFromSource"
     ],
     "experiments": {
       "typedRoutes": true,

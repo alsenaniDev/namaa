@@ -46,11 +46,11 @@ export function HealthStatusCard({ status, color, message, commitmentPercent }: 
 
 const styles = StyleSheet.create({
   card: { padding: 16, borderWidth: 1, marginBottom: 4 },
-  header: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
-  headerRight: { alignItems: 'center', gap: 8 },
+  header: { alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 8 },
+  headerRight: { alignItems: 'center', gap: 8, minWidth: 0 },
   badge: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
   badgeText: { color: '#fff', fontSize: 13, fontWeight: '700', fontFamily: 'Cairo_700Bold' },
-  pctLabel: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
+  pctLabel: { fontSize: 12, fontFamily: 'Cairo_400Regular', flexShrink: 1 },
   percent: { fontSize: 20, fontWeight: '700', fontFamily: 'Cairo_700Bold', marginBottom: 6 },
   message: { fontSize: 13, lineHeight: 20, fontFamily: 'Cairo_400Regular' },
 });

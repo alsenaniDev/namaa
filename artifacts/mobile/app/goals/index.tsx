@@ -11,6 +11,8 @@ import { useT } from '@/hooks/useT';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { GoalCard } from '@/components/GoalCard';
 import { getGoalProgress } from '@/utils/calculations';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function GoalsScreen() {
   const colors = useColors();
@@ -18,6 +20,7 @@ export default function GoalsScreen() {
   const router = useRouter();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   // `dir` ensures any future inline rows/text follow RTL conventions like other list screens.
   void dir;
   const { goals, goalContributions, userProfile } = useApp();
@@ -33,9 +36,10 @@ export default function GoalsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
+        {...iosScrollViewObserverProps}
         data={sorted}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !sorted.length && styles.emptyList]}
+        contentContainerStyle={[styles.list, { padding: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 }, !sorted.length && styles.emptyList]}
         ListEmptyComponent={
           <EmptyState
             icon="target"
@@ -66,7 +70,7 @@ export default function GoalsScreen() {
 }
 
 const styles = StyleSheet.create({
-  list: { padding: 16 },
+  list: {},
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

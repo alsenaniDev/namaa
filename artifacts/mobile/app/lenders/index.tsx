@@ -13,6 +13,7 @@ import { getLenderStats } from '@/utils/calculations';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LenderAvatar } from '@/components/LenderAvatar';
 import type { Lender } from '@/types';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function LendersScreen() {
   const colors = useColors();
@@ -64,6 +65,7 @@ export default function LendersScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <FlatList
+        {...iosScrollViewObserverProps}
         data={sorted}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !sorted.length && styles.emptyList]}

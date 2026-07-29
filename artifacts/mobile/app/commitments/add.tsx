@@ -17,6 +17,7 @@ import { COMMITMENT_CATEGORIES, CommitmentKind } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
 import { toAsciiDigits, formatCurrency, getCurrentMonthYear } from '@/utils/format';
 import { CommitmentImpactAssessment, getCommitmentImpactAssessment } from '@/utils/calculations';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface FormErrors {
   title?: string;
@@ -281,6 +282,7 @@ export default function AddCommitmentScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

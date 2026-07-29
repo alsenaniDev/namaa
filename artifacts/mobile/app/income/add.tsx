@@ -14,6 +14,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField';
 import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { INCOME_TYPES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateDay, validateNotes, validateTitle } from '@/utils/validation';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
   const day = String(i + 1);
@@ -95,7 +96,7 @@ export default function AddIncomeScreen() {
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScrollView {...iosScrollViewObserverProps} style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
       <Input label={t.forms.titleLabel} value={title} onChangeText={(v) => { setTitle(v); clearError('title'); }} placeholder={t.forms.titleIncomePlaceholder} error={errors.title} maxLength={FIELD_LIMITS.title} />
       <CurrencyAmountInput label={t.forms.amountLabel} value={amount} onChangeText={(v) => { setAmount(v); clearError('amount'); }} placeholder="0.00" error={errors.amount} maxLength={16} />
       <Select label={t.forms.typeLabel} value={type} options={allTypes.map((t) => ({ label: t, value: t }))} onValueChange={(v) => setType(v as typeof type)} />

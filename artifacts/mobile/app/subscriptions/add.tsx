@@ -16,6 +16,7 @@ import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { BILLING_CYCLES, GOAL_COLOR_PALETTE, BillingCycle } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateAmount, validateDate, validateNotes } from '@/utils/validation';
 import { toAsciiDigits } from '@/utils/format';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 const SUB_ICONS = [
   'film', 'tv', 'music', 'cloud', 'book', 'shopping-bag',
@@ -102,6 +103,7 @@ export default function AddSubscriptionScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

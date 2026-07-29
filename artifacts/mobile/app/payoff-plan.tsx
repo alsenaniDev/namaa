@@ -12,6 +12,7 @@ import { getPayoffPlan, PayoffStrategy, PayoffStrategyKind } from '@/utils/calcu
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function PayoffPlanScreen() {
   const colors = useColors();
@@ -60,6 +61,7 @@ export default function PayoffPlanScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       showsVerticalScrollIndicator={false}

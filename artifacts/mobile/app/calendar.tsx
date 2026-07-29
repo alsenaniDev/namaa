@@ -12,6 +12,7 @@ import { formatCurrency, getGregorianDateLocale, parseDateLocal } from '@/utils/
 import { getCommitmentMonthlyShare, isCommitmentArchived } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function CalendarScreen() {
   const colors = useColors();
@@ -152,6 +153,7 @@ export default function CalendarScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + bottomPad + 24 }}
       showsVerticalScrollIndicator={false}

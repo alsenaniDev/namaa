@@ -29,11 +29,14 @@ import { GoalCard } from '@/components/GoalCard';
 import { BudgetRow } from '@/components/BudgetRow';
 import { getSalaryCountdown } from '@/utils/salaryCountdown';
 import { ACHIEVEMENT_IDS } from '@/utils/achievements';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function DashboardScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const dir = useDir();
+  const responsive = useResponsive();
   const router = useRouter();
   const { userProfile, commitments, commitmentPayments, expenses, goals, goalContributions, budgets, subscriptions, achievements, getMonthlyTotals } = useApp();
   const { language } = useLanguage();
@@ -118,8 +121,16 @@ export default function DashboardScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: insets.bottom + bottomPad + 90 }]}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingHorizontal: responsive.screenPadding,
+          paddingTop: responsive.isTiny ? 12 : 16,
+          paddingBottom: insets.bottom + bottomPad + 90,
+        },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       {/* Greeting */}
@@ -127,7 +138,7 @@ export default function DashboardScreen() {
         <View style={[styles.avatarWrap, { backgroundColor: colors.primary + '20', borderRadius: 26 }]}>
           <Feather name="user" size={24} color={colors.primary} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.dateText, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{dayName}، {dateStr}</Text>
           <Text style={[styles.greetText, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.greeting}، {userProfile?.name ?? ''}</Text>
         </View>
@@ -136,15 +147,17 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/commitments/overview' as any)}
-        style={[styles.totalCommitmentsCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+        style={[styles.totalCommitmentsCard, { backgroundColor: colors.card, borderColor: colors.border, padding: responsive.compactCardPadding }]}
       >
         <View style={[styles.debtHeader, { flexDirection: dir.row }]}>
           <View style={[styles.debtIconWrap, { backgroundColor: colors.commitment + '18' }]}>
             <Feather name="shield" size={22} color={colors.commitment} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.debtLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{t.dashboard.totalOwedTitle}</Text>
-            <Text style={[styles.debtAmount, { color: colors.foreground, textAlign: dir.textAlign }]}>{formatCurrency(commitmentsOverview.totalOwed, currency)}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82} style={[styles.debtAmount, { color: colors.foreground, textAlign: dir.textAlign }]}>
+              {formatCurrency(commitmentsOverview.totalOwed, currency)}
+            </Text>
           </View>
           <Feather name={dir.chevronDetail as any} size={18} color={colors.mutedForeground} />
         </View>
@@ -206,12 +219,12 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/payoff-plan' as any)}
-        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35' }]}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35', padding: responsive.isTiny ? 10 : 12, gap: responsive.isTiny ? 8 : 10 }]}
       >
         <View style={[styles.payoffIcon, { backgroundColor: colors.primary }]}>
           <Feather name="zap" size={20} color="#fff" />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.payoffPlanTitle}</Text>
           <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.payoffPlanSubtitle}</Text>
         </View>
@@ -221,12 +234,12 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/what-if' as any)}
-        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.warning + '10', borderColor: colors.warning + '35' }]}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.warning + '10', borderColor: colors.warning + '35', padding: responsive.isTiny ? 10 : 12, gap: responsive.isTiny ? 8 : 10 }]}
       >
         <View style={[styles.payoffIcon, { backgroundColor: colors.warning }]}>
           <Feather name="help-circle" size={20} color="#fff" />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.whatIfTitle}</Text>
           <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.whatIfSubtitle}</Text>
         </View>
@@ -236,12 +249,12 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/subscriptions' as any)}
-        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.commitment + '10', borderColor: colors.commitment + '35' }]}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.commitment + '10', borderColor: colors.commitment + '35', padding: responsive.isTiny ? 10 : 12, gap: responsive.isTiny ? 8 : 10 }]}
       >
         <View style={[styles.payoffIcon, { backgroundColor: colors.commitment }]}>
           <Feather name="repeat" size={20} color="#fff" />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.subscriptionsTitle}</Text>
           <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
             {t.dashboard.subscriptionsSubtitle(activeSubscriptionCount, formatCurrency(subscriptionMonthlyTotal, currency))}
@@ -253,12 +266,12 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/financial-challenges' as any)}
-        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.success + '10', borderColor: colors.success + '35' }]}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.success + '10', borderColor: colors.success + '35', padding: responsive.isTiny ? 10 : 12, gap: responsive.isTiny ? 8 : 10 }]}
       >
         <View style={[styles.payoffIcon, { backgroundColor: colors.success }]}>
           <Feather name="flag" size={20} color="#fff" />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.financialChallengesTitle}</Text>
           <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.financialChallengesSubtitle}</Text>
         </View>
@@ -268,12 +281,12 @@ export default function DashboardScreen() {
       <TouchableOpacity
         activeOpacity={0.82}
         onPress={() => router.push('/achievements' as any)}
-        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35' }]}
+        style={[styles.payoffCard, { flexDirection: dir.row, backgroundColor: colors.primary + '10', borderColor: colors.primary + '35', padding: responsive.isTiny ? 10 : 12, gap: responsive.isTiny ? 8 : 10 }]}
       >
         <View style={[styles.payoffIcon, { backgroundColor: colors.primary }]}>
           <Feather name="award" size={20} color="#fff" />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.payoffTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.achievementsTitle}</Text>
           <Text style={[styles.payoffSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
             {t.dashboard.achievementsSubtitle(achievements.length, ACHIEVEMENT_IDS.length)}
@@ -349,11 +362,11 @@ export default function DashboardScreen() {
                 onPress={() => router.push(`/commitments/${c.id}` as any)}
                 style={[styles.listRow, { flexDirection: dir.row }]}
               >
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.listTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{c.title}</Text>
                   <Text style={[styles.listSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.dueOn} {c.dueDay}</Text>
                 </View>
-                <Text style={[styles.listAmt, { color: colors.commitment }]}>{formatCurrency(getCommitmentMonthlyShare(c), currency)}</Text>
+                <Text numberOfLines={1} style={[styles.listAmt, { color: colors.commitment }]}>{formatCurrency(getCommitmentMonthlyShare(c), currency)}</Text>
               </TouchableOpacity>
             </Card>
           ))}
@@ -371,11 +384,11 @@ export default function DashboardScreen() {
                 onPress={() => router.push({ pathname: '/expenses/add', params: { id: e.id } })}
                 style={[styles.listRow, { flexDirection: dir.row }]}
               >
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   <Text style={[styles.listTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{e.title}</Text>
                   <Text style={[styles.listSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{e.category} · {formatShortDate(e.expenseDate)}</Text>
                 </View>
-                <Text style={[styles.listAmt, { color: colors.expense }]}>{formatCurrency(e.amount, currency)}</Text>
+                <Text numberOfLines={1} style={[styles.listAmt, { color: colors.expense }]}>{formatCurrency(e.amount, currency)}</Text>
               </TouchableOpacity>
             </Card>
           ))}
@@ -397,6 +410,7 @@ function SalaryCountdownCard({
   const colors = useColors();
   const dir = useDir();
   const t = useT();
+  const responsive = useResponsive();
   const statusColor = countdown.isSalaryDay
     ? colors.success
     : countdown.isOverDailyLimit
@@ -404,12 +418,12 @@ function SalaryCountdownCard({
       : colors.success;
 
   return (
-    <Card style={styles.salaryCountdownCard} padding={14}>
+    <Card style={styles.salaryCountdownCard} padding={responsive.compactCardPadding}>
       <View style={[styles.salaryCountdownHeader, { flexDirection: dir.row }]}>
         <View style={[styles.salaryCountdownIcon, { backgroundColor: statusColor + '18' }]}>
           <Feather name={countdown.isSalaryDay ? 'gift' : 'clock'} size={21} color={statusColor} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.salaryCountdownTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.salaryCountdownTitle}</Text>
           <Text style={[styles.salaryCountdownSub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
             {countdown.isSalaryDay ? t.dashboard.salaryCountdownToday : t.dashboard.salaryCountdownDays(countdown.daysRemaining)}
@@ -417,7 +431,7 @@ function SalaryCountdownCard({
         </View>
       </View>
 
-      <View style={[styles.salaryCountdownGrid, { flexDirection: dir.row }]}>
+      <View style={[styles.salaryCountdownGrid, { flexDirection: dir.row, gap: responsive.isTiny ? 8 : 10 }]}>
         <CountdownMetric label={t.dashboard.salaryCountdownNextDate} value={nextSalaryLabel} />
         <CountdownMetric label={t.dashboard.salaryCountdownBalance} value={formatCurrency(countdown.currentBalance, currency)} />
         <CountdownMetric label={t.dashboard.salaryCountdownDailyLimit} value={formatCurrency(countdown.dailyLimit, currency)} strong color={colors.primary} />
@@ -449,8 +463,9 @@ function CountdownMetric({
 }) {
   const colors = useColors();
   const dir = useDir();
+  const responsive = useResponsive();
   return (
-    <View style={[styles.countdownMetric, { backgroundColor: colors.muted }]}>
+    <View style={[styles.countdownMetric, { backgroundColor: colors.muted, width: responsive.isTiny ? '100%' : '48%', padding: responsive.isTiny ? 9 : 10 }]}>
       <Text style={[styles.countdownMetricLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{label}</Text>
       <Text style={[styles.countdownMetricValue, { color: color ?? colors.foreground, textAlign: dir.textAlign }, strong ? styles.countdownMetricStrong : null]} numberOfLines={1}>
         {value}
@@ -471,6 +486,7 @@ function SalaryAllocationCard({
   const colors = useColors();
   const dir = useDir();
   const t = useT();
+  const responsive = useResponsive();
   const distribution = [
     { key: 'commitments', value: plan.essentialCommitments, color: colors.commitment },
     { key: 'saving', value: plan.suggestedSaving, color: colors.success },
@@ -479,12 +495,12 @@ function SalaryAllocationCard({
   ].filter((item) => item.value > 0);
 
   return (
-    <Card style={styles.salaryCard} padding={14}>
+    <Card style={styles.salaryCard} padding={responsive.compactCardPadding}>
       <View style={[styles.salaryHeader, { flexDirection: dir.row }]}>
         <View style={[styles.salaryIcon, { backgroundColor: colors.success + '18' }]}>
           <Feather name="calendar" size={20} color={colors.success} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.salaryTitle, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.dashboard.salaryAllocationTitle}</Text>
           <Text style={[styles.salarySub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.salaryAllocationSubtitle}</Text>
         </View>
@@ -492,7 +508,9 @@ function SalaryAllocationCard({
 
       <View style={[styles.dailyPanel, { backgroundColor: colors.primary + '10', borderColor: colors.primary + '30' }]}>
         <Text style={[styles.dailyLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.salaryAllocationDailyLabel}</Text>
-        <Text style={[styles.dailyAmount, { textAlign: dir.textAlign, color: colors.primary }]}>{formatCurrency(plan.dailyAvailable, currency)}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.dailyAmount, { textAlign: dir.textAlign, color: colors.primary, fontSize: responsive.isTiny ? 26 : 30 }]}>
+          {formatCurrency(plan.dailyAvailable, currency)}
+        </Text>
         <Text style={[styles.dailyHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
           {t.dashboard.salaryAllocationDailyHint(plan.daysUntilNextSalary, nextSalaryLabel)}
         </Text>
@@ -562,7 +580,7 @@ function AllocationRow({
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: 16 },
+  content: {},
   greetRow: { alignItems: 'center', gap: 12, marginBottom: 16 },
   avatarWrap: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center' },
   dateText: { fontSize: 12, fontFamily: 'Cairo_400Regular', marginBottom: 2 },
@@ -574,22 +592,22 @@ const styles = StyleSheet.create({
   salarySub: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
   dailyPanel: { borderWidth: 1, borderRadius: 12, padding: 12, marginBottom: 12 },
   dailyLabel: { fontSize: 12, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
-  dailyAmount: { fontSize: 30, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
+  dailyAmount: { fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   dailyHint: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
   allocationBar: { height: 9, borderRadius: 999, overflow: 'hidden', marginBottom: 8 },
   allocationRows: { marginTop: 2 },
   allocationRow: { alignItems: 'center', gap: 8, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth },
   allocationIcon: { width: 26, height: 26, borderRadius: 8, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  allocationLabel: { flex: 1, fontSize: 12, fontFamily: 'Cairo_500Medium' },
-  allocationAmount: { fontSize: 12, fontFamily: 'Cairo_700Bold', flexShrink: 0 },
+  allocationLabel: { flex: 1, minWidth: 0, fontSize: 12, fontFamily: 'Cairo_500Medium' },
+  allocationAmount: { fontSize: 12, fontFamily: 'Cairo_700Bold', flexShrink: 1, maxWidth: '44%' },
   salaryWarning: { fontSize: 11, fontFamily: 'Cairo_500Medium', lineHeight: 16, marginTop: 8 },
   salaryCountdownCard: { marginBottom: 10 },
   salaryCountdownHeader: { alignItems: 'center', gap: 10, marginBottom: 12 },
   salaryCountdownIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   salaryCountdownTitle: { fontSize: 15, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   salaryCountdownSub: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
-  salaryCountdownGrid: { flexWrap: 'wrap', gap: 14, marginBottom: 10 },
-  countdownMetric: { width: '48%', minHeight: 72, borderRadius: 12, padding: 10, justifyContent: 'center' },
+  salaryCountdownGrid: { flexWrap: 'wrap', marginBottom: 10 },
+  countdownMetric: { minHeight: 72, borderRadius: 12, justifyContent: 'center' },
   countdownMetricLabel: { fontSize: 10, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
   countdownMetricValue: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
   countdownMetricStrong: { fontSize: 14 },
@@ -602,12 +620,12 @@ const styles = StyleSheet.create({
   debtAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold' },
   debtProgressTrack: { height: 8, borderRadius: 4, overflow: 'hidden', marginBottom: 12 },
   debtProgressFill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 4 },
-  debtStatsRow: { gap: 10 },
+  debtStatsRow: { gap: 10, flexWrap: 'wrap' },
   debtStat: { flex: 1, minWidth: 0 },
   debtStatValue: { fontSize: 13, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   debtStatLabel: { fontSize: 10, fontFamily: 'Cairo_400Regular' },
-  payoffCard: { alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 12, marginBottom: 10, gap: 10 },
-  payoffIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  payoffCard: { alignItems: 'center', borderWidth: 1, borderRadius: 14, marginBottom: 10 },
+  payoffIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   payoffTitle: { fontSize: 14, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   payoffSub: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
   section: { marginTop: 12, marginBottom: 4 },
@@ -619,5 +637,5 @@ const styles = StyleSheet.create({
   listRow: { alignItems: 'center', gap: 10 },
   listTitle: { fontSize: 14, fontFamily: 'Cairo_500Medium' },
   listSub: { fontSize: 12, fontFamily: 'Cairo_400Regular', marginTop: 2 },
-  listAmt: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
+  listAmt: { fontSize: 14, fontFamily: 'Cairo_700Bold', flexShrink: 1, maxWidth: '45%' },
 });

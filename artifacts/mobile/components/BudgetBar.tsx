@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useT } from '@/hooks/useT';
+import { useResponsive } from '@/hooks/useResponsive';
 import { Card } from './ui/Card';
 import { formatCurrency } from '@/utils/format';
 
@@ -64,8 +65,9 @@ export function BudgetBar({ income, committed, spent, currency }: BudgetBarProps
 function LegendChip({ color, label, amount }: { color: string; label: string; amount: string }) {
   const colors = useColors();
   const dir = useDir();
+  const responsive = useResponsive();
   return (
-    <View style={[styles.legend, { flex: 1 }]}>
+    <View style={[styles.legend, { flex: 1, flexBasis: responsive.isTiny ? '48%' : 0 }]}>
       <View style={[styles.legendHeader, { flexDirection: dir.row }]}>
         <View style={[styles.dot, { backgroundColor: color }]} />
         <Text style={[styles.legendLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]} numberOfLines={1}>{label}</Text>
@@ -77,11 +79,11 @@ function LegendChip({ color, label, amount }: { color: string; label: string; am
 
 const styles = StyleSheet.create({
   card: { marginBottom: 10 },
-  headerRow: { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  headerRow: { alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 12 },
   title: { fontSize: 14, fontFamily: 'Cairo_600SemiBold' },
-  income: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  income: { fontSize: 16, fontFamily: 'Cairo_700Bold', flexShrink: 1 },
   track: { height: 12, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
-  legendRow: { gap: 10 },
+  legendRow: { gap: 10, flexWrap: 'wrap' },
   legend: { minWidth: 0 },
   legendHeader: { alignItems: 'center', gap: 6, marginBottom: 2 },
   dot: { width: 8, height: 8, borderRadius: 4 },

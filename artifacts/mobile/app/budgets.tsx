@@ -17,12 +17,15 @@ import { EXPENSE_CATEGORIES } from '@/types';
 import { getBudgetUsages } from '@/utils/calculations';
 import { getCurrentMonthYear, toAsciiDigits } from '@/utils/format';
 import { validateAmount } from '@/utils/validation';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function BudgetsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   const { budgets, expenses, customTypes, userProfile, upsertBudget, deleteBudget } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -93,8 +96,9 @@ export default function BudgetsScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 32 }]}
+      contentContainerStyle={[styles.content, { padding: responsive.screenPadding, paddingBottom: bottomPad + 32 }]}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
     >
@@ -130,11 +134,11 @@ export default function BudgetsScreen() {
               placeholder="0.00"
               error={errLimit}
             />
-            <View style={[styles.btnRow, { flexDirection: dir.row }]}>
+            <View style={[styles.btnRow, { flexDirection: dir.row, flexWrap: responsive.isTiny ? 'wrap' : 'nowrap' }]}>
               {editingCategory ? (
-                <Button title={t.common.cancel} onPress={resetForm} variant="outline" style={{ flex: 1 }} />
+                <Button title={t.common.cancel} onPress={resetForm} variant="outline" style={{ flex: 1, minWidth: responsive.isTiny ? '100%' : 0 }} />
               ) : null}
-              <Button title={saving ? t.common.saving : t.budgets.saveBtn} onPress={handleSave} loading={saving} disabled={!canSave} style={{ flex: 1 }} />
+              <Button title={saving ? t.common.saving : t.budgets.saveBtn} onPress={handleSave} loading={saving} disabled={!canSave} style={{ flex: 1, minWidth: responsive.isTiny ? '100%' : 0 }} />
             </View>
           </>
         ) : null}
@@ -162,7 +166,7 @@ export default function BudgetsScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16 },
+  content: {},
   hint: { borderWidth: 1, marginBottom: 16 },
   hintRow: { alignItems: 'center', gap: 10 },
   hintText: { flex: 1, fontSize: 12, fontFamily: 'Cairo_400Regular', lineHeight: 18 },

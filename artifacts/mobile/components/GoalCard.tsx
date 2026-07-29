@@ -4,6 +4,7 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useT } from '@/hooks/useT';
+import { useResponsive } from '@/hooks/useResponsive';
 import { formatCurrency } from '@/utils/format';
 import type { SavingsGoal, GoalContribution } from '@/types';
 import { getGoalProgress } from '@/utils/calculations';
@@ -20,6 +21,7 @@ export function GoalCard({ goal, contributions, currency, onPress, compact = fal
   const colors = useColors();
   const dir = useDir();
   const t = useT();
+  const responsive = useResponsive();
   const prog = getGoalProgress(goal, contributions);
   const pct = Math.round(prog.percent);
 
@@ -33,7 +35,7 @@ export function GoalCard({ goal, contributions, currency, onPress, compact = fal
           backgroundColor: colors.card,
           borderColor: colors.border,
           borderRadius: colors.radius - 2,
-          padding: compact ? 12 : 16,
+          padding: compact ? responsive.compactCardPadding : responsive.cardPadding,
           marginBottom: 8,
         },
       ]}
@@ -42,13 +44,13 @@ export function GoalCard({ goal, contributions, currency, onPress, compact = fal
         <View style={[styles.iconCircle, { backgroundColor: goal.color + '22', borderColor: goal.color + '55' }]}>
           <Feather name={goal.icon as any} size={20} color={goal.color} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={[styles.name, { textAlign: dir.textAlign, color: colors.foreground }]}>{goal.name}</Text>
           <Text style={[styles.sub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
             {formatCurrency(prog.saved, currency)} / {formatCurrency(goal.targetAmount, currency)}
           </Text>
         </View>
-        <Text style={[styles.pct, { color: goal.color }]}>{pct}٪</Text>
+        <Text numberOfLines={1} style={[styles.pct, { color: goal.color }]}>{pct}٪</Text>
       </View>
 
       <View style={[styles.track, { backgroundColor: colors.muted }]}>
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
   iconCircle: { width: 42, height: 42, borderRadius: 21, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center' },
   name: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
   sub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
-  pct: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  pct: { fontSize: 16, fontFamily: 'Cairo_700Bold', flexShrink: 1 },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
   suggest: { fontSize: 11, fontFamily: 'Cairo_400Regular', marginTop: 8 },

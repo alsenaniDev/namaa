@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface TransactionItemProps {
   title: string;
@@ -21,6 +22,7 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const colors = useColors();
   const dir = useDir();
+  const responsive = useResponsive();
   const ic = iconColor ?? colors.primary;
 
   return (
@@ -30,7 +32,7 @@ export function TransactionItem({
       style={[styles.wrapper, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}
     >
       <View style={[styles.strip, { backgroundColor: ic }]} />
-      <View style={[styles.inner, { flexDirection: dir.row }]}>
+      <View style={[styles.inner, { flexDirection: dir.row, paddingHorizontal: responsive.isTiny ? 9 : 12, gap: responsive.isTiny ? 8 : 10 }]}>
         {icon ? (
           <View style={[styles.iconWrap, { backgroundColor: ic + '15', borderRadius: 18 }]}>
             <Feather name={icon as any} size={17} color={ic} />
@@ -49,7 +51,7 @@ export function TransactionItem({
             ) : null}
           </View>
         </View>
-        <View style={[styles.right, { flexDirection: dir.row }]}>
+        <View style={[styles.right, { flexDirection: dir.row, maxWidth: responsive.isTiny ? '40%' : '46%' }]}>
           <Text style={[styles.amount, { textAlign: dir.textAlign, color: amountColor ?? colors.foreground }]} numberOfLines={1}>{amount}</Text>
           <Feather name={dir.chevronDetail as any} size={13} color={colors.mutedForeground} />
         </View>
@@ -63,12 +65,12 @@ const styles = StyleSheet.create({
   strip: { width: 4 },
   inner: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 12, gap: 10 },
   iconWrap: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  body: { flex: 1 },
+  body: { flex: 1, minWidth: 0 },
   title: { fontSize: 14, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
-  metaRow: { alignItems: 'center', gap: 6, flexWrap: 'nowrap' },
+  metaRow: { alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   badge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, flexShrink: 0 },
   badgeText: { fontSize: 11, fontFamily: 'Cairo_500Medium' },
   subtitle: { fontSize: 11, fontFamily: 'Cairo_400Regular', flexShrink: 1 },
-  right: { alignItems: 'center', gap: 4, flexShrink: 0 },
+  right: { alignItems: 'center', gap: 4, flexShrink: 1, minWidth: 0 },
   amount: { fontSize: 14, fontFamily: 'Cairo_700Bold' },
 });

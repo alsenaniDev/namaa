@@ -2,6 +2,7 @@ import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, ViewStyle, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useColors } from '@/hooks/useColors';
+import { useResponsive } from '@/hooks/useResponsive';
 
 type Variant = 'primary' | 'secondary' | 'destructive' | 'ghost' | 'outline';
 
@@ -19,6 +20,7 @@ export function Button({
   title, onPress, variant = 'primary', disabled, loading, style, fullWidth = false,
 }: ButtonProps) {
   const colors = useColors();
+  const responsive = useResponsive();
 
   const handlePress = () => {
     if (!disabled && !loading) {
@@ -59,6 +61,9 @@ export function Button({
           borderRadius: colors.radius,
           opacity: disabled ? 0.5 : 1,
           alignSelf: fullWidth ? 'stretch' : 'auto',
+          paddingHorizontal: responsive.isTiny ? 14 : 20,
+          paddingVertical: responsive.isTiny ? 11 : 13,
+          minHeight: responsive.isTiny ? 44 : 48,
         },
         style,
       ]}
@@ -74,11 +79,9 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingHorizontal: 20,
-    paddingVertical: 13,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minWidth: 0,
   },
   label: {
     fontSize: 15,

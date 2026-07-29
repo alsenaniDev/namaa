@@ -4,6 +4,8 @@ import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDir } from '@/hooks/useDir';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface SelectOption {
   label: string;
@@ -22,6 +24,7 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const dir = useDir();
+  const responsive = useResponsive();
   const [open, setOpen] = useState(false);
   const selected = options.find((o) => o.value === value);
 
@@ -36,7 +39,14 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
         style={[
           styles.trigger,
           { flexDirection: dir.row },
-          { borderColor: colors.border, backgroundColor: colors.card, borderRadius: colors.radius - 2 },
+          {
+            borderColor: colors.border,
+            backgroundColor: colors.card,
+            borderRadius: colors.radius - 2,
+            paddingHorizontal: responsive.isTiny ? 10 : 12,
+            paddingVertical: responsive.isTiny ? 11 : 13,
+            minHeight: responsive.isTiny ? 44 : 48,
+          },
         ]}
         activeOpacity={0.8}
       >
@@ -57,6 +67,7 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
             <View style={[styles.handle, { backgroundColor: colors.border }]} />
             {label ? <Text style={[styles.sheetTitle, { color: colors.foreground }]}>{label}</Text> : null}
             <FlatList
+              {...iosScrollViewObserverProps}
               data={options}
               keyExtractor={(item) => item.value}
               renderItem={({ item }) => (
@@ -83,8 +94,8 @@ export function Select({ label, value, options, onValueChange, placeholder = 'ا
 const styles = StyleSheet.create({
   container: { marginBottom: 14 },
   label: { fontSize: 14, fontWeight: '500', marginBottom: 6, fontFamily: 'Cairo_500Medium' },
-  trigger: { alignItems: 'center', borderWidth: 1.5, paddingHorizontal: 12, paddingVertical: 13, minHeight: 48, gap: 8 },
-  triggerText: { flex: 1, fontSize: 15, fontFamily: 'Cairo_400Regular' },
+  trigger: { alignItems: 'center', borderWidth: 1.5, gap: 8 },
+  triggerText: { flex: 1, minWidth: 0, fontSize: 15, fontFamily: 'Cairo_400Regular' },
   overlay: { flex: 1, justifyContent: 'flex-end' },
   sheet: { maxHeight: '70%' },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 8 },

@@ -17,6 +17,7 @@ import { Card } from '@/components/ui/Card';
 import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { CURRENCIES, INCOME_TYPES, COMMITMENT_CATEGORIES, EXPENSE_CATEGORIES } from '@/types';
 import type { CustomTypes } from '@/utils/storage';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 type TypeCategory = keyof CustomTypes;
 
@@ -211,7 +212,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 32 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+    <ScrollView {...iosScrollViewObserverProps} style={{ flex: 1, backgroundColor: colors.background }} contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 32 }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
       <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.profileSection}</Text>
       <Card style={styles.card}>
         <Input label={t.settings.nameLabel} value={name} onChangeText={setName} placeholder="" />

@@ -11,6 +11,7 @@ import { formatCurrency } from '@/utils/format';
 import { getCommitmentMonthlyShare, getLenderStats, getCommitmentProgress } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { LenderAvatar } from '@/components/LenderAvatar';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function LenderDetailScreen() {
   const colors = useColors();
@@ -75,6 +76,7 @@ export default function LenderDetailScreen() {
         }}
       />
       <ScrollView
+        {...iosScrollViewObserverProps}
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}

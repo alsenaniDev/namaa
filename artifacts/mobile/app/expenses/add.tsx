@@ -13,6 +13,7 @@ import { DatePickerField } from '@/components/ui/DatePickerField';
 import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { EXPENSE_CATEGORIES } from '@/types';
 import { FIELD_LIMITS, validateAmount, validateDate, validateNotes, validateTitle } from '@/utils/validation';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface FormErrors {
   title?: string;
@@ -95,6 +96,7 @@ export default function AddExpenseScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

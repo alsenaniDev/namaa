@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { ProgressBar } from '@/components/ProgressBar';
 import { getAllChallengeProgress, ChallengeProgress } from '@/utils/financialChallenges';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function FinancialChallengesScreen() {
   const colors = useColors();
@@ -42,6 +43,7 @@ export default function FinancialChallengesScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 28 }]}
       showsVerticalScrollIndicator={false}

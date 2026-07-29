@@ -12,6 +12,8 @@ import { formatCurrency, formatMonthYear, formatShortDate, getCurrentMonthYear, 
 import { TransactionItem } from '@/components/TransactionItem';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 const CATEGORY_ICONS: Record<string, string> = {
   'مطاعم': 'coffee', 'قهوة': 'coffee', 'تسوق': 'shopping-bag', 'بنزين': 'navigation',
@@ -28,6 +30,7 @@ export default function ExpensesScreen() {
   const router = useRouter();
   const t = useT();
   const dir = useDir();
+  const responsive = useResponsive();
   const { expenses, getMonthlyTotals, userProfile } = useApp();
   const { month, year } = getCurrentMonthYear();
   const [viewMonth, setViewMonth] = useState(month);
@@ -59,13 +62,15 @@ export default function ExpensesScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <Card style={styles.summaryCard} padding={14}>
+      <Card style={[styles.summaryCard, { margin: responsive.screenPadding, marginBottom: 8 }]} padding={responsive.compactCardPadding}>
         <Text style={[styles.summaryLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.expenses.filteredTotalLabel}</Text>
-        <Text style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.expense }]}>{formatCurrency(totals.totalExpenses, currency)}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.summaryAmount, { textAlign: dir.textAlign, color: colors.expense }]}>
+          {formatCurrency(totals.totalExpenses, currency)}
+        </Text>
         <Text style={[styles.summaryCount, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{monthExpenses.length} {t.expenses.countSuffix}</Text>
       </Card>
 
-      <View style={[styles.filterBar, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border }]}>
+      <View style={[styles.filterBar, { flexDirection: dir.row, backgroundColor: colors.card, borderColor: colors.border, marginHorizontal: responsive.screenPadding, gap: responsive.isTiny ? 6 : 10 }]}>
         <TouchableOpacity
           style={[styles.monthButton, { backgroundColor: colors.muted }]}
           onPress={() => changeMonth(-1)}
@@ -97,10 +102,11 @@ export default function ExpensesScreen() {
       </View>
 
       <FlatList
+        {...iosScrollViewObserverProps}
         data={monthExpenses}
         keyExtractor={(item) => item.id}
         scrollEnabled={!!monthExpenses.length}
-        contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 90 }, !monthExpenses.length && styles.emptyList]}
+        contentContainerStyle={[styles.list, { paddingHorizontal: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 }, !monthExpenses.length && styles.emptyList]}
         ListEmptyComponent={
           <EmptyState icon="shopping-bag" title={t.expenses.emptyTitle} description={t.expenses.emptyDesc} actionLabel={t.expenses.addLabel} onAction={() => router.push('/expenses/add')} />
         }
@@ -133,17 +139,17 @@ export default function ExpensesScreen() {
 }
 
 const styles = StyleSheet.create({
-  summaryCard: { margin: 16, marginBottom: 8 },
+  summaryCard: { marginBottom: 8 },
   summaryLabel: { fontSize: 13, fontFamily: 'Cairo_400Regular', marginBottom: 4 },
   summaryAmount: { fontSize: 24, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   summaryCount: { fontSize: 12, fontFamily: 'Cairo_400Regular' },
-  filterBar: { alignItems: 'center', borderWidth: 1, borderRadius: 12, marginHorizontal: 16, marginBottom: 8, padding: 8, gap: 10 },
+  filterBar: { alignItems: 'center', borderWidth: 1, borderRadius: 12, marginBottom: 8, padding: 8 },
   monthButton: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   monthTitleWrap: { flex: 1, alignItems: 'center', minHeight: 38, justifyContent: 'center' },
   monthTitle: { fontSize: 15, fontFamily: 'Cairo_600SemiBold' },
   todayChip: { marginTop: 5, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   todayChipText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
-  list: { paddingHorizontal: 16, paddingTop: 4 },
+  list: { paddingTop: 4 },
   emptyList: { flex: 1 },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

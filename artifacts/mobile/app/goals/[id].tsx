@@ -17,6 +17,7 @@ import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { getGoalProgress } from '@/utils/calculations';
 import { formatCurrency, formatShortDate, toAsciiDigits } from '@/utils/format';
 import { validateAmount, validateDate } from '@/utils/validation';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function GoalDetailScreen() {
   const colors = useColors();
@@ -83,6 +84,7 @@ export default function GoalDetailScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

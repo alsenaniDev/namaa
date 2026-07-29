@@ -15,6 +15,7 @@ import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import { GOAL_COLOR_PALETTE, GOAL_ICONS } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateAmount, validateDate, validateNotes } from '@/utils/validation';
 import { toAsciiDigits } from '@/utils/format';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface FormErrors { name?: string; target?: string; current?: string; date?: string; notes?: string; }
 
@@ -94,6 +95,7 @@ export default function AddGoalScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

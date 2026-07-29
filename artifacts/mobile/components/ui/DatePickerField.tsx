@@ -7,6 +7,7 @@ import { useDir } from '@/hooks/useDir';
 import { getGregorianDateLocale, parseDateLocal } from '@/utils/format';
 import { useT } from '@/hooks/useT';
 import { useLanguage } from '@/context/LanguageContext';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface DatePickerFieldProps {
   label: string;
@@ -150,6 +151,7 @@ function PickerColumn({
   const colors = useColors();
   return (
     <FlatList
+      {...iosScrollViewObserverProps}
       data={values}
       keyExtractor={(item) => String(item)}
       style={styles.column}

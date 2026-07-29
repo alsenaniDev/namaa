@@ -8,6 +8,7 @@ import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { ACHIEVEMENT_IDS, formatAchievementDate, getAchievementMeta } from '@/utils/achievements';
 import { AchievementId, UserAchievement } from '@/types';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function AchievementsScreen() {
   const colors = useColors();
@@ -23,6 +24,7 @@ export default function AchievementsScreen() {
 
   return (
     <FlatList
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 28 }]}
       data={ACHIEVEMENT_IDS}

@@ -5,12 +5,14 @@ import { useRouter } from 'expo-router';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useT } from '@/hooks/useT';
+import { useResponsive } from '@/hooks/useResponsive';
 
 export function QuickActions() {
   const colors = useColors();
   const dir = useDir();
   const t = useT();
   const router = useRouter();
+  const responsive = useResponsive();
 
   const actions = [
     { icon: 'trending-up', label: t.dashboard.actionAddIncome, color: colors.income, route: '/income/add' },
@@ -20,18 +22,26 @@ export function QuickActions() {
   ];
 
   return (
-    <View style={[styles.row, { flexDirection: dir.row }]}>
+    <View style={[styles.row, { flexDirection: dir.row, flexWrap: responsive.isTiny ? 'wrap' : 'nowrap' }]}>
       {actions.map((a) => (
         <TouchableOpacity
           key={a.route}
           activeOpacity={0.7}
           onPress={() => router.push(a.route as any)}
-          style={[styles.chip, { backgroundColor: colors.card, borderColor: colors.border }]}
+          style={[
+            styles.chip,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              flexBasis: responsive.isTiny ? '48%' : 0,
+              paddingVertical: responsive.isTiny ? 10 : 12,
+            },
+          ]}
         >
           <View style={[styles.iconWrap, { backgroundColor: a.color + '18' }]}>
             <Feather name={a.icon as any} size={18} color={a.color} />
           </View>
-          <Text style={[styles.label, { color: colors.foreground }]} numberOfLines={1}>{a.label}</Text>
+          <Text style={[styles.label, { color: colors.foreground }]} numberOfLines={2}>{a.label}</Text>
         </TouchableOpacity>
       ))}
     </View>
@@ -40,7 +50,7 @@ export function QuickActions() {
 
 const styles = StyleSheet.create({
   row: { gap: 8, marginBottom: 12 },
-  chip: { flex: 1, alignItems: 'center', paddingVertical: 12, paddingHorizontal: 6, borderRadius: 14, borderWidth: 1, gap: 6 },
+  chip: { flex: 1, alignItems: 'center', paddingHorizontal: 6, borderRadius: 14, borderWidth: 1, gap: 6, minWidth: 0 },
   iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 11, fontFamily: 'Cairo_500Medium', textAlign: 'center' },
 });

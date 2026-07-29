@@ -18,6 +18,7 @@ import {
 } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 const SCENARIOS: { kind: WhatIfScenarioKind; icon: string; defaultAmount: string }[] = [
   { kind: 'extraDebtPayment', icon: 'zap', defaultAmount: '500' },
@@ -133,6 +134,7 @@ export default function WhatIfScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       showsVerticalScrollIndicator={false}

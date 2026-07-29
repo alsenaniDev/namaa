@@ -25,7 +25,7 @@ export function BudgetRow({ usage, currency, onEdit, onDelete }: Props) {
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}>
       <View style={[styles.headerRow, { flexDirection: dir.row }]}>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text numberOfLines={1} style={[styles.cat, { textAlign: dir.textAlign, color: colors.foreground }]}>{usage.category}</Text>
           <Text style={[styles.sub, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>
             {formatCurrency(usage.spent, currency)} / {formatCurrency(usage.limit, currency)}
@@ -73,10 +73,10 @@ const styles = StyleSheet.create({
   headerRow: { alignItems: 'flex-end', gap: 8, marginBottom: 8 },
   cat: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 2 },
   sub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
-  pct: { fontSize: 16, fontFamily: 'Cairo_700Bold' },
+  pct: { fontSize: 16, fontFamily: 'Cairo_700Bold', flexShrink: 1 },
   track: { height: 8, borderRadius: 4, overflow: 'hidden' },
   fill: { height: 8, borderRadius: 4 },
   actionsRow: { alignItems: 'center', marginTop: 10, gap: 12 },
   actionBtn: { padding: 2 },
-  remaining: { flex: 1, fontSize: 11, fontFamily: 'Cairo_500Medium' },
+  remaining: { flex: 1, minWidth: 0, fontSize: 11, fontFamily: 'Cairo_500Medium' },
 });

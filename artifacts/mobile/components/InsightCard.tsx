@@ -22,7 +22,7 @@ export function InsightCard({ insight, onCta }: InsightCardProps) {
         <View style={[styles.iconWrap, { backgroundColor: accent + '20' }]}>
           <Feather name={insight.icon as any} size={18} color={accent} />
         </View>
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.title, { textAlign: dir.textAlign, color: colors.foreground }]}>{insight.title}</Text>
           <Text style={[styles.msg, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{insight.message}</Text>
           {insight.cta && onCta ? (
@@ -50,7 +50,7 @@ function severityColor(s: InsightSeverity, colors: ReturnType<typeof useColors>)
 const styles = StyleSheet.create({
   card: { marginBottom: 8, borderWidth: 1 },
   row: { gap: 12, alignItems: 'flex-start' },
-  iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  iconWrap: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 4 },
   msg: { fontSize: 13, fontFamily: 'Cairo_400Regular', lineHeight: 19 },
   ctaRow: { alignItems: 'center', gap: 4, marginTop: 8 },

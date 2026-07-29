@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Card } from '@/components/ui/Card';
 import { LenderAvatar } from '@/components/LenderAvatar';
 import type { Commitment } from '@/types';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function CommitmentsArchiveScreen() {
   const colors = useColors();
@@ -61,6 +62,7 @@ export default function CommitmentsArchiveScreen() {
       </Card>
 
       <FlatList
+        {...iosScrollViewObserverProps}
         data={archived}
         keyExtractor={(item) => item.id}
         contentContainerStyle={[styles.list, { paddingBottom: insets.bottom + bottomPad + 24 }, !archived.length && styles.emptyList]}

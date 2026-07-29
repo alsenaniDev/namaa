@@ -15,6 +15,7 @@ import { Select } from '@/components/ui/Select';
 import { LENDER_TYPES, PAYMENT_METHODS, LENDER_COLOR_PALETTE, LenderType, PaymentMethodKind } from '@/types';
 import { FIELD_LIMITS, validateTitle, validateNotes } from '@/utils/validation';
 import { imageUriToPersistentDataUri } from '@/utils/lenderImages';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 interface FormErrors {
   name?: string;
@@ -131,6 +132,7 @@ export default function AddLenderScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
       keyboardShouldPersistTaps="handled"

@@ -45,11 +45,11 @@ export function SummaryCard({ label, amount, icon, iconColor, sub, trend }: Summ
 }
 
 const styles = StyleSheet.create({
-  card: { flex: 1, minWidth: 140 },
+  card: { flex: 1, minWidth: 0 },
   row: { alignItems: 'center', marginBottom: 10, gap: 8 },
   iconWrap: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   label: { fontSize: 12, fontFamily: 'Cairo_500Medium', flex: 1 },
-  amount: { fontSize: 18, fontWeight: '700', fontFamily: 'Cairo_700Bold', marginBottom: 4 },
+  amount: { fontSize: 17, fontWeight: '700', fontFamily: 'Cairo_700Bold', marginBottom: 4 },
   subRow: { alignItems: 'center' },
   sub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
 });

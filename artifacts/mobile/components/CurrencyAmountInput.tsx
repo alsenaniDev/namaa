@@ -12,6 +12,7 @@ import { formatAmountForInput, formatRateForInput, getDefaultExchangeRate } from
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Button } from '@/components/ui/Button';
+import { useResponsive } from '@/hooks/useResponsive';
 
 interface CurrencyAmountInputProps extends TextInputProps {
   label?: string;
@@ -30,6 +31,7 @@ export function CurrencyAmountInput({
   const insets = useSafeAreaInsets();
   const dir = useDir();
   const t = useT();
+  const responsive = useResponsive();
   const { userProfile } = useApp();
   const target = targetCurrency ?? userProfile?.preferredCurrency ?? 'SAR';
   const initialSource = target === 'USD' ? 'SAR' : 'USD';
@@ -101,6 +103,7 @@ export function CurrencyAmountInput({
                   backgroundColor: colors.card,
                   borderTopLeftRadius: 20,
                   borderTopRightRadius: 20,
+                  paddingHorizontal: responsive.formPadding,
                   paddingBottom: insets.bottom + 16,
                 },
               ]}
@@ -150,9 +153,9 @@ export function CurrencyAmountInput({
                 </Text>
               </View>
 
-              <View style={[styles.actions, { flexDirection: dir.row }]}>
-                <Button title={t.common.cancel} onPress={closeConverter} variant="outline" style={{ flex: 1 }} />
-                <Button title={t.forms.currencyApplyConverted} onPress={applyConvertedAmount} disabled={!canApply} style={{ flex: 1 }} />
+              <View style={[styles.actions, { flexDirection: dir.row, flexWrap: responsive.isTiny ? 'wrap' : 'nowrap' }]}>
+                <Button title={t.common.cancel} onPress={closeConverter} variant="outline" style={{ flex: 1, minWidth: responsive.isTiny ? '100%' : 0 }} />
+                <Button title={t.forms.currencyApplyConverted} onPress={applyConvertedAmount} disabled={!canApply} style={{ flex: 1, minWidth: responsive.isTiny ? '100%' : 0 }} />
               </View>
             </View>
           </View>
@@ -164,7 +167,7 @@ export function CurrencyAmountInput({
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  sheet: { paddingHorizontal: 20, paddingTop: 12 },
+  sheet: { paddingTop: 12 },
   handle: { width: 40, height: 4, borderRadius: 2, alignSelf: 'center', marginBottom: 12 },
   header: { alignItems: 'center', gap: 10, marginBottom: 14 },
   title: { flex: 1, fontSize: 17, fontFamily: 'Cairo_700Bold' },

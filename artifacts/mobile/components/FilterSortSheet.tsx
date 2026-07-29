@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export interface FilterSortOption {
   label: string;
@@ -131,7 +132,7 @@ export function FilterSortSheet({
             </TouchableOpacity>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+          <ScrollView {...iosScrollViewObserverProps} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
             <Text style={[styles.sectionTitle, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{filterLabel}</Text>
             <View style={styles.optionsWrap}>{renderOptions(filterOptions, draftFilter, chooseFilter)}</View>
 

@@ -10,6 +10,8 @@ import { useT } from '@/hooks/useT';
 import { formatCurrency } from '@/utils/format';
 import { getCommitmentsOverview, CommitmentsOverviewItem } from '@/utils/calculations';
 import { Card } from '@/components/ui/Card';
+import { useResponsive } from '@/hooks/useResponsive';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 export default function CommitmentsOverviewScreen() {
   const colors = useColors();
@@ -17,6 +19,7 @@ export default function CommitmentsOverviewScreen() {
   const router = useRouter();
   const dir = useDir();
   const t = useT();
+  const responsive = useResponsive();
   const { commitments, commitmentPayments, userProfile } = useApp();
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
@@ -30,8 +33,9 @@ export default function CommitmentsOverviewScreen() {
 
   return (
     <ScrollView
+      {...iosScrollViewObserverProps}
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
+      contentContainerStyle={[styles.content, { padding: responsive.screenPadding, paddingBottom: bottomPad + 24 }]}
       showsVerticalScrollIndicator={false}
     >
       <Card style={styles.hero}>
@@ -39,9 +43,11 @@ export default function CommitmentsOverviewScreen() {
           <View style={[styles.iconWrap, { backgroundColor: colors.commitment + '18' }]}>
             <Feather name="shield" size={24} color={colors.commitment} />
           </View>
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text style={[styles.heroLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.dashboard.totalOwedTitle}</Text>
-            <Text style={[styles.heroAmount, { textAlign: dir.textAlign, color: colors.foreground }]}>{formatCurrency(overview.totalOwed, currency)}</Text>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.78} style={[styles.heroAmount, { textAlign: dir.textAlign, color: colors.foreground }]}>
+              {formatCurrency(overview.totalOwed, currency)}
+            </Text>
           </View>
         </View>
 
@@ -63,7 +69,7 @@ export default function CommitmentsOverviewScreen() {
         </View>
       </Card>
 
-      <View style={[styles.grid, { flexDirection: dir.row }]}>
+      <View style={[styles.grid, { flexDirection: dir.row, gap: responsive.isTiny ? 8 : 10 }]}>
         <MetricCard label={t.commitmentsOverview.finiteRemaining} value={formatCurrency(overview.finiteRemaining, currency)} color={colors.commitment} />
         <MetricCard label={t.commitmentsOverview.oneTimeTotal} value={formatCurrency(overview.oneTimeTotal, currency)} color={colors.warning} />
         <MetricCard label={t.dashboard.monthlyOpenCommitments} value={formatCurrency(overview.monthlyTotal, currency)} color={colors.primary} />
@@ -107,9 +113,10 @@ export default function CommitmentsOverviewScreen() {
 function MetricCard({ label, value, color }: { label: string; value: string; color: string }) {
   const colors = useColors();
   const dir = useDir();
+  const responsive = useResponsive();
   return (
-    <View style={[styles.metric, { backgroundColor: colors.card, borderColor: colors.border }]}>
-      <Text style={[styles.metricValue, { textAlign: dir.textAlign, color }]} numberOfLines={1}>{value}</Text>
+    <View style={[styles.metric, { width: responsive.isTiny ? '100%' : '48%', backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Text style={[styles.metricValue, { textAlign: dir.textAlign, color }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82}>{value}</Text>
       <Text style={[styles.metricLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]} numberOfLines={2}>{label}</Text>
     </View>
   );
@@ -151,7 +158,7 @@ function BreakdownSection({
                 {typeof item.remainingInstallments === 'number' ? ` · ${item.remainingInstallments}` : ''}
               </Text>
             </View>
-            <Text style={[styles.rowAmount, { color: accent }]} numberOfLines={1}>{formatCurrency(item.amount, currency)}</Text>
+            <Text style={[styles.rowAmount, { color: accent }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.82}>{formatCurrency(item.amount, currency)}</Text>
             <Feather name={dir.chevronDetail as any} size={14} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
         ))
@@ -161,7 +168,7 @@ function BreakdownSection({
 }
 
 const styles = StyleSheet.create({
-  content: { padding: 16 },
+  content: {},
   hero: { marginBottom: 12 },
   heroTop: { alignItems: 'center', gap: 10, marginBottom: 14 },
   iconWrap: { width: 46, height: 46, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
@@ -172,18 +179,18 @@ const styles = StyleSheet.create({
   progressHint: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   track: { height: 10, borderRadius: 5, overflow: 'hidden' },
   fill: { position: 'absolute', top: 0, bottom: 0, height: '100%', borderRadius: 5 },
-  grid: { flexWrap: 'wrap', gap: 14, marginBottom: 12 },
-  metric: { width: '48%', borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 76 },
+  grid: { flexWrap: 'wrap', marginBottom: 12 },
+  metric: { borderWidth: 1, borderRadius: 12, padding: 12, minHeight: 76 },
   metricValue: { fontSize: 15, fontFamily: 'Cairo_700Bold', marginBottom: 4 },
   metricLabel: { fontSize: 11, fontFamily: 'Cairo_400Regular', lineHeight: 16 },
   section: { marginTop: 10 },
   sectionTitle: { fontSize: 16, fontFamily: 'Cairo_600SemiBold', marginBottom: 8 },
   rowCard: { alignItems: 'center', borderWidth: 1, borderRadius: 12, marginBottom: 8, overflow: 'hidden', gap: 10 },
   rowStrip: { width: 4, alignSelf: 'stretch' },
-  rowBody: { flex: 1, paddingVertical: 12 },
+  rowBody: { flex: 1, minWidth: 0, paddingVertical: 12 },
   rowTitle: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 3 },
   rowSub: { fontSize: 11, fontFamily: 'Cairo_400Regular' },
-  rowAmount: { fontSize: 13, fontFamily: 'Cairo_700Bold', flexShrink: 0 },
+  rowAmount: { fontSize: 13, fontFamily: 'Cairo_700Bold', flexShrink: 1, maxWidth: '40%' },
   emptyText: { fontSize: 12, fontFamily: 'Cairo_400Regular', lineHeight: 18 },
   noteCard: { marginTop: 12 },
   noteText: { fontSize: 12, fontFamily: 'Cairo_400Regular', lineHeight: 18 },

@@ -24,6 +24,7 @@ import { LenderAvatar } from '@/components/LenderAvatar';
 import { CommitmentArchiveCelebrationModal } from '@/components/CommitmentArchiveCelebrationModal';
 import { CurrencyAmountInput } from '@/components/CurrencyAmountInput';
 import type { CommitmentPayment } from '@/types';
+import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 type ScheduleRow = {
   index: number;          // 1-based installment number
@@ -345,6 +346,7 @@ export default function CommitmentDetailScreen() {
         }}
       />
       <ScrollView
+        {...iosScrollViewObserverProps}
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 24 }]}
         showsVerticalScrollIndicator={false}

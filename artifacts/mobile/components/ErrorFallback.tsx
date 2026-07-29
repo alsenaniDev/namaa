@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useColors } from "@/hooks/useColors";
+import { iosScrollViewObserverProps } from "@/utils/scrollView";
 
 export type ErrorFallbackProps = {
   error: Error;
@@ -136,6 +137,7 @@ export function ErrorFallback({ error, resetError }: ErrorFallbackProps) {
               </View>
 
               <ScrollView
+                {...iosScrollViewObserverProps}
                 style={styles.modalScrollView}
                 contentContainerStyle={[
                   styles.modalScrollContent,

@@ -13,6 +13,7 @@ import { evaluateAchievementUnlocks } from '../utils/achievements';
 import { getAllChallengeProgress } from '../utils/financialChallenges';
 import { normalizeLenderImageUris } from '../utils/lenderImages';
 import { initNotifications, syncReminders, cancelAllScheduled } from '../utils/notifications';
+import { unmarkByExpenseId } from '../features/smartExpenseDetection/storage/processedStore';
 
 interface AppContextType {
   userProfile: UserProfile | null;
@@ -58,9 +59,15 @@ interface AppContextType {
     action: 'paid' | 'unpaid' | 'amount',
     amount?: number,
   ) => Promise<void>;
-  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
+  addExpense: (expense: Omit<Expense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateExpense: (id: string, expense: Partial<Expense>) => Promise<void>;
   deleteExpense: (id: string) => Promise<void>;
+  /** One-shot month the Expenses screen should open on, if any. */
+  expenseFocus: { month: number; year: number } | null;
+  /** Requests the Expenses screen to open on the given month. */
+  setExpenseFocus: (month: number, year: number) => void;
+  /** Clears the pending expense-month focus after it has been applied. */
+  clearExpenseFocus: () => void;
   addLender: (lender: Omit<Lender, 'id' | 'createdAt' | 'updatedAt'>) => Promise<string>;
   updateLender: (id: string, lender: Partial<Lender>) => Promise<void>;
   deleteLender: (id: string) => Promise<void>;
@@ -103,6 +110,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [challenges, setChallenges] = useState<FinancialChallenge[]>([]);
   const [achievements, setAchievements] = useState<UserAchievement[]>([]);
   const [recentAchievement, setRecentAchievement] = useState<UserAchievement | null>(null);
+  // One-shot signal asking the Expenses screen to open on a specific month
+  // (e.g. after adding an expense whose date is in a past month). Consumed and
+  // cleared by the Expenses screen when it next gains focus.
+  const [expenseFocus, setExpenseFocusState] = useState<{ month: number; year: number } | null>(null);
   const [customTypes, setCustomTypes] = useState<CustomTypes>(DEFAULT_CUSTOM_TYPES);
   const [isLoading, setIsLoading] = useState(true);
   const suppressAchievementsUntilRef = useRef(0);
@@ -401,6 +412,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = [...expenses, item];
     await storage.saveExpenses(updated);
     setExpenses(updated);
+    return item.id;
   }, [expenses]);
 
   const updateExpense = useCallback(async (id: string, data: Partial<Expense>) => {
@@ -413,7 +425,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const updated = expenses.filter((e) => e.id !== id);
     await storage.saveExpenses(updated);
     setExpenses(updated);
+    // Allow a bank message that was added then deleted to be detected again.
+    await unmarkByExpenseId(id);
   }, [expenses]);
+
+  const setExpenseFocus = useCallback((month: number, year: number) => {
+    setExpenseFocusState({ month, year });
+  }, []);
+
+  const clearExpenseFocus = useCallback(() => setExpenseFocusState(null), []);
 
   const addLender = useCallback(async (data: Omit<Lender, 'id' | 'createdAt' | 'updatedAt'>) => {
     const now = new Date().toISOString();
@@ -679,6 +699,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       addIncome, updateIncome, deleteIncome,
       addCommitment, updateCommitment, deleteCommitment, markCommitmentPaid, markCommitmentUnpaid, seedPastInstallments, bulkUpdateCommitmentPayments,
       addExpense, updateExpense, deleteExpense,
+      expenseFocus, setExpenseFocus, clearExpenseFocus,
       addLender, updateLender, deleteLender,
       addGoal, updateGoal, deleteGoal, addGoalContribution, deleteGoalContribution,
       upsertBudget, deleteBudget,

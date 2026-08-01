@@ -18,6 +18,7 @@ import { AchievementPopup } from '@/components/AchievementPopup';
 import { HeaderBack } from '@/components/HeaderBack';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
+import { SmartExpenseDetectionProvider } from '@/features/smartExpenseDetection/context/SmartExpenseDetectionProvider';
 import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
 import { isRTL } from '@/utils/dir';
@@ -108,6 +109,7 @@ function AppLayout() {
         <Stack.Screen name="commitments/archive" options={{ title: t.screen.commitmentsArchive }} />
         <Stack.Screen name="commitments/[id]" options={{ title: t.screen.commitmentDetail }} />
         <Stack.Screen name="expenses/add" options={{ presentation: 'modal', title: t.screen.addEditExpense }} />
+        <Stack.Screen name="expenses/review" options={{ presentation: 'modal', title: t.screen.reviewExpense }} />
         <Stack.Screen name="lenders/index" options={{ title: t.screen.lenders }} />
         <Stack.Screen name="lenders/add" options={{ presentation: 'modal', title: t.screen.addEditLender }} />
         <Stack.Screen name="lenders/[id]" options={{ title: t.screen.lenderDetail }} />
@@ -156,7 +158,9 @@ export default function RootLayout() {
             <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
                 <WebDirectionSync />
-                <AppLayout />
+                <SmartExpenseDetectionProvider>
+                  <AppLayout />
+                </SmartExpenseDetectionProvider>
               </KeyboardProvider>
             </GestureHandlerRootView>
           </AppProvider>

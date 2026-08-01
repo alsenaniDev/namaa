@@ -98,6 +98,12 @@ export default function SettingsScreen() {
   const [monthStartDay, setMonthStartDay] = useState(userProfile?.financialMonthStartDay?.toString() ?? '1');
   const [saving, setSaving] = useState(false);
   const notificationsEnabled = !!userProfile?.notificationsEnabled;
+  const clipboardDetectionEnabled = userProfile?.clipboardDetectionEnabled !== false;
+
+  const handleToggleClipboardDetection = async (next: boolean) => {
+    await updateUserProfile({ clipboardDetectionEnabled: next });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const handleToggleNotifications = async (next: boolean) => {
     if (Platform.OS === 'web') {
@@ -231,6 +237,19 @@ export default function SettingsScreen() {
           <Switch
             value={notificationsEnabled}
             onValueChange={handleToggleNotifications}
+            trackColor={{ false: colors.muted, true: colors.primary }}
+            thumbColor="#fff"
+          />
+        </View>
+
+        <View style={[styles.toggleRow, { flexDirection: dir.row, borderTopColor: colors.border }]}>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.toggleLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.settings.clipboardDetectionLabel}</Text>
+            <Text style={[styles.toggleHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.clipboardDetectionHint}</Text>
+          </View>
+          <Switch
+            value={clipboardDetectionEnabled}
+            onValueChange={handleToggleClipboardDetection}
             trackColor={{ false: colors.muted, true: colors.primary }}
             thumbColor="#fff"
           />

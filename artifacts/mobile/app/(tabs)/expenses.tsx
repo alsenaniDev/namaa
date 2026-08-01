@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -31,10 +31,23 @@ export default function ExpensesScreen() {
   const t = useT();
   const dir = useDir();
   const responsive = useResponsive();
-  const { expenses, getMonthlyTotals, userProfile } = useApp();
+  const { expenses, getMonthlyTotals, userProfile, expenseFocus, clearExpenseFocus } = useApp();
   const { month, year } = getCurrentMonthYear();
   const [viewMonth, setViewMonth] = useState(month);
   const [viewYear, setViewYear] = useState(year);
+
+  // When arriving after adding an expense (whose date may be in a past month),
+  // jump to that month so the new expense is visible rather than hidden behind
+  // the default current-month view.
+  useFocusEffect(
+    useCallback(() => {
+      if (expenseFocus) {
+        setViewMonth(expenseFocus.month);
+        setViewYear(expenseFocus.year);
+        clearExpenseFocus();
+      }
+    }, [expenseFocus, clearExpenseFocus]),
+  );
   const totals = getMonthlyTotals(viewMonth, viewYear);
   const currency = userProfile?.preferredCurrency ?? 'SAR';
   const bottomPad = Platform.OS === 'web' ? 34 : 0;
@@ -103,12 +116,14 @@ export default function ExpensesScreen() {
 
       <FlatList
         {...iosScrollViewObserverProps}
+        style={styles.listView}
         data={monthExpenses}
         keyExtractor={(item) => item.id}
         scrollEnabled={!!monthExpenses.length}
-        contentContainerStyle={[styles.list, { paddingHorizontal: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 }, !monthExpenses.length && styles.emptyList]}
-        ListEmptyComponent={
-          <EmptyState icon="shopping-bag" title={t.expenses.emptyTitle} description={t.expenses.emptyDesc} actionLabel={t.expenses.addLabel} onAction={() => router.push('/expenses/add')} />
+        contentContainerStyle={
+          monthExpenses.length
+            ? [styles.list, { paddingHorizontal: responsive.screenPadding, paddingBottom: insets.bottom + bottomPad + 90 }]
+            : [styles.emptyList, { paddingHorizontal: responsive.screenPadding }]
         }
         renderItem={({ item }) => {
           const ic = CATEGORY_COLORS[item.category] ?? colors.expense;
@@ -127,6 +142,11 @@ export default function ExpensesScreen() {
           );
         }}
       />
+      {!monthExpenses.length ? (
+        <View style={styles.emptyOverlay} pointerEvents="box-none">
+          <EmptyState icon="shopping-bag" title={t.expenses.emptyTitle} description={t.expenses.emptyDesc} actionLabel={t.expenses.addLabel} onAction={() => router.push('/expenses/add')} />
+        </View>
+      ) : null}
       <TouchableOpacity
         style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + bottomPad + 80 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push('/expenses/add'); }}
@@ -150,6 +170,8 @@ const styles = StyleSheet.create({
   todayChip: { marginTop: 5, paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10 },
   todayChipText: { fontSize: 11, fontFamily: 'Cairo_600SemiBold' },
   list: { paddingTop: 4 },
-  emptyList: { flex: 1 },
+  listView: { flex: 1 },
+  emptyList: { flexGrow: 1, justifyContent: 'center' },
+  emptyOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' },
   fab: { position: 'absolute', left: 20, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
 });

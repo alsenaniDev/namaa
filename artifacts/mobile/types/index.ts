@@ -7,6 +7,12 @@ export interface UserProfile {
   financialMonthStartDay: number;
   isDarkMode: boolean;
   notificationsEnabled?: boolean;
+  /**
+   * When the app checks the clipboard on launch/foreground and suggests adding
+   * a detected bank purchase as an expense. Enabled by default (treated as
+   * enabled when undefined for backward compatibility).
+   */
+  clipboardDetectionEnabled?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -14,7 +20,7 @@ export interface UserProfile {
 export type IncomeType = 'راتب' | 'عمل إضافي' | 'مكافأة' | 'تجارة' | 'استثمار' | 'أخرى';
 
 export const INCOME_TYPES: IncomeType[] = [
-  'راتب', 'عمل إضافي', 'مكافأة' , 'تجارة', 'استثمار', 'أخرى',
+  'راتب', 'عمل إضافي', 'مكافأة', 'تجارة', 'استثمار', 'أخرى',
 ];
 
 export interface Income {

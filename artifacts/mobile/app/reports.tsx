@@ -165,8 +165,8 @@ export default function ReportsScreen() {
                 <Text style={[styles.catAmt, { textAlign: dir.textAlign, color: barColor }]}>{formatCurrency(amt, currency)}</Text>
                 <View style={{ flex: 1, minWidth: 0, marginLeft: 12 }}>
                   <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
-                    <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                     <Text style={[styles.catName, { color: colors.foreground }]}>{cat}</Text>
+                    <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(pct)}٪</Text>
                   </View>
                   <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
                     <View style={[styles.catFill, { width: `${pct}%` as any, backgroundColor: barColor, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
@@ -204,8 +204,8 @@ export default function ReportsScreen() {
             {goalsTopFour.map(({ g, p }) => (
               <View key={g.id} style={{ marginTop: 12 }}>
                 <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
-                  <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(p.percent)}٪</Text>
                   <Text style={[styles.catName, { color: colors.foreground }]} numberOfLines={1}>{g.name}</Text>
+                  <Text style={[styles.catPct, { color: colors.mutedForeground }]}>{Math.round(p.percent)}٪</Text>
                 </View>
                 <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
                   <View style={[styles.catFill, { width: `${Math.min(100, p.percent)}%` as any, backgroundColor: g.color, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />
@@ -251,8 +251,8 @@ export default function ReportsScreen() {
             return (
               <View key={u.category} style={{ marginBottom: 12 }}>
                 <View style={[styles.catLabelRow, { flexDirection: dir.row }]}>
-                  <Text style={[styles.catPct, { color: c }]}>{Math.round(u.percent)}٪</Text>
                   <Text style={[styles.catName, { color: colors.foreground }]}>{u.category}</Text>
+                  <Text style={[styles.catPct, { color: c }]}>{Math.round(u.percent)}٪</Text>
                 </View>
                 <View style={[styles.catBar, { backgroundColor: colors.muted }]}>
                   <View style={[styles.catFill, { width: `${Math.min(100, u.percent)}%` as any, backgroundColor: c, position: 'absolute', ...(dir.isRTL ? { right: 0 } : { left: 0 }) }]} />

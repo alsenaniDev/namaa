@@ -12,7 +12,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType>({
   language: 'ar',
-  setLanguage: async () => {},
+  setLanguage: async () => { },
 });
 
 function applyWebDirection(lang: Language) {
@@ -45,7 +45,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           applyWebDirection(value);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const setLanguage = useCallback(async (lang: Language) => {

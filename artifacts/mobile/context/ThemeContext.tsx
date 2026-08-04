@@ -10,12 +10,12 @@ export type ResolvedScheme = 'light' | 'dark';
 const THEME_KEY = '@mali/theme';
 
 interface ThemeContextValue {
-  /** The user's stored choice. */
-  preference: ThemePreference;
-  /** The effective palette after resolving `system` against the device. */
-  scheme: ResolvedScheme;
-  /** Persist a new choice and apply it immediately. */
-  setPreference: (preference: ThemePreference) => Promise<void>;
+    /** The user's stored choice. */
+    preference: ThemePreference;
+    /** The effective palette after resolving `system` against the device. */
+    scheme: ResolvedScheme;
+    /** Persist a new choice and apply it immediately. */
+    setPreference: (preference: ThemePreference) => Promise<void>;
 }
 
 export const ThemeContext = createContext<ThemeContextValue | null>(null);
@@ -26,39 +26,39 @@ export const ThemeContext = createContext<ThemeContextValue | null>(null);
  * whole app re-themes instantly when the choice changes — no reload required.
  */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const system = useColorScheme();
-  const [preference, setPref] = useState<ThemePreference>('system');
+    const system = useColorScheme();
+    const [preference, setPref] = useState<ThemePreference>('system');
 
-  useEffect(() => {
-    AsyncStorage.getItem(THEME_KEY)
-      .then((value) => {
-        if (value === 'light' || value === 'dark' || value === 'system') setPref(value);
-      })
-      .catch(() => {});
-  }, []);
+    useEffect(() => {
+        AsyncStorage.getItem(THEME_KEY)
+            .then((value) => {
+                if (value === 'light' || value === 'dark' || value === 'system') setPref(value);
+            })
+            .catch(() => { });
+    }, []);
 
-  const setPreference = useCallback(async (next: ThemePreference) => {
-    setPref(next);
-    try {
-      await AsyncStorage.setItem(THEME_KEY, next);
-    } catch {
-      // Best-effort; keep the in-memory choice even if persistence fails.
-    }
-  }, []);
+    const setPreference = useCallback(async (next: ThemePreference) => {
+        setPref(next);
+        try {
+            await AsyncStorage.setItem(THEME_KEY, next);
+        } catch {
+            // Best-effort; keep the in-memory choice even if persistence fails.
+        }
+    }, []);
 
-  const scheme: ResolvedScheme =
-    preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
+    const scheme: ResolvedScheme =
+        preference === 'system' ? (system === 'dark' ? 'dark' : 'light') : preference;
 
-  return (
-    <ThemeContext.Provider value={{ preference, scheme, setPreference }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+    return (
+        <ThemeContext.Provider value={{ preference, scheme, setPreference }}>
+            {children}
+        </ThemeContext.Provider>
+    );
 }
 
 /** Access the theme preference and setter (used by the settings screen). */
 export function useThemePreference(): ThemeContextValue {
-  const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useThemePreference must be used within ThemeProvider');
-  return ctx;
+    const ctx = useContext(ThemeContext);
+    if (!ctx) throw new Error('useThemePreference must be used within ThemeProvider');
+    return ctx;
 }

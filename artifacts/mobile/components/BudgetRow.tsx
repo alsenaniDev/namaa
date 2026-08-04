@@ -19,8 +19,8 @@ export function BudgetRow({ usage, currency, onEdit, onDelete }: Props) {
   const pct = Math.round(usage.percent);
   const color =
     usage.status === 'over' ? colors.danger :
-    usage.status === 'warning' ? '#F59E0B' :
-    colors.success;
+      usage.status === 'warning' ? '#F59E0B' :
+        colors.success;
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border, borderRadius: colors.radius - 2 }]}>

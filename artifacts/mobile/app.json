@@ -2,7 +2,7 @@
   "expo": {
     "name": "نماء - إدارة الميزانية الشخصية",
     "slug": "mobile",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": false,
-      "buildNumber": "7",
+      "buildNumber": "8",
       "infoPlist": {
         "CFBundleName": "نماء",
         "CFBundleDisplayName": "نماء",

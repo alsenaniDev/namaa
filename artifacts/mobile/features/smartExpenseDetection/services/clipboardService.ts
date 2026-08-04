@@ -1,5 +1,5 @@
 import type * as ExpoClipboard from 'expo-clipboard';
-import { requireOptionalNativeModule } from 'expo-modules-core';
+import { requireOptionalNativeModule } from 'expo';
 
 /**
  * Cached reference to the lazily-loaded `expo-clipboard` module.

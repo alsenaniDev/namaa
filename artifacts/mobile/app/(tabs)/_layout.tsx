@@ -2,16 +2,17 @@ import { BlurView } from 'expo-blur';
 import { Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import React from 'react';
-import { Platform, StyleSheet, View, useColorScheme, TouchableOpacity } from 'react-native';
+import { Platform, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { useColors } from '@/hooks/useColors';
 import { useRouter } from 'expo-router';
 import { useT } from '@/hooks/useT';
 import { useDir } from '@/hooks/useDir';
+import { useThemePreference } from '@/context/ThemeContext';
 
 export default function TabLayout() {
   const colors = useColors();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { scheme } = useThemePreference();
+  const isDark = scheme === 'dark';
   const isIOS = Platform.OS === 'ios';
   const isWeb = Platform.OS === 'web';
   const router = useRouter();

@@ -57,22 +57,24 @@ export default function LenderDetailScreen() {
     }
   };
 
+  // Edit lives opposite the back button: back is on the right in Arabic (RTL),
+  // so edit goes left, and vice-versa in English.
+  const editButton = () => (
+    <TouchableOpacity
+      onPress={() => router.push({ pathname: '/lenders/add', params: { id: lender.id } })}
+      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+      style={{ paddingHorizontal: 14, paddingVertical: 6 }}
+    >
+      <Feather name="edit-2" size={20} color={colors.primary} />
+    </TouchableOpacity>
+  );
+
   return (
     <>
       <Stack.Screen
         options={{
           title: lender.name,
-          // headerRight is reserved globally for the back button (see root
-          // _layout). The edit action lives on headerLeft (visual left).
-          headerRight: () => (
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/lenders/add', params: { id: lender.id } })}
-              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-              style={{ paddingHorizontal: 14, paddingVertical: 6 }}
-            >
-              <Feather name="edit-2" size={20} color={colors.primary} />
-            </TouchableOpacity>
-          ),
+          ...(dir.isRTL ? { headerLeft: editButton } : { headerRight: editButton }),
         }}
       />
       <ScrollView

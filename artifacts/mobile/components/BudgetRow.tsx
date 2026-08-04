@@ -34,7 +34,7 @@ export function BudgetRow({ usage, currency, onEdit, onDelete }: Props) {
         <Text style={[styles.pct, { color }]}>{pct}٪</Text>
       </View>
 
-      <View style={[styles.track, { backgroundColor: colors.muted }]}>
+      <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View
           style={[
             styles.fill,

@@ -37,7 +37,7 @@ export function BudgetBar({ income, committed, spent, currency }: BudgetBarProps
         <Text style={[styles.income, { color: colors.income }]}>{formatCurrency(income, currency)}</Text>
       </View>
 
-      <View style={[styles.track, { backgroundColor: colors.muted, flexDirection: dir.row }]}>
+      <View style={[styles.track, { backgroundColor: colors.border, flexDirection: dir.row }]}>
         {wCommitted > 0 ? (
           <View style={{ width: `${wCommitted}%` as any, backgroundColor: colors.commitment }} />
         ) : null}

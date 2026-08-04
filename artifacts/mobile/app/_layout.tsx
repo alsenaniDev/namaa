@@ -18,9 +18,11 @@ import { AchievementPopup } from '@/components/AchievementPopup';
 import { HeaderBack } from '@/components/HeaderBack';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { LanguageProvider, useLanguage } from '@/context/LanguageContext';
+import { ThemeProvider } from '@/context/ThemeContext';
 import { SmartExpenseDetectionProvider } from '@/features/smartExpenseDetection/context/SmartExpenseDetectionProvider';
 import { useColors } from '@/hooks/useColors';
 import { useT } from '@/hooks/useT';
+import { useDir } from '@/hooks/useDir';
 import { isRTL } from '@/utils/dir';
 
 // ─── WEB-ONLY SYNCHRONOUS DIRECTION SETUP ────────────────────────────────────
@@ -64,6 +66,7 @@ function AppLayout() {
   const segments = useSegments();
   const colors = useColors();
   const t = useT();
+  const dir = useDir();
 
   useEffect(() => {
     if (isLoading) return;
@@ -87,11 +90,13 @@ function AppLayout() {
           headerShadowVisible: false,
           headerTintColor: colors.primary,
           headerBackTitle: t.nav.back,
-          // App is manually RTL with native I18nManager pinned LTR, so the
-          // default back button lands on the visual LEFT — wrong side for
-          // Arabic. We hide it and render our own larger chevron on the
-          // visual right via headerRight (see HeaderBack).
-          headerBackVisible: true,
+          // Native RTL stays pinned LTR (see index.js / plugins/withForceRTL.js),
+          // so we render our own back button for both languages to keep the icon
+          // size identical: English on the left, Arabic on the right.
+          headerBackVisible: false,
+          ...(dir.isRTL
+            ? { headerRight: () => <HeaderBack />, headerRightContainerStyle: { paddingEnd: 4 } }
+            : { headerLeft: () => <HeaderBack />, headerLeftContainerStyle: { paddingStart: 4 } }),
         }}
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -153,18 +158,20 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <ErrorBoundary>
-        <LanguageProvider>
-          <AppProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <WebDirectionSync />
-                <SmartExpenseDetectionProvider>
-                  <AppLayout />
-                </SmartExpenseDetectionProvider>
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </AppProvider>
-        </LanguageProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AppProvider>
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <KeyboardProvider>
+                  <WebDirectionSync />
+                  <SmartExpenseDetectionProvider>
+                    <AppLayout />
+                  </SmartExpenseDetectionProvider>
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </AppProvider>
+          </LanguageProvider>
+        </ThemeProvider>
       </ErrorBoundary>
     </SafeAreaProvider>
   );

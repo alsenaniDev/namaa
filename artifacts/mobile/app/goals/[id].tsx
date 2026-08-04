@@ -130,7 +130,7 @@ export default function GoalDetailScreen() {
           </View>
         </View>
 
-        <View style={[styles.track, { backgroundColor: colors.muted }]}>
+        <View style={[styles.track, { backgroundColor: colors.border }]}>
           <View
             style={[
               styles.fill,

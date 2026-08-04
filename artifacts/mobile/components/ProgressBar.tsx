@@ -25,7 +25,7 @@ export function ProgressBar({ label, value, max, color, showPercent = true }: Pr
         ) : null}
         <Text style={[styles.label, { textAlign: dir.textAlign, color: colors.foreground }]}>{label}</Text>
       </View>
-      <View style={[styles.track, { backgroundColor: colors.muted, borderRadius: 6 }]}>
+      <View style={[styles.track, { backgroundColor: colors.border, borderRadius: 6 }]}>
         <View
           style={[
             styles.fill,

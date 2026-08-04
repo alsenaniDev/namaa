@@ -162,7 +162,7 @@ export default function DashboardScreen() {
           <Feather name={dir.chevronDetail as any} size={18} color={colors.mutedForeground} />
         </View>
 
-        <View style={[styles.debtProgressTrack, { backgroundColor: colors.muted }]}>
+        <View style={[styles.debtProgressTrack, { backgroundColor: colors.border }]}>
           <View
             style={[
               styles.debtProgressFill,
@@ -465,7 +465,7 @@ function CountdownMetric({
   const dir = useDir();
   const responsive = useResponsive();
   return (
-    <View style={[styles.countdownMetric, { backgroundColor: colors.muted, width: responsive.isTiny ? '100%' : '48%', padding: responsive.isTiny ? 9 : 10 }]}>
+    <View style={[styles.countdownMetric, { backgroundColor: colors.background, borderColor: colors.border, width: responsive.isTiny ? '100%' : '48%', padding: responsive.isTiny ? 9 : 10 }]}>
       <Text style={[styles.countdownMetricLabel, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>{label}</Text>
       <Text style={[styles.countdownMetricValue, { color: color ?? colors.foreground, textAlign: dir.textAlign }, strong ? styles.countdownMetricStrong : null]} numberOfLines={1}>
         {value}
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
   salaryCountdownTitle: { fontSize: 15, fontFamily: 'Cairo_700Bold', marginBottom: 2 },
   salaryCountdownSub: { fontSize: 12, fontFamily: 'Cairo_500Medium' },
   salaryCountdownGrid: { flexWrap: 'wrap', marginBottom: 10 },
-  countdownMetric: { minHeight: 72, borderRadius: 12, justifyContent: 'center' },
+  countdownMetric: { minHeight: 72, borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, justifyContent: 'center' },
   countdownMetricLabel: { fontSize: 10, fontFamily: 'Cairo_500Medium', marginBottom: 4 },
   countdownMetricValue: { fontSize: 12, fontFamily: 'Cairo_700Bold' },
   countdownMetricStrong: { fontSize: 14 },

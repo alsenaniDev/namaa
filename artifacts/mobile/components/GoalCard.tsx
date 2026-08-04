@@ -53,7 +53,7 @@ export function GoalCard({ goal, contributions, currency, onPress, compact = fal
         <Text numberOfLines={1} style={[styles.pct, { color: goal.color }]}>{pct}٪</Text>
       </View>
 
-      <View style={[styles.track, { backgroundColor: colors.muted }]}>
+      <View style={[styles.track, { backgroundColor: colors.border }]}>
         <View
           style={[
             styles.fill,

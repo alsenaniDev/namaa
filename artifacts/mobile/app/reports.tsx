@@ -111,7 +111,7 @@ export default function ReportsScreen() {
             return (
               <View key={bar.label} style={styles.barCol}>
                 <Text style={[styles.barAmt, { color: bar.color }]}>{formatCurrency(bar.value, currency)}</Text>
-                <View style={[styles.barTrack, { backgroundColor: colors.muted }]}>
+                <View style={[styles.barTrack, { backgroundColor: colors.border }]}>
                   <View style={[styles.barFill, { height: `${pct}%` as any, backgroundColor: bar.color }]} />
                 </View>
                 <Text style={[styles.barLabel, { color: colors.mutedForeground }]}>{bar.label}</Text>

@@ -55,7 +55,7 @@ export default function CommitmentsOverviewScreen() {
           <Text style={[styles.progressText, { color: colors.commitment }]}>{progressLabel}</Text>
           <Text style={[styles.progressHint, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.commitmentsOverview.loanProgress}</Text>
         </View>
-        <View style={[styles.track, { backgroundColor: colors.muted }]}>
+        <View style={[styles.track, { backgroundColor: colors.border }]}>
           <View
             style={[
               styles.fill,

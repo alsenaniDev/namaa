@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '@/hooks/useColors';
 import { useDir } from '@/hooks/useDir';
 import { useApp } from '@/context/AppContext';
+import { useLanguage } from '@/context/LanguageContext';
+import { useThemePreference } from '@/context/ThemeContext';
 import { useT } from '@/hooks/useT';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
@@ -20,6 +22,49 @@ import type { CustomTypes } from '@/utils/storage';
 import { iosScrollViewObserverProps } from '@/utils/scrollView';
 
 type TypeCategory = keyof CustomTypes;
+
+interface SegmentedOption {
+  label: string;
+  value: string;
+  icon?: string;
+}
+
+/** A row of mutually-exclusive pill buttons; highlights the active value. */
+function Segmented({ value, options, onChange }: { value: string; options: SegmentedOption[]; onChange: (value: string) => void }) {
+  const colors = useColors();
+  const dir = useDir();
+  return (
+    <View style={[segStyles.row, { flexDirection: dir.row, backgroundColor: colors.muted, borderColor: colors.border }]}>
+      {options.map((opt) => {
+        const active = opt.value === value;
+        return (
+          <TouchableOpacity
+            key={opt.value}
+            onPress={() => {
+              if (!active) {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onChange(opt.value);
+              }
+            }}
+            activeOpacity={0.85}
+            style={[segStyles.item, { flexDirection: dir.row, backgroundColor: active ? colors.primary : 'transparent' }]}
+          >
+            {opt.icon ? (
+              <Feather name={opt.icon as any} size={15} color={active ? '#fff' : colors.mutedForeground} />
+            ) : null}
+            <Text style={[segStyles.itemText, { color: active ? '#fff' : colors.foreground }]}>{opt.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const segStyles = StyleSheet.create({
+  row: { alignItems: 'center', padding: 4, borderRadius: 12, borderWidth: 1, gap: 4 },
+  item: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 9 },
+  itemText: { fontSize: 13, fontFamily: 'Cairo_600SemiBold' },
+});
 
 const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => {
   const value = String(i + 1);
@@ -88,6 +133,8 @@ export default function SettingsScreen() {
   const router = useRouter();
   const t = useT();
   const dir = useDir();
+  const { language, setLanguage } = useLanguage();
+  const { preference: themePreference, setPreference: setThemePreference } = useThemePreference();
   const { userProfile, updateUserProfile, clearAllData, loadSampleData, exportData, importData } = useApp();
   const bottomPad = Platform.OS === 'web' ? 34 : insets.bottom;
 
@@ -104,6 +151,16 @@ export default function SettingsScreen() {
     await updateUserProfile({ clipboardDetectionEnabled: next });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
+
+  const themeOptions: SegmentedOption[] = [
+    { label: t.settings.themeLight, value: 'light', icon: 'sun' },
+    { label: t.settings.themeDark, value: 'dark', icon: 'moon' },
+    { label: t.settings.themeSystem, value: 'system', icon: 'smartphone' },
+  ];
+  const languageOptions: SegmentedOption[] = [
+    { label: t.settings.arabic, value: 'ar' },
+    { label: t.settings.english, value: 'en' },
+  ];
 
   const handleToggleNotifications = async (next: boolean) => {
     if (Platform.OS === 'web') {
@@ -256,6 +313,14 @@ export default function SettingsScreen() {
         </View>
       </Card>
 
+      <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.appearanceSection}</Text>
+      <Card style={styles.card}>
+        <Text style={[styles.fieldLabel, { textAlign: dir.textAlign, color: colors.foreground }]}>{t.settings.themeLabel}</Text>
+        <Segmented value={themePreference} options={themeOptions} onChange={(v) => setThemePreference(v as any)} />
+        <Text style={[styles.fieldLabel, { textAlign: dir.textAlign, color: colors.foreground, marginTop: 18 }]}>{t.settings.languageLabel}</Text>
+        <Segmented value={language} options={languageOptions} onChange={(v) => setLanguage(v as any)} />
+      </Card>
+
       <Text style={[styles.sectionLabel, { textAlign: dir.textAlign, color: colors.mutedForeground }]}>{t.settings.categoriesSection}</Text>
       <Card style={styles.card} padding={14}>
         <TypeManager title={t.settings.incomeTypesTitle} category="incomeTypes" builtins={[...INCOME_TYPES]} />
@@ -340,6 +405,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 16, paddingTop: 16 },
   sectionLabel: { fontSize: 11, fontFamily: 'Cairo_600SemiBold', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 },
   card: { marginBottom: 24 },
+  fieldLabel: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 10 },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: 16 },
   typeManager: { marginBottom: 4 },
   typeTitle: { fontSize: 14, fontFamily: 'Cairo_600SemiBold', marginBottom: 10 },

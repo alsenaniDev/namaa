@@ -19,7 +19,7 @@ const PURCHASE_KEYWORDS = [
  * first token that resolves an adjacent amount wins.
  */
 const CURRENCY_TOKENS: { code: string; patterns: string[] }[] = [
-    { code: 'SAR', patterns: ['SAR', 'ر.س', 'ريال', 'رس'] },
+    { code: 'SAR', patterns: ['SAR', 'SR', 'ر.س', 'ريال', 'رس'] },
     { code: 'AED', patterns: ['AED', 'د.إ', 'درهم'] },
     { code: 'KWD', patterns: ['KWD', 'د.ك'] },
     { code: 'BHD', patterns: ['BHD', 'د.ب'] },
@@ -44,6 +44,15 @@ const PAYMENT_METHODS: { match: RegExp; label: string }[] = [
 const ESCAPE_REGEX = /[.*+?^${}()|[\]\\]/g;
 function escapeRegExp(value: string): string {
     return value.replace(ESCAPE_REGEX, '\\$&');
+}
+
+// Invisible bidirectional / zero-width formatting characters that banking apps
+// embed in RTL messages — around Latin currency codes and, most often, around
+// decimal amounts (e.g. "بـSR ‎52.44"). They sit between the currency and the
+// digits and silently break amount/marker matching, so they're removed up front.
+const FORMATTING_MARKS = /[\u200B-\u200F\u061C\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+function stripFormattingMarks(text: string): string {
+    return text.replace(FORMATTING_MARKS, '');
 }
 
 /** Parses a numeric string that may contain thousands separators. */
@@ -200,7 +209,12 @@ function extractDate(text: string): Date {
     return candidates.find((d): d is Date => d !== null) ?? new Date();
 }
 
-const MERCHANT_MARKER = /(?:^|\s)(?:لـ|لدى|من|@|at|from)\s*[:：]?\s*([^\n]+)/i;
+// Markers that point *to* the merchant (destination of the payment). These are
+// tried first because a bank message also carries a "from account" marker.
+const MERCHANT_MARKER = /(?:^|\s)(?:لـ|لدى|@|at)\s*[:：]?\s*([^\n]+)/gi;
+// "From" markers usually precede the source account, but on some messages they
+// carry the merchant, so they're only used as a fallback.
+const SOURCE_MARKER = /(?:^|\s)(?:من|from)\s*[:：]?\s*([^\n]+)/gi;
 
 /** Strips known markers/punctuation from a raw merchant fragment. */
 function cleanMerchant(raw: string): string {
@@ -221,52 +235,124 @@ function isMetadataLine(line: string): boolean {
     return isKeyword || hasAmount || isDate || isCardOrPayment;
 }
 
+/** True when a fragment is only digits/separators (e.g. an account number). */
+function isNumericOnly(value: string): boolean {
+    return /^[\d\s.,#*x-]+$/i.test(value);
+}
+
+/** Returns the first non-numeric merchant captured by `marker`, if any. */
+function firstMarkedMerchant(text: string, marker: RegExp): string | undefined {
+    marker.lastIndex = 0;
+    let match: RegExpExecArray | null;
+    while ((match = marker.exec(text)) !== null) {
+        const merchant = cleanMerchant(match[1]);
+        if (merchant && !isNumericOnly(merchant)) return merchant;
+    }
+    return undefined;
+}
+
 /** Extracts the merchant name, preferring an explicit "لـ / لدى / at" marker. */
 function extractMerchant(originalText: string, asciiText: string): string | undefined {
-    const marked = asciiText.match(MERCHANT_MARKER);
-    if (marked) {
-        const merchant = cleanMerchant(marked[1]);
-        if (merchant) return merchant;
-    }
+    const marked = firstMarkedMerchant(asciiText, MERCHANT_MARKER)
+        ?? firstMarkedMerchant(asciiText, SOURCE_MARKER);
+    if (marked) return marked;
+
     // Fallback: the first content line that is not recognizable metadata.
     const lines = originalText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    const candidate = lines.find((line) => !isMetadataLine(line));
-    return candidate ? cleanMerchant(candidate) : undefined;
+    for (const line of lines) {
+        if (isMetadataLine(line)) continue;
+        const cleaned = cleanMerchant(line);
+        if (cleaned && !isNumericOnly(cleaned)) return cleaned;
+    }
+    return undefined;
+}
+
+// Keywords that signal a bank/financial notification of *any* kind (transfer,
+// deposit, withdrawal, salary, fee, refund…). Used to tell "a bank message we
+// don't support" apart from arbitrary clipboard text, so the user can be shown a
+// clear "not a purchase" notice instead of nothing happening.
+const BANK_MESSAGE_KEYWORDS = [
+    'حواله', 'حوالة', 'تحويل', 'حولت', 'محول', 'مستفيد',
+    'ايداع', 'إيداع', 'اودع', 'سحب', 'استقطاع', 'خصم', 'اقتطاع',
+    'راتب', 'رصيد', 'رسوم', 'مرجع', 'استرداد', 'مسترد',
+    'دفعة', 'قسط', 'فاتورة', 'حساب', 'ايبان', 'آيبان',
+    'transfer', 'deposit', 'withdraw', 'withdrawal', 'salary', 'balance',
+    'fee', 'fees', 'ref', 'refund', 'iban', 'credit', 'debit', 'account',
+    'payment', 'beneficiary',
+];
+
+/** True when the text reads like a bank/financial notification of any type. */
+function looksLikeBankMessage(asciiLower: string): boolean {
+    return BANK_MESSAGE_KEYWORDS.some((keyword) => asciiLower.includes(keyword.toLowerCase()));
+}
+
+/**
+ * The outcome of inspecting clipboard text:
+ *  - `expense`     → a supported purchase, ready to add;
+ *  - `unsupported` → clearly a bank message, but not a purchase we can add
+ *                    (e.g. a transfer, deposit or fee alert);
+ *  - `none`        → not a bank message at all (stay silent).
+ */
+export type BankMessageClassification =
+    | { kind: 'expense'; expense: DetectedExpense }
+    | { kind: 'unsupported'; fingerprint: string }
+    | { kind: 'none' };
+
+/**
+ * Classifies clipboard text. Distinguishes a supported purchase from a bank
+ * message we can't add automatically, so the UI can tell the user *why* nothing
+ * was added instead of silently doing nothing.
+ *
+ * All processing is local; the input is never transmitted anywhere.
+ */
+export function classifyBankMessage(text: string): BankMessageClassification {
+    if (!text || !text.trim()) return { kind: 'none' };
+
+    // Remove invisible bidi/zero-width marks first; without this, decimal amounts
+    // wrapped by the sending app (e.g. "SR ‎52.44") fail to match.
+    const cleaned = stripFormattingMarks(text);
+    const asciiText = toAsciiDigits(cleaned);
+    const lower = asciiText.toLowerCase();
+
+    const isPurchase = PURCHASE_KEYWORDS.some((keyword) => lower.includes(keyword.toLowerCase()));
+    const money = extractAmountAndCurrency(asciiText);
+    const merchant = isPurchase && money ? extractMerchant(cleaned, asciiText) : undefined;
+
+    // A supported purchase needs a purchase keyword, an amount and a merchant.
+    if (isPurchase && money && merchant) {
+        return {
+            kind: 'expense',
+            expense: {
+                amount: money.amount,
+                currency: money.currency,
+                merchant,
+                paymentMethod: extractPaymentMethod(asciiText),
+                cardLastFourDigits: extractCardLastFour(asciiText),
+                transactionDate: extractDate(asciiText),
+                originalText: text,
+                fingerprint: computeFingerprint(cleaned),
+                suggestedCategory: suggestCategory(merchant),
+            },
+        };
+    }
+
+    // Not a supported purchase, but still recognizably a bank/financial message
+    // (has a money amount plus a purchase or other banking keyword). Surface it as
+    // "unsupported" so the caller can inform the user rather than stay silent.
+    if (money && (isPurchase || looksLikeBankMessage(lower))) {
+        return { kind: 'unsupported', fingerprint: computeFingerprint(cleaned) };
+    }
+
+    return { kind: 'none' };
 }
 
 /**
  * Parses clipboard text into a {@link DetectedExpense}. Returns `null` when the
- * text is not recognizable as a bank purchase transaction.
+ * text is not a supported bank purchase transaction.
  *
  * All processing is local; the input is never transmitted anywhere.
  */
 export function parseBankMessage(text: string): DetectedExpense | null {
-    if (!text || !text.trim()) return null;
-
-    const asciiText = toAsciiDigits(text);
-    const lower = asciiText.toLowerCase();
-
-    // 1) Must look like a purchase.
-    const isPurchase = PURCHASE_KEYWORDS.some((keyword) => lower.includes(keyword.toLowerCase()));
-    if (!isPurchase) return null;
-
-    // 2) Must have a recognizable amount + currency.
-    const money = extractAmountAndCurrency(asciiText);
-    if (!money) return null;
-
-    // 3) Must have a merchant to attribute the expense to.
-    const merchant = extractMerchant(text, asciiText);
-    if (!merchant) return null;
-
-    return {
-        amount: money.amount,
-        currency: money.currency,
-        merchant,
-        paymentMethod: extractPaymentMethod(asciiText),
-        cardLastFourDigits: extractCardLastFour(asciiText),
-        transactionDate: extractDate(asciiText),
-        originalText: text,
-        fingerprint: computeFingerprint(text),
-        suggestedCategory: suggestCategory(merchant),
-    };
+    const result = classifyBankMessage(text);
+    return result.kind === 'expense' ? result.expense : null;
 }

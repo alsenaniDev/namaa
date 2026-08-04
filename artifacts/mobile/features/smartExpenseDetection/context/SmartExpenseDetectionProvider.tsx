@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, InteractionManager, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
@@ -22,17 +22,35 @@ const SmartExpenseDetectionContext = createContext<SmartExpenseDetectionContextV
 
 const TOAST_VISIBLE_MS = 2600;
 
+type ToastVariant = 'alreadyAdded' | 'unsupported';
+
 /**
- * Transient banner shown when a copied purchase was already added, so the user
- * understands why nothing else happened. Auto-dismisses after a short delay.
+ * Transient banner explaining why a copied message produced no popup: either it
+ * was already added, or it's a bank message we can't add automatically (e.g. a
+ * transfer). Auto-dismisses after a short delay.
  */
-function AlreadyAddedToast({ show, onHide }: { show: boolean; onHide: () => void }) {
+function DetectionToast({ variant, show, onHide }: { variant: ToastVariant; show: boolean; onHide: () => void }) {
     const colors = useColors();
     const dir = useDir();
     const t = useT();
     const insets = useSafeAreaInsets();
     const opacity = useRef(new Animated.Value(0)).current;
     const translateY = useRef(new Animated.Value(-12)).current;
+
+    const config =
+        variant === 'alreadyAdded'
+            ? {
+                icon: 'check-circle' as const,
+                tint: colors.primary,
+                title: t.smartDetection.alreadyAddedTitle,
+                text: t.smartDetection.alreadyAddedText,
+            }
+            : {
+                icon: 'alert-circle' as const,
+                tint: colors.warning,
+                title: t.smartDetection.unsupportedTitle,
+                text: t.smartDetection.unsupportedText,
+            };
 
     useEffect(() => {
         if (!show) return;
@@ -68,15 +86,15 @@ function AlreadyAddedToast({ show, onHide }: { show: boolean; onHide: () => void
                 },
             ]}
         >
-            <View style={[styles.toastIcon, { backgroundColor: colors.primary + '1A' }]}>
-                <Feather name="check-circle" size={18} color={colors.primary} />
+            <View style={[styles.toastIcon, { backgroundColor: config.tint + '1A' }]}>
+                <Feather name={config.icon} size={18} color={config.tint} />
             </View>
             <View style={styles.toastTextWrap}>
                 <Text style={[styles.toastTitle, { color: colors.foreground, textAlign: dir.textAlign }]}>
-                    {t.smartDetection.alreadyAddedTitle}
+                    {config.title}
                 </Text>
                 <Text style={[styles.toastDesc, { color: colors.mutedForeground, textAlign: dir.textAlign }]}>
-                    {t.smartDetection.alreadyAddedText}
+                    {config.text}
                 </Text>
             </View>
         </Animated.View>
@@ -96,14 +114,21 @@ export function SmartExpenseDetectionProvider({ children }: { children: React.Re
     const router = useRouter();
     const enabled = !!userProfile && userProfile.clipboardDetectionEnabled !== false;
 
-    const { detected, duplicate, dismiss, accept, dismissDuplicate } = useClipboardExpenseDetection(enabled);
+    const { detected, duplicate, unsupported, dismiss, accept, dismissDuplicate, dismissUnsupported } =
+        useClipboardExpenseDetection(enabled);
     const [pending, setPending] = useState<DetectedExpense | null>(null);
 
     const handleContinue = useCallback(async () => {
         const current = await accept();
         if (!current) return;
         setPending(current);
-        router.push('/expenses/review');
+        // Closing the detection popup (via accept → setDetected(null)) dismisses an
+        // RN <Modal>. Presenting the review screen in the same frame is dropped on
+        // iOS ("nothing happens"), so we navigate only after that dismissal and the
+        // setPending state have settled.
+        InteractionManager.runAfterInteractions(() => {
+            router.push('/expenses/review');
+        });
     }, [accept, router]);
 
     const clearPending = useCallback(() => setPending(null), []);
@@ -112,7 +137,8 @@ export function SmartExpenseDetectionProvider({ children }: { children: React.Re
         <SmartExpenseDetectionContext.Provider value={{ pending, clearPending }}>
             {children}
             <DetectedExpenseModal detected={detected} onCancel={dismiss} onContinue={handleContinue} />
-            <AlreadyAddedToast show={!!duplicate} onHide={dismissDuplicate} />
+            <DetectionToast variant="alreadyAdded" show={!!duplicate} onHide={dismissDuplicate} />
+            <DetectionToast variant="unsupported" show={unsupported} onHide={dismissUnsupported} />
         </SmartExpenseDetectionContext.Provider>
     );
 }
